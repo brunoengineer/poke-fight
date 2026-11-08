@@ -30,15 +30,41 @@ export function padMask(pad: PadLike): InputMask {
   return mask;
 }
 
+/** The buttons that drive the menus. */
+export interface MenuPad {
+  up: boolean;
+  down: boolean;
+  left: boolean;
+  right: boolean;
+  a: boolean;
+  b: boolean;
+}
+
+export const NO_MENU_PAD: MenuPad = { up: false, down: false, left: false, right: false, a: false, b: false };
+
+export function padMenu(pad: PadLike): MenuPad {
+  const on = (index: number) => pad.buttons[index]?.pressed === true;
+  const [stickX = 0, stickY = 0] = pad.axes;
+  return {
+    up: on(PAD.Up) || stickY <= -STICK_DEADZONE,
+    down: on(PAD.Down) || stickY >= STICK_DEADZONE,
+    left: on(PAD.Left) || stickX <= -STICK_DEADZONE,
+    right: on(PAD.Right) || stickX >= STICK_DEADZONE,
+    a: on(PAD.A),
+    b: on(PAD.B),
+  };
+}
+
 export interface PadReading {
   mask: InputMask;
   start: boolean;
+  menu: MenuPad;
 }
 
 /** Reads the first connected controller (player 1). */
 export function readFirstPad(): PadReading {
   const pads = typeof navigator.getGamepads === 'function' ? navigator.getGamepads() : [];
   const pad = pads.find(p => p?.connected);
-  if (!pad) return { mask: 0, start: false };
-  return { mask: padMask(pad), start: pad.buttons[PAD.Start]?.pressed === true };
+  if (!pad) return { mask: 0, start: false, menu: NO_MENU_PAD };
+  return { mask: padMask(pad), start: pad.buttons[PAD.Start]?.pressed === true, menu: padMenu(pad) };
 }

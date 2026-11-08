@@ -11,6 +11,8 @@ import { DUMMY_MODES, dummyInput, type DummyMode } from '../fight/dummy';
 import { cleanDirections, type InputMask } from '../fight/input';
 import type { FightEvent, FighterId, FightState } from '../fight/state';
 import type { MessageKey } from '../i18n';
+import type { StageSpec } from '../render/stage';
+import { ENTRANCE, type Entrance, type TrainerLook } from './entrance';
 import { OPPONENT_TEAM, PLAYER_TEAM } from './sandbox-teams';
 
 /** Frames of white flash after a big special lands. */
@@ -79,6 +81,12 @@ export interface SandboxView {
   banner: Banner | null;
   /** Training tools (F1–F4, R) are available. */
   tools: boolean;
+  /** Where the fight takes place (the background). */
+  stage: StageSpec;
+  /** The trainers at the edges of the arena (null: none, like a wild Pokémon's side). */
+  trainers: [TrainerLook | null, TrainerLook | null];
+  /** The trainers throwing their Poké Balls; the fight waits for it. */
+  entrance: Entrance | null;
 }
 
 export interface Sandbox {
@@ -109,6 +117,10 @@ export interface SandboxOptions {
   roundFrames?: number;
   /** Training tools (F1–F4, R). Default: on, unless a director runs the fight. Journey fights turn them off. */
   tools?: boolean;
+  /** Play the trainers' entrance before each Pokémon comes in (the browser tests turn it off to stay frame-exact). */
+  entrance?: boolean;
+  stage?: StageSpec;
+  trainers?: [TrainerLook | null, TrainerLook | null];
 }
 
 /** How long the intro message stays (frames). */
@@ -132,6 +144,9 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
   let infinitePp = false;
   let flash = 0;
   let effect: EffectMessage | null = null;
+  const enter = (sides: [boolean, boolean], first: boolean): Entrance | null =>
+    options.entrance && (sides[0] || sides[1]) ? { frame: 0, sides, first } : null;
+  let entrance = enter([true, true], true);
 
   const newCpu = (): CpuState | null => {
     const difficulty = difficultyOf(opponent);
@@ -154,6 +169,12 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
 
   return {
     tick(p1) {
+      // While the trainers throw their Poké Balls, the fight waits (inputs do nothing).
+      if (entrance) {
+        entrance = entrance.frame + 1 >= ENTRANCE.total ? null : { ...entrance, frame: entrance.frame + 1 };
+        return [];
+      }
+      const before = [...battle.active];
       const result = battleStep(battle, [p1, player2Input()]);
       battle = result.battle;
       // Training only: the sandbox refills PP outside the fight rules.
@@ -165,6 +186,8 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
       if (result.events.some(e => e.type === 'roundStart')) {
         advantage = createAdvantageTracker();
         if (cpu) cpu = resetCpuMemory(cpu);
+        // Only the side whose Pokémon changed throws a new ball.
+        entrance = enter([battle.active[0] !== before[0], battle.active[1] !== before[1]], false);
       }
       advantage = trackAdvantage(advantage, battle.round, fightEvents);
       flash = result.events.some(e => e.type === 'hit' && e.big) ? BIG_HIT_FLASH : Math.max(0, flash - 1);
@@ -181,6 +204,7 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
     },
     reset() {
       battle = newBattle();
+      entrance = enter([true, true], true);
       advantage = createAdvantageTracker();
       flash = 0;
       effect = null;
@@ -213,8 +237,13 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
       advantage: advantage.last,
       flash,
       effect,
-      banner: director?.banner() ?? (options.intro && battle.rounds === 1 && battle.round.frame < INTRO_FRAMES ? options.intro : null),
+      banner: entrance
+        ? null
+        : (director?.banner() ?? (options.intro && battle.rounds === 1 && battle.round.frame < INTRO_FRAMES ? options.intro : null)),
       tools,
+      stage: options.stage ?? { id: 'stadium' },
+      trainers: options.trainers ?? [null, null],
+      entrance,
     }),
   };
 }

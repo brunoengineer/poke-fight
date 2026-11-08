@@ -8,6 +8,8 @@ export interface Button {
   testid: string;
   /** The button Enter / Start press (one per screen). */
   primary?: boolean;
+  /** The button a controller's B presses (leaving the screen). */
+  back?: boolean;
   disabled?: boolean;
   onClick: () => void;
 }
@@ -28,6 +30,7 @@ export interface PartyMemberView {
   /** 0–1: how far to the next level. */
   xpProgress: number;
   xpText: string;
+  sprite?: string;
   specials: { label: string; testid: string; options: Choice[]; value: string; onChange: (value: string) => void }[];
   /** Items to use on it (potions). */
   actions: Button[];
@@ -46,8 +49,15 @@ const button = (b: Button) =>
     testid: b.testid,
     class: b.primary ? 'primary' : undefined,
     onClick: b.onClick,
-    attrs: { ...(b.primary ? { 'data-primary': '' } : {}), ...(b.disabled ? { disabled: '' } : {}) },
+    attrs: {
+      ...(b.primary ? { 'data-primary': '' } : {}),
+      ...(b.back ? { 'data-back': '' } : {}),
+      ...(b.disabled ? { disabled: '' } : {}),
+    },
   });
+
+/** A Pokémon's picture in a menu (the same sprite the fight draws). */
+const sprite = (url: string | undefined) => (url ? h('img', { class: 'sprite', attrs: { src: url, alt: '', crossorigin: 'anonymous', loading: 'lazy' } }) : null);
 
 export function renderResults(root: HTMLElement, view: ResultsView) {
   root.replaceChildren(
@@ -74,7 +84,7 @@ export function renderParty(root: HTMLElement, view: PartyView) {
         { class: 'members' },
         view.members.map((m, i) =>
           h('li', { class: m.fainted ? 'member fainted' : 'member', testid: `member-${i}` }, [
-            h('div', { class: 'member-head' }, [h('strong', { text: m.name }), h('span', { text: m.level }), h('span', { text: m.hp })]),
+            h('div', { class: 'member-head' }, [sprite(m.sprite), h('strong', { text: m.name }), h('span', { text: m.level }), h('span', { text: m.hp })]),
             h('div', { class: 'xp-bar', attrs: { 'aria-hidden': 'true' } }, [h('div', { attrs: { style: `width: ${Math.round(m.xpProgress * 100)}%` } })]),
             h('small', { text: m.xpText }),
             ...m.specials.map(s => h('label', { class: 'special' }, [h('span', { text: s.label }), select(s.options, s.value, s.testid, s.label, s.onChange)])),
@@ -213,6 +223,12 @@ export interface MenuRow {
   label: string;
   detail?: string;
   testid?: string;
+  /** A Pokémon's sprite URL, shown before the label. */
+  sprite?: string;
+  /** A keyboard key, shown as a key cap (the Controls screen). */
+  key?: string;
+  /** Highlighted (the Controls screen waiting for a key). */
+  active?: boolean;
   buttons: Button[];
 }
 
@@ -237,9 +253,15 @@ export function renderMenu(root: HTMLElement, view: MenuView) {
             'ul',
             { class: 'rows' },
             section.rows.map(row =>
-              h('li', { class: 'row', testid: row.testid }, [
-                h('div', {}, [h('strong', { text: row.label }), row.detail ? h('small', { text: row.detail }) : null]),
-                h('div', { class: 'buttons' }, row.buttons.map(button)),
+              h('li', { class: row.active ? 'row waiting' : 'row', testid: row.testid }, [
+                h('div', { class: 'who' }, [
+                  sprite(row.sprite),
+                  h('div', {}, [h('strong', { text: row.label }), row.detail ? h('small', { text: row.detail }) : null]),
+                ]),
+                h('div', { class: 'buttons' }, [
+                  row.key ? h('kbd', { text: row.key, testid: row.testid ? `${row.testid}-key` : undefined }) : null,
+                  ...row.buttons.map(button),
+                ]),
               ]),
             ),
           ),

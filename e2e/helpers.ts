@@ -1,11 +1,13 @@
 // Shared tools for the browser tests.
 //   - Every test fails on a page error or a console error.
-//   - Requests to other sites (the Pokémon sprites) are stubbed with a 1-pixel image, so tests run offline and fast;
-//     the game draws its stand-in rectangles instead.
+//   - Requests to other sites are stubbed, so tests run offline and fast: sprites become a 1-pixel image (the game
+//     draws its stand-in rectangles), web fonts an empty stylesheet, cries an empty answer.
 //   - The game is opened in test mode (see src/test/hooks.ts): fixed seed and a manual clock.
 //   - Player 2 is a standing dummy unless the test asks for another opponent (the game's default is the CPU).
 //   - The game opens straight into Training (`scene: 'training'`) unless the test asks for the title
 //     (`scene: 'title'`). Training without a saved journey is the demo (Lv. 30 teams, no XP).
+//   - The trainers' entrance (Poké Balls thrown before each Pokémon) is off (`entrance: '0'`), so fights start on
+//     frame 0; e2e/entrance.spec.ts turns it on.
 
 import { readFileSync } from 'node:fs';
 import { test as base, expect, type Page } from '@playwright/test';
@@ -24,11 +26,14 @@ export const test = base.extend({
       if (message.type() === 'error') errors.push(`console: ${message.text()}`);
     });
     await page.route(url => url.hostname !== 'localhost', route => {
+      const type = route.request().resourceType();
       // The game loads sprites as crossOrigin (to trim them), so the stub must allow it like the real host does.
-      if (route.request().resourceType() === 'image') {
+      if (type === 'image') {
         return route.fulfill({ contentType: 'image/png', body: PIXEL, headers: { 'Access-Control-Allow-Origin': '*' } });
       }
-      return route.abort();
+      // Web fonts: an empty stylesheet (the game falls back to system fonts). Cries and anything else: empty.
+      if (type === 'stylesheet') return route.fulfill({ contentType: 'text/css', body: '' });
+      return route.fulfill({ status: 200, body: '', headers: { 'Access-Control-Allow-Origin': '*' } });
     });
     await use(page);
     expect(errors, 'the game logged errors during this test').toEqual([]);
@@ -60,7 +65,7 @@ export async function openGame(page: Page, params: Record<string, string> = {}, 
       { key: SAVE_KEY, value: typeof setup.save === 'string' ? setup.save : JSON.stringify(setup.save) },
     );
   }
-  const query = new URLSearchParams({ test: '1', opponent: 'stand', scene: 'training', ...params });
+  const query = new URLSearchParams({ test: '1', opponent: 'stand', scene: 'training', entrance: '0', ...params });
   await page.goto(`/?${query}`);
   await page.waitForFunction(() => window.__pf !== undefined);
 }

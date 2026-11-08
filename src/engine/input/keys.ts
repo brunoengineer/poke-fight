@@ -28,13 +28,16 @@ export interface KeyLatch {
   isBound(code: string): boolean;
   down(code: string): void;
   up(code: string): void;
+  /** New controls (the Controls screen): keys held so far are forgotten. */
+  setBindings(next: Bindings): void;
   /** Forgets every key (the window lost focus: key-up events would never arrive). */
   clear(): void;
   /** The mask for the next frame: keys held now, plus keys pressed since the last sample. */
   sample(): InputMask;
 }
 
-export function createKeyLatch(bindings: Bindings = DEFAULT_BINDINGS): KeyLatch {
+export function createKeyLatch(initial: Bindings = DEFAULT_BINDINGS): KeyLatch {
+  let bindings = initial;
   const held = new Set<string>();
   let pressedSinceSample: InputMask = 0;
   const isBound = (code: string) => Object.hasOwn(bindings, code);
@@ -48,13 +51,18 @@ export function createKeyLatch(bindings: Bindings = DEFAULT_BINDINGS): KeyLatch 
     up(code) {
       held.delete(code);
     },
+    setBindings(next) {
+      bindings = next;
+      held.clear();
+      pressedSinceSample = 0;
+    },
     clear() {
       held.clear();
       pressedSinceSample = 0;
     },
     sample() {
       let mask = pressedSinceSample;
-      for (const code of held) mask |= bindings[code];
+      for (const code of held) mask |= bindings[code] ?? 0;
       pressedSinceSample = 0;
       return mask;
     },

@@ -89,12 +89,18 @@ Our own light narrative on top of the canonical Kanto structure (cities, gym ord
 
 ### 4.1 The arena
 
-- Side view, a single flat stage with a background per location (grass, cave, gym, etc.).
-- **Trainers** stand in the background at the left and right edges. Intro: trainer throws a Pokéball → ball arcs →
-  flash → Pokémon appears. KO: the trainer recalls it (red beam), or the next one comes out in team fights.
-- Wild battles: no opponent trainer on the right, and the wild Pokémon jumps in from off-screen.
-- HUD: HP bars with name, level and types at the top, round timer, and a type-effectiveness flash on hit
-  ("Super effective!").
+- Side view, a single flat stage with a background per place, painted by code (`render/stage.ts`): route, forest
+  (grass around Pewter), cave, sea (fishing), gym (lit in the leader's type color), League hall, Safari, and the
+  stadium (trainers' battle field, Training).
+- **Trainers** stand at the left and right edges (small pixel figures, `render/trainers.ts`). The **entrance**
+  (`screens/entrance.ts`, 72 frames): the trainer throws a Poké Ball → it arcs → bursts open → the Pokémon grows out of
+  the light (and cries) → "FIGHT!". After a KO, only the side sending a new Pokémon throws. The fight waits for it.
+- Wild battles (and the Safari): no trainer on the right; the wild Pokémon leaps in from off-screen.
+- HUD: rounded panels with name, level and type badges, a gradient HP bar with a **damage trail** (the lost part
+  drains away after a moment), the PP bar (glowing when the big special is ready), a Poké Ball per team member, the
+  timer. A type-effectiveness text pops up on hit ("Super effective!").
+- Effects (`render/fx.ts`, purely visual): hit sparks and rings, block rings, KO bursts, dust on dashes and landings,
+  charge particles, projectile trails, screen shake.
 
 ### 4.2 Controls (MVP)
 
@@ -109,7 +115,12 @@ Our own light narrative on top of the canonical Kanto structure (cities, gym ord
 | Guard | L (hold) | R1 / RB (hold) | **Dedicated button**, ground only (no air guard); can't move while guarding |
 | Pause | Esc | Start | |
 
-Every key can be rebound, and controllers use the browser Gamepad API (polled every frame).
+Every action's key can be rebound on the **Controls** screen (title or city): one key per action, the arrows always
+move, the game's keys (Enter, Esc, P, R, M, F1–F4) can't be taken, and picking a key another action uses swaps them.
+Saved in `poke-fight.settings` (not the save: a new game keeps them). Texts that name keys follow the bindings
+(`{keyPhysical}`… in i18n). Controllers use the browser Gamepad API (polled every frame).
+**Menus** work without a mouse: arrow keys / d-pad move between buttons, Enter / A presses, B goes back, Start presses
+the main button. **M** turns the sound off and on.
 **No crouch** for now (so there are no high/low attacks): ↓ is unused and reserved for later.
 
 ### 4.3 Moves and frame data
@@ -503,7 +514,20 @@ Pokémon sprites are single front/back images, not fighting-game animation frame
   the player's). Animation is **procedural**: idle bob, squash/stretch on jump, lean + forward slide on the
   physical attack, glow/shake while charging, flash + knockback on hit, fall + fade on KO.
 - **Later** ❓: the data script turns Gen 5 animated GIFs into sprite sheets for the idle animation.
-- Trainers in the background: trainer sprites (static) + a throw animation.
+- Trainers at the edges: pixel figures painted by code (no trainer sprites) with a throwing pose.
+- Menus show each Pokémon's sprite (party, box, Hall of Fame).
+
+### 7.6 Sound
+
+All in `audio/`, through the Web Audio API, starting on the first click or key (the browser's autoplay rule):
+
+- **Effects** are synthesized (oscillators + filtered noise): hit, big hit, block, charge, KO, jump, dash, menu
+  select/confirm, ball throw/open/shake, caught, level up. Which ones a fight frame makes is a pure function
+  (`audio/cues.ts`), tested.
+- **Music**: short **original** chiptune loops written as chords + a melody (`audio/music.ts`): title, town, battle,
+  gym, League, victory. No game's music is copied.
+- **Cries**: the games' recordings, loaded by URL from PokeAPI (like the sprites) when a Pokémon comes out.
+- The browser tests are silent (test mode uses a silent player and never fetches cries).
 
 ### 7.4 Folder structure
 
@@ -588,7 +612,7 @@ Each milestone ends with something playable, tests, and green CI.
 | 7 | ✅ **World loop** | World map, cities, hunt (grass/water/cave), capture with balls, Pokémon Center, first shop, box |
 | 8 | ✅ **Gyms** | KOF-style team battles, trainers, 8 gyms with AI styles, badges unlock cities, mall, Safari Zone |
 | 9 | ✅ **League** | Elite Four + Champion, credits, "next region" hook (scalability check) |
-| 10 | **Juice & polish** | Sound effects, music, cries, screen shake, particles, rebinding UI, options, balance pass |
+| 10 | ✅ **Juice & polish** | Stages per place, trainers' Poké Ball entrance, new HUD, particles and screen shake, sound effects, original music, cries, mute, rebinding UI, menu navigation by keys and controller, modern menus. **Balance pass deferred**: it needs playtest data |
 
 Milestones 1–3 come **before** any Pokémon content on purpose: if the fight doesn't feel good with rectangles, the
 sprites won't save it.
@@ -632,6 +656,11 @@ sprites won't save it.
 | Next region | Party, box, money and Pokédex carry over; badges and League start over (default) |
 | Back dash | Invincible on its first 6 frames, punishable after |
 | Capture failure | One throw per win; if it breaks free, it flees |
+| Look | Modern and soft: glassy menus (Inter + Pixelify Sans), stages and trainers painted by code (no extra assets) |
+| Entrance | Trainers throw their balls before each Pokémon (72 frames, inputs ignored); the browser tests skip it (`?entrance=0`) |
+| Music | Original loops only (no copied themes); cries are the games' recordings by URL |
+| Settings | Sound and keys live apart from the save (`poke-fight.settings`), one custom key per action, arrows always move |
+| Balance pass | Deferred until there is playtest data (numbers stay pinned in tests) |
 
 ### Still open
 

@@ -21,8 +21,21 @@ export const isLanguage = (value: unknown): value is Language => LANGUAGES.inclu
 /** Portuguese for any Portuguese browser (pt-BR, pt-PT…), English otherwise. */
 export const detectLanguage = (browserLanguage: string): Language => (browserLanguage.toLowerCase().startsWith('pt') ? 'pt' : 'en');
 
+/**
+ * The player's keys, which texts can mention as {keyPhysical}, {keyGuard}… (the Controls screen changes them).
+ * Same as DEFAULT_KEYS in state/settings.ts.
+ */
+let keyNames: Record<string, string> = {
+  keyUp: 'W', keyLeft: 'A', keyDown: 'S', keyRight: 'D', keyPhysical: 'J', keySpecial: 'K', keyBig: 'I', keyGuard: 'L', keyDash: 'Space',
+};
+export function setKeyNames(names: Record<string, string>) {
+  keyNames = { ...names };
+}
+
 export function t(key: MessageKey, params: Record<string, string | number> = {}): string {
-  return MESSAGES[current][key].replace(/\{(\w+)\}/g, (match, name: string) => (name in params ? String(params[name]) : match));
+  return MESSAGES[current][key].replace(/\{(\w+)\}/g, (match, name: string) =>
+    name in params ? String(params[name]) : name in keyNames ? keyNames[name] : match,
+  );
 }
 
 /** The language names, each in its own language (for the language picker). */

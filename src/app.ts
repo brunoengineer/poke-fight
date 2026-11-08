@@ -5,7 +5,10 @@ import { BALLS, EVOLUTION_ITEMS, ITEMS, type BallId, type ItemId, type PotionId 
 import { move, species } from './data/pokedex';
 import { nextRegion } from './data/regions';
 import { city, gymIn, isUnlocked, KANTO, LEAGUE_CITY, type Gym, type HuntKind } from './data/regions/kanto';
-import { readFirstPad } from './engine/input/gamepad';
+import { createSilentAudio, createWebAudio } from './audio/audio';
+import { fightCues, freshCues, type SoundId } from './audio/cues';
+import type { SongId } from './audio/music';
+import { readFirstPad, type MenuPad, NO_MENU_PAD } from './engine/input/gamepad';
 import { attachKeyboard } from './engine/input/keyboard';
 import { createKeyLatch } from './engine/input/keys';
 import { createFixedStep } from './engine/loop';
@@ -24,15 +27,20 @@ import { evolve, heal, itemEvolution, setSpecial, specialOptions } from './game/
 import { SAFARI_BALLS, SAFARI_ENTRANCE, SAFARI_SECONDS } from './game/safari';
 import { cleanName, createStarter, DEFAULT_NAMES, MAX_NAME_LENGTH, RIVAL_PICK, STARTERS, STARTER_GIFTS, trainingOpponents } from './game/story';
 import { MAX_LEVEL, xpForLevel } from './game/xp';
-import { detectLanguage, isLanguage, language, LANGUAGE_NAMES, LANGUAGES, setLanguage, t, type Language, type MessageKey } from './i18n';
-import { render, renderBackdrop } from './render/renderer';
+import { detectLanguage, isLanguage, language, LANGUAGE_NAMES, LANGUAGES, setKeyNames, setLanguage, t, type Language, type MessageKey } from './i18n';
+import { createRenderer } from './render/renderer';
+import type { StageSpec } from './render/stage';
+import { typeColor } from './render/colors';
+import { leaderLook, LOOKS, type TrainerLook } from './screens/entrance';
 import { preloadSprites, spriteUrl } from './render/sprites';
 import { createSandbox, isOpponent, type Banner, type Director, type Opponent, type Sandbox } from './screens/sandbox';
 import { OPPONENT_TEAM, PLAYER_TEAM } from './screens/sandbox-teams';
 import { createTutorialDirector, type TutorialDirector } from './screens/tutorial-director';
 import { newSave, type Save } from './state/save';
+import { ACTIONS, bindingsOf, createSettingsStore, DEFAULT_KEYS, keyLabel, keyNames, rebind, type Action, type Settings } from './state/settings';
 import { createSaveStore } from './state/store';
 import { installTestHooks, type TestOptions } from './test/hooks';
+import { moveFocus, pressBack, pressFocused } from './ui/navigation';
 import { pressPrimary, renderDialog, renderMenu, renderParty, renderResults, renderStarter, renderTitle, type Button } from './ui/screens';
 
 /** A text to show: a translation key and its values. */
@@ -74,6 +82,7 @@ const typeNames = (types: readonly string[]) => types.map(type => t(`type.${type
 export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, options: TestOptions) {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('2D canvas not supported');
+  const renderer = createRenderer(ctx);
   const params = new URLSearchParams(location.search);
   const seed = options.enabled ? options.seed : Date.now() >>> 0;
   /** Encounters and catching (seeded in test mode, so the browser tests are repeatable). */
@@ -89,6 +98,31 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     notice = 'save.problem';
   }
   const persist = () => save && store.write(save);
+
+  // ── Settings and sound ────────────────────────────────────────────────────────────────────────────────────────
+  const settingsStore = createSettingsStore(safeStorage());
+  let settings: Settings = settingsStore.load();
+  setKeyNames(keyNames(settings.keys));
+  // The browser tests stay silent (and never fetch cries).
+  const audio = options.enabled ? createSilentAudio() : createWebAudio(settings.muted);
+  const unlockAudio = () => audio.unlock();
+  window.addEventListener('pointerdown', unlockAudio, true);
+  window.addEventListener('keydown', unlockAudio, true);
+  // Every menu button clicks.
+  overlayRoot.addEventListener('click', event => {
+    if (event.target instanceof HTMLElement && event.target.closest('button')) audio.play('confirm');
+  });
+  const applySettings = (next: Settings) => {
+    settings = next;
+    settingsStore.write(next);
+    keys.setBindings(bindingsOf(next.keys));
+    setKeyNames(keyNames(next.keys));
+    audio.setMuted(next.muted);
+  };
+  const toggleMute = () => {
+    applySettings({ ...settings, muted: !settings.muted });
+    if (scene === 'title') goTitle();
+  };
   const update = (change: (s: Save) => Save) => {
     if (!save) return;
     save = change(save);
@@ -158,6 +192,8 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     if (save) buttons.push({ label: t('title.continue'), testid: 'continue-game', primary: true, onClick: continueGame });
     buttons.push({ label: t('title.new'), testid: 'new-game', primary: !save, onClick: newGame });
     buttons.push({ label: t('title.training'), testid: 'training', onClick: startDemo });
+    buttons.push({ label: t('title.controls'), testid: 'controls', onClick: () => showControls(goTitle) });
+    buttons.push({ label: t(settings.muted ? 'sound.off' : 'sound.on'), testid: 'sound', onClick: toggleMute });
     renderTitle(overlayRoot, {
       title: 'Poké Fight',
       subtitle: t(notice ?? 'title.subtitle'),
@@ -252,7 +288,11 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     if (!save) return;
     const rival = createStarter(save.rival.starterId as (typeof STARTERS)[number]);
     tutorial = createTutorialDirector(seed, save.rival.name, move(save.party[0].specials.elemental).name);
-    enterFight('tutorial', save.party.map(toFighter), [toFighter(rival)], { director: tutorial });
+    enterFight('tutorial', save.party.map(toFighter), [toFighter(rival)], {
+      director: tutorial,
+      stage: { id: 'route' },
+      rivalLook: LOOKS.rival,
+    });
   }
 
   function endPrologue(outcome: ResultsState['outcome']) {
@@ -335,12 +375,64 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
         { label: t('city.box'), testid: 'city-box', onClick: showBox },
         { label: t('city.party'), testid: 'city-party', onClick: toggleParty },
         { label: t('city.map'), testid: 'city-map', onClick: showMap },
+        { label: t('title.controls'), testid: 'city-controls', onClick: () => showControls(goCity) },
         { label: t('city.title'), testid: 'to-title', onClick: goTitle },
       ],
     });
   }
 
-  const back: () => Button = () => ({ label: t('menu.back'), testid: 'back', onClick: goCity });
+  /** The keyboard controls: pick an action, press its new key (Esc cancels). `from` is where Back goes. */
+  function showControls(from: () => void, waiting: Action | null = null, notice: MessageKey | null = null) {
+    scene = 'menu';
+    show();
+    renderMenu(overlayRoot, {
+      title: t('controls.title'),
+      testid: 'controls',
+      info: [t(waiting ? 'controls.waiting' : (notice ?? 'controls.info')), t('controls.pad')],
+      sections: [
+        {
+          rows: ACTIONS.map(action => ({
+            label: t(`action.${action}` as MessageKey),
+            key: keyLabel(settings.keys[action]),
+            testid: `bind-${action}`,
+            active: waiting === action,
+            buttons: [{ label: t('controls.change'), testid: `change-${action}`, onClick: () => waitForKey(from, action) }],
+          })),
+        },
+      ],
+      buttons: [
+        {
+          label: t('controls.reset'),
+          testid: 'controls-reset',
+          onClick: () => {
+            applySettings({ ...settings, keys: DEFAULT_KEYS });
+            showControls(from);
+          },
+        },
+        { label: t('menu.back'), testid: 'back', back: true, primary: !waiting, onClick: from },
+      ],
+    });
+  }
+
+  function waitForKey(from: () => void, action: Action) {
+    showControls(from, action);
+    // Before the game's own key handling, so the key only rebinds.
+    const listener = (event: KeyboardEvent) => {
+      window.removeEventListener('keydown', listener, true);
+      // The player left the screen without pressing a key.
+      if (!overlayRoot.querySelector('[data-testid="controls"]')) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (event.code === 'Escape') return showControls(from);
+      const next = rebind(settings.keys, action, event.code);
+      if (!next) return showControls(from, null, 'controls.reserved');
+      applySettings({ ...settings, keys: next });
+      showControls(from);
+    };
+    window.addEventListener('keydown', listener, true);
+  }
+
+  const back: () => Button = () => ({ label: t('menu.back'), testid: 'back', back: true, onClick: goCity });
 
   function showCenter(message: MessageKey | null) {
     if (!save) return;
@@ -421,6 +513,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
           title: t('box.party', { count: s.party.length }),
           rows: s.party.map((p, i) => ({
             label: row(p),
+            sprite: spriteUrl(p.speciesId),
             testid: `party-${i}`,
             buttons: [
               {
@@ -439,6 +532,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
           title: t('box.box', { count: s.box.length }),
           rows: s.box.map((p, i) => ({
             label: row(p),
+            sprite: spriteUrl(p.speciesId),
             testid: `boxed-${i}`,
             buttons: [
               {
@@ -509,7 +603,13 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     opponent?: Opponent;
     style?: Style;
     roundFrames?: number;
+    stage?: StageSpec;
+    /** Who stands on the opponent's side (none for a wild Pokémon, which leaps in by itself). */
+    rivalLook?: TrainerLook | null;
   }
+
+  /** `?entrance=0` (the browser tests' default) skips the trainers throwing their Poké Balls. */
+  const entranceOn = params.get('entrance') !== '0';
 
   function enterFight(next: FightMode, player: TeamMember[], opponents: TeamMember[], setup: FightSetup = {}) {
     mode = next;
@@ -526,10 +626,14 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       intro: setup.intro,
       style: setup.style,
       roundFrames: setup.roundFrames,
+      entrance: entranceOn,
+      stage: setup.stage ?? { id: 'stadium' },
+      trainers: [LOOKS.player, setup.rivalLook === undefined ? LOOKS.trainer : setup.rivalLook],
       // The training tools (infinite PP, switching the opponent…) are for the practice demo only, never the journey.
       tools: next === 'demo',
     });
     preloadSprites([...player, ...opponents].map(member => member.speciesId));
+    renderer.reset();
     keys.clear();
   }
 
@@ -557,6 +661,10 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     });
   }
 
+  /** Where a hunt happens: the grass (Viridian Forest's trees around Pewter), a cave, or the sea. */
+  const huntStage = (location: string, kind: HuntKind): StageSpec =>
+    kind === 'cave' ? { id: 'cave' } : kind === 'water' ? { id: 'sea' } : { id: location === 'pewter' ? 'forest' : 'route' };
+
   /** Hunting: a wild Pokémon from this city's grass, cave or water (fishing with the best rod). */
   function startHunt(kind: HuntKind) {
     if (!save) return;
@@ -570,6 +678,8 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     update(current => ({ ...current, dex: register(current, [found.speciesId]) }));
     enterFight('wild', party.map(toFighter), [toFighter(found)], {
       opponent: 'cpu-easy',
+      stage: huntStage(s.location, kind),
+      rivalLook: null,
       intro: { step: null, key: 'wild.appeared', params: { name: nameOf(found) } },
     });
   }
@@ -586,6 +696,8 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       enterFight('gym', party.map(toFighter), team.map(toFighter), {
         opponent: `cpu-${g.ai.difficulty}`,
         style: g.ai.style,
+        stage: { id: 'gym', tint: typeColor(g.type) },
+        rivalLook: leaderLook(typeColor(g.type)),
         intro: { step: null, key: 'gym.challenge', params: { leader: g.leader } },
       });
     });
@@ -627,6 +739,8 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     enterFight('safari', save.party.map(toFighter), [toFighter(found)], {
       opponent: 'cpu-easy',
       roundFrames: SAFARI_SECONDS * 60,
+      stage: { id: 'safari' },
+      rivalLook: null,
       intro: { step: null, key: 'wild.appeared', params: { name: nameOf(found) } },
     });
     wild = found;
@@ -685,6 +799,8 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       enterFight('league', save.party.map(toFighter), opponent.team.map(toFighter), {
         opponent: `cpu-${opponent.ai.difficulty}`,
         style: opponent.ai.style,
+        stage: { id: 'league', tint: opponent.type ? typeColor(opponent.type) : undefined },
+        rivalLook: opponent.kind === 'champion' ? LOOKS.champion : leaderLook(typeColor(opponent.type), true),
         intro: { step: null, key: 'league.wants', params: { who: whoIs(opponent) } },
       });
     });
@@ -713,7 +829,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       title: t('hof.title'),
       testid: 'hall-of-fame',
       info: [t('hof.entry', { n: save.hallOfFame.length })],
-      sections: [{ rows: entry.team.map(m => ({ label: species(m.speciesId).name, detail: t('party.level', { level: m.level }), buttons: [] })) }],
+      sections: [{ rows: entry.team.map(m => ({ label: species(m.speciesId).name, sprite: spriteUrl(m.speciesId), detail: t('party.level', { level: m.level }), buttons: [] })) }],
       buttons: [{ label: t('dialog.next'), testid: 'hof-next', primary: true, onClick: showCredits }],
     });
   }
@@ -829,6 +945,10 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     if (ball === 'safari-ball' && safari) safari.balls--;
     else update(s => ({ ...s, bag: removeItem(s.bag, ball) }));
     const name = nameOf(pokemon);
+    // The ball's sounds: the throw, each shake, then the click (caught) or nothing (it broke free).
+    audio.play('ballThrow');
+    for (let i = 0; i < thrown.shakes; i++) later(0.5 + i * 0.45, 'shake');
+    if (thrown.caught) later(0.5 + thrown.shakes * 0.45, 'caught');
     if (thrown.caught) {
       // A caught Pokémon arrives rested (it was knocked out in the battle).
       const team = addCaught(save, heal(pokemon));
@@ -841,6 +961,10 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     }
     results.capture = null;
     showResults();
+  }
+
+  function later(seconds: number, sound: SoundId) {
+    window.setTimeout(() => audio.play(sound), seconds * 1000);
   }
 
   function letGo() {
@@ -858,6 +982,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       const evolved = evolve(before, to);
       update(s => ({ ...s, party: s.party.map((p, i) => (i === index ? evolved.pokemon : p)), dex: register(s, [], [to]) }));
       results.lines.push({ key: 'results.evolved', params: { name: nameOf(before), species: nameOf(evolved.pokemon) } });
+      audio.play('levelUp');
       for (const m of evolved.moves) results.lines.push({ key: 'results.move', params: { name: nameOf(evolved.pokemon), move: move(m).name } });
     } else {
       results.lines.push({ key: 'results.stopped', params: { name: nameOf(before) } });
@@ -1000,6 +1125,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     }
     modal = 'results';
     show();
+    if (results?.lines.some(line => line.key === 'results.level')) later(0.3, 'levelUp');
     showResults();
   }
 
@@ -1021,6 +1147,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       const evolvers = EVOLUTION_ITEMS.filter(id => countOf(s.bag, id) > 0 && itemEvolution(p, id));
       return {
         name: sp.name,
+        sprite: spriteUrl(p.speciesId),
         level: t('party.level', { level: p.level }),
         hp: p.hp === 0 ? t('party.fainted') : t('party.hp', { hp: displayHp(p.hp), max: displayHp(maxHpOf(p)) }),
         fainted: p.hp === 0,
@@ -1066,7 +1193,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       title: t('party.title'),
       members: s.party.map(member),
       language: languagePicker(showParty),
-      buttons: [{ label: t('party.close'), testid: 'close-party', primary: true, onClick: toggleParty }],
+      buttons: [{ label: t('party.close'), testid: 'close-party', primary: true, back: true, onClick: toggleParty }],
     });
   }
 
@@ -1101,7 +1228,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
   }
 
   // ── Input ─────────────────────────────────────────────────────────────────────────────────────────────────────
-  const keys = createKeyLatch();
+  const keys = createKeyLatch(bindingsOf(settings.keys));
   const tool = (action: (s: Sandbox) => void) => () => {
     if (sandbox && sandbox.view().tools) action(sandbox);
   };
@@ -1116,27 +1243,74 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       KeyR: tool(s => s.reset()),
       KeyP: toggleParty,
       Escape: () => (modal === 'party' ? toggleParty() : leaveCurrentFight()),
+      KeyM: toggleMute,
     },
-    { paused: () => scene !== 'fight' || modal !== 'none', alwaysOn: ['KeyP', 'Escape'] },
+    { paused: () => scene !== 'fight' || modal !== 'none', alwaysOn: ['KeyP', 'Escape', 'KeyM'] },
   );
+  // In menus, the arrow keys move between buttons (Enter presses the focused one, as browsers do).
+  window.addEventListener('keydown', event => {
+    if (overlayRoot.hidden || event.ctrlKey || event.altKey || event.metaKey) return;
+    if (event.target instanceof HTMLElement && event.target.matches('input, select, textarea')) return;
+    const delta = event.code === 'ArrowDown' || event.code === 'ArrowRight' ? 1 : event.code === 'ArrowUp' || event.code === 'ArrowLeft' ? -1 : 0;
+    if (!delta) return;
+    event.preventDefault();
+    moveFocus(overlayRoot, delta);
+    audio.play('select');
+  });
 
   // ── Loop ──────────────────────────────────────────────────────────────────────────────────────────────────────
   // Inputs are read right before each simulated frame, so a press is used on the very next frame.
+  let cueMemory = freshCues();
   const simulate = () => {
     if (scene !== 'fight' || modal !== 'none' || !sandbox) return;
     const events = sandbox.tick(keys.sample() | readFirstPad().mask);
+    const view = sandbox.view();
+    renderer.onTick(view, events);
+    const cues = fightCues(cueMemory, { fighters: view.battle.round.fighters, entrance: view.entrance, trainers: view.trainers }, events);
+    cueMemory = cues.memory;
+    cues.sounds.forEach(sound => audio.play(sound));
+    cues.cries.forEach(id => audio.cry(id));
     if (events.some(e => e.type === 'battleOver')) battleFinished();
   };
   const clock = createFixedStep(simulate);
-  const draw = () => (sandbox ? render(ctx, sandbox.view()) : renderBackdrop(ctx));
+  /** Behind the menus: the place you're in (the League's hall, a city's route, the stadium on the title). */
+  const backdrop = (): StageSpec => {
+    if (league) return { id: 'league' };
+    if (safari) return { id: 'safari' };
+    if (scene === 'title' || !save) return { id: 'stadium' };
+    return { id: 'route' };
+  };
+  const draw = () => (sandbox ? renderer.draw(sandbox.view()) : renderer.backdrop(backdrop()));
+
+  /** The music for where the player is. */
+  const songNow = (): SongId => {
+    if (scene === 'title') return 'title';
+    if (scene === 'fight' && sandbox) {
+      const { battle } = sandbox.view();
+      if (battle.phase === 'over' && battle.winner === 0) return 'victory';
+      return mode === 'gym' ? 'gym' : mode === 'league' ? 'league' : 'battle';
+    }
+    return league ? 'league' : 'town';
+  };
 
   let startWasHeld = false;
+  let padBefore: MenuPad = NO_MENU_PAD;
   let last: number | undefined;
   function onAnimationFrame(now: number) {
+    const pad = readFirstPad();
     // A controller's Start presses the open menu's main button.
-    const start = readFirstPad().start;
-    if (start && !startWasHeld && !overlayRoot.hidden) pressPrimary(overlayRoot);
-    startWasHeld = start;
+    if (pad.start && !startWasHeld && !overlayRoot.hidden) pressPrimary(overlayRoot);
+    startWasHeld = pad.start;
+    // In menus: the d-pad moves between buttons, A presses, B goes back (or closes the party).
+    if (!overlayRoot.hidden) {
+      const pressed = (button: keyof MenuPad) => pad.menu[button] && !padBefore[button];
+      if (pressed('down') || pressed('right')) moveFocus(overlayRoot, 1);
+      if (pressed('up') || pressed('left')) moveFocus(overlayRoot, -1);
+      if (pressed('a')) pressFocused(overlayRoot);
+      if (pressed('b')) pressBack(overlayRoot);
+    }
+    padBefore = pad.menu;
+    audio.music(songNow());
     if (!options.manualClock && last !== undefined) clock.advance(now - last);
     last = now;
     draw();

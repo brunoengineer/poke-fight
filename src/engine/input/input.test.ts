@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Button, cleanDirections } from '../../fight/input';
-import { PAD, STICK_DEADZONE, padMask, type PadLike } from './gamepad';
+import { PAD, STICK_DEADZONE, padMask, padMenu, type PadLike } from './gamepad';
 import { HISTORY_MAX_FRAMES, pushHistory, type HistoryEntry } from './history';
 import { createKeyLatch } from './keys';
 
@@ -53,6 +53,11 @@ describe('controller', () => {
   const pad = (pressed: number[] = [], axes: number[] = [0, 0]): PadLike => ({
     buttons: Array.from({ length: 17 }, (_, i) => ({ pressed: pressed.includes(i) })),
     axes,
+  });
+
+  it('in menus: the d-pad or the stick move, A confirms, B goes back', () => {
+    expect(padMenu(pad([PAD.Down, PAD.A]))).toEqual({ up: false, down: true, left: false, right: false, a: true, b: false });
+    expect(padMenu(pad([PAD.B], [0, -0.9]))).toMatchObject({ up: true, b: true, a: false });
   });
 
   it('maps the d-pad and the face buttons', () => {

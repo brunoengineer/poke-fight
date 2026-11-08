@@ -37,17 +37,23 @@ Run all three before saying a task is done. CI (`.github/workflows/ci.yml`) runs
 
 ## Texts and saves
 
+- Texts that name a key use `{keyPhysical}`, `{keyGuard}`… (filled from the player's bindings), never a fixed letter.
 - **Every text a player sees goes through `t()`** (`src/i18n/`), in English (`en.ts`) and Portuguese (`pt.ts`). A test
   fails if a text is missing in either language or their `{placeholders}` differ. Pokémon and move names come from
   the data (English) and are not translated. The debug overlay may stay in English.
 - **Changing the save format**: bump `SAVE_VERSION` in `src/state/save.ts`, add a migration from the old version, and
   keep a fixture of the old format in `src/state/fixtures/` (every fixture must keep loading).
 
+- Settings that belong to the device (sound, keys) are in `src/state/settings.ts` (`poke-fight.settings`), not the save.
+- Rendering (`render/`) and sound (`audio/`) only read the game; what to draw or play is decided by pure, tested helpers
+  where it matters (`audio/cues.ts`, `audio/music.ts`).
+
 ## Testing rules
 
 - Every feature adds tests: Vitest for rules and frame-exact behavior, Playwright for flows the player sees.
 - Playwright opens the game with `?test=1` (see `src/test/hooks.ts`): fixed seed, **manual clock** (`window.__pf.step(n)`),
-  read-only access through `window.__pf`. Use `e2e/helpers.ts` (`openGame`, `step`, `frame`); it fails a test on any
+  read-only access through `window.__pf`, and no sound. `openGame` also passes `entrance: '0'` (fights start without the
+  trainers' Poké Ball entrance); `e2e/entrance.spec.ts` turns it on. Use `e2e/helpers.ts` (`openGame`, `step`, `frame`); it fails a test on any
   console error and stubs requests to other sites.
 - Browser tests can't import game code that loads the JSON data (Node needs an import attribute): use type imports,
   or copy small constants into `e2e/helpers.ts`. `openGame(page, params, { save })` starts from a saved game

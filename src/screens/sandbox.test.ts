@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { PP_MAX } from '../fight/constants';
 import { DUMMY_ATTACK_EVERY, DUMMY_SPECIAL_EVERY } from '../fight/dummy';
+import { KO_DELAY } from '../fight/battle';
 import { Button } from '../fight/input';
+import { ENTRANCE } from './entrance';
 import { createSandbox, isOpponent, OPPONENTS, type Sandbox } from './sandbox';
 import { OPPONENT_TEAM, PLAYER_TEAM } from './sandbox-teams';
 
@@ -99,5 +101,42 @@ describe('sandbox', () => {
     sandbox.reset();
     expect(sandbox.view().battle.round.frame).toBe(0);
     expect(sandbox.view().battle.round.fighters[0].x).toBe(createSandbox().view().battle.round.fighters[0].x);
+  });
+});
+
+describe('the trainers’ entrance', () => {
+  it('is off unless asked for (the fight starts on frame 0)', () => {
+    expect(createSandbox().view().entrance).toBeNull();
+  });
+
+  it('the fight waits while the Poké Balls fly, ignoring inputs, then starts', () => {
+    const sandbox = createSandbox({ entrance: true });
+    expect(sandbox.view().entrance).toEqual({ frame: 0, sides: [true, true], first: true });
+    expect(sandbox.view().banner).toBeNull();
+    const x = sandbox.view().battle.round.fighters[0].x;
+    ticks(sandbox, ENTRANCE.total - 1, Button.Right);
+    expect(sandbox.view().entrance?.frame).toBe(ENTRANCE.total - 1);
+    expect(sandbox.view().battle.round.frame).toBe(0);
+    expect(sandbox.view().battle.round.fighters[0].x).toBe(x);
+    sandbox.tick(Button.Right);
+    expect(sandbox.view().entrance).toBeNull();
+    sandbox.tick(Button.Right);
+    expect(sandbox.view().battle.round.frame).toBe(1);
+  });
+
+  it('after a K.O., only the side sending a new Pokémon throws a ball (no "FIGHT!")', () => {
+    const sandbox = createSandbox({ entrance: true, opponentTeam: [{ ...OPPONENT_TEAM[0], hp: 1 }, OPPONENT_TEAM[1]] });
+    ticks(sandbox, ENTRANCE.total);
+    for (let i = 0; i < 600 && sandbox.view().battle.phase === 'fight'; i++) sandbox.tick(i % 20 === 0 ? Button.Physical : Button.Right);
+    expect(sandbox.view().battle.phase).toBe('ko');
+    for (let i = 0; i < KO_DELAY + 5 && !sandbox.view().entrance; i++) sandbox.tick(0);
+    expect(sandbox.view().entrance).toMatchObject({ sides: [false, true], first: false });
+  });
+
+  it('reset (R) plays the whole entrance again', () => {
+    const sandbox = createSandbox({ entrance: true });
+    ticks(sandbox, ENTRANCE.total + 10);
+    sandbox.reset();
+    expect(sandbox.view().entrance).toEqual({ frame: 0, sides: [true, true], first: true });
   });
 });

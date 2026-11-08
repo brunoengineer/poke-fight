@@ -46,8 +46,10 @@ export interface TestApi {
     infinitePp: boolean;
     advantage: { kind: ContactKind; value: number } | null;
   };
-  /** A copy of the current save. */
+  /** A copy of the current save (null before a journey starts). */
   save(): Save;
+  /** Where the app is: the scene, the kind of fight, and the tutorial's current step. */
+  scene(): { scene: string; mode: string | null; tutorialStep: string | null };
   /** Whether the clock only moves through step(). */
   manualClock: boolean;
   seed: number;

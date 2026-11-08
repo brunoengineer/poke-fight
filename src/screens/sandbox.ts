@@ -9,7 +9,8 @@ import { battleStep, createBattle, type BattleEvent, type BattleState, type Team
 import { PP_MAX } from '../fight/constants';
 import { DUMMY_MODES, dummyInput, type DummyMode } from '../fight/dummy';
 import { cleanDirections, type InputMask } from '../fight/input';
-import type { FightEvent, FighterId } from '../fight/state';
+import type { FightEvent, FighterId, FightState } from '../fight/state';
+import type { MessageKey } from '../i18n';
 import { OPPONENT_TEAM, PLAYER_TEAM } from './sandbox-teams';
 
 /** Frames of white flash after a big special lands. */
@@ -39,6 +40,26 @@ export type Opponent = DummyMode | `cpu-${Difficulty}`;
 
 export const isOpponent = (value: string): value is Opponent => (OPPONENTS as readonly string[]).includes(value);
 
+/** A message shown over the fight (the tutorial's instructions). */
+export interface Banner {
+  /** "Step 3 of 7", or null for a banner without steps. */
+  step: { number: number; total: number } | null;
+  key: MessageKey;
+  params: Record<string, string | number>;
+}
+
+/**
+ * Something that runs a fight instead of the dummy or the CPU options (the tutorial): it plays player 2 and may
+ * adjust the round after each frame (tutorial safety). With a director, the training tools are off.
+ */
+export interface Director {
+  input(round: FightState): InputMask;
+  after(round: FightState, events: readonly FightEvent[]): void;
+  banner(): Banner | null;
+  /** For the tests and the debug overlay. */
+  describe(): string;
+}
+
 export interface SandboxView {
   battle: BattleState;
   debug: boolean;
@@ -55,6 +76,9 @@ export interface SandboxView {
   flash: number;
   /** The last type effectiveness message, while it shows. */
   effect: EffectMessage | null;
+  banner: Banner | null;
+  /** Training tools (F1–F4, R) are available. */
+  tools: boolean;
 }
 
 export interface Sandbox {
@@ -76,6 +100,7 @@ export interface SandboxOptions {
   opponent?: Opponent;
   /** Seed for the CPU's decisions. */
   seed?: number;
+  director?: Director;
 }
 
 const difficultyOf = (opponent: Opponent): Difficulty | null =>
@@ -103,7 +128,11 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
   };
   let cpu = newCpu();
 
+  const director = options.director ?? null;
+  const tools = director === null;
+
   const player2Input = (): InputMask => {
+    if (director) return battle.phase === 'fight' ? director.input(battle.round) : 0;
     if (!cpu) return dummyInput(opponent as DummyMode, battle.round.frame + 1);
     // The CPU only plays during the fight itself (not on the KO pause or the menus).
     if (battle.phase !== 'fight') return 0;
@@ -118,8 +147,9 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
       battle = result.battle;
       // Training only: the sandbox refills PP outside the fight rules.
       if (infinitePp) for (const f of battle.round.fighters) f.pp = PP_MAX;
-      history = pushHistory(history, cleanDirections(p1));
       const fightEvents = result.events.filter((e): e is FightEvent => e.type !== 'roundStart' && e.type !== 'battleOver');
+      if (director && battle.phase === 'fight') director.after(battle.round, fightEvents);
+      history = pushHistory(history, cleanDirections(p1));
       // A new round: a new frame-advantage measurement, and the CPU forgets the Pokémon it was fighting.
       if (result.events.some(e => e.type === 'roundStart')) {
         advantage = createAdvantageTracker();
@@ -146,30 +176,34 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
       cpu = newCpu();
     },
     toggleDebug() {
-      debug = !debug;
+      if (tools) debug = !debug;
     },
     cycleOpponent() {
+      if (!tools) return;
       opponent = OPPONENTS[(OPPONENTS.indexOf(opponent) + 1) % OPPONENTS.length];
       cpu = newCpu();
     },
     cycleStyle() {
+      if (!tools) return;
       style = STYLES[(STYLES.indexOf(style) + 1) % STYLES.length];
       cpu = newCpu();
     },
     toggleInfinitePp() {
-      infinitePp = !infinitePp;
+      if (tools) infinitePp = !infinitePp;
     },
     view: () => ({
       battle,
       debug,
       opponent,
       style,
-      cpu: cpu ? describeCpu(cpu) : null,
+      cpu: director ? director.describe() : cpu ? describeCpu(cpu) : null,
       infinitePp,
       history,
       advantage: advantage.last,
       flash,
       effect,
+      banner: director?.banner() ?? null,
+      tools,
     }),
   };
 }

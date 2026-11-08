@@ -36,7 +36,7 @@ describe('guard', () => {
 
   it('blocks a tackle: no damage, blockstun, no PP for the attacker', () => {
     const r = run(40, on(Physical, 1), Guard, fightAt(40));
-    expect(r.events).toEqual([{ type: 'block', attacker: 0, defender: 1, chip: 0, frame: 6 }]);
+    expect(r.events).toEqual([{ type: 'block', attacker: 0, defender: 1, chip: 0, source: 'tackle', frame: 6 }]);
     expect(r.final.fighters[1].hp).toBe(MAX_HP);
     expect(r.final.fighters[0].pp).toBe(PP_START);
     expect(r.frames.some(s => s.fighters[1].action === 'blockstun')).toBe(true);

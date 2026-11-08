@@ -6,33 +6,76 @@
 import { hasSpecies, move } from '../data/pokedex';
 import { maxHpOf, type Pokemon } from '../game/pokemon';
 import { specialOptions } from '../game/progress';
+import { DEFAULT_NAMES, MAX_NAME_LENGTH } from '../game/story';
 import { MAX_LEVEL } from '../game/xp';
 import { isLanguage, type Language } from '../i18n';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export interface Settings {
   language: Language;
 }
 
+/** The prologue: the rival tutorial still to play, or done (then the journey is on). */
+export type PrologueStage = 'tutorial' | 'done';
+export const PROLOGUE_STAGES: readonly PrologueStage[] = ['tutorial', 'done'];
+
 export interface Save {
   version: typeof SAVE_VERSION;
   createdAt: number;
+  settings: Settings;
+  player: { name: string };
+  rival: { name: string; starterId: number };
+  starterId: number;
+  prologue: PrologueStage;
+  /** Where the player is (a city id; the world map comes with milestone 7). */
+  location: string;
   /** Up to 6 Pokémon that fight, in order. */
   party: Pokemon[];
   /** Everything else caught (the PC box, milestone 7). */
   box: Pokemon[];
-  settings: Settings;
 }
 
 export const MAX_PARTY = 6;
 
-export function newSave(party: Pokemon[], createdAt: number, language: Language): Save {
-  return { version: SAVE_VERSION, createdAt, party: structuredClone(party), box: [], settings: { language } };
+export interface NewJourney {
+  playerName: string;
+  rivalName: string;
+  starterId: number;
+  rivalStarterId: number;
+  party: Pokemon[];
 }
 
-/** Migrations from version N to N + 1 (none yet: version 1 is the first). */
-const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> = {};
+/** A new journey starts right after the starter is chosen: the rival tutorial comes next. */
+export function newSave(journey: NewJourney, createdAt: number, language: Language): Save {
+  return {
+    version: SAVE_VERSION,
+    createdAt,
+    settings: { language },
+    player: { name: journey.playerName },
+    rival: { name: journey.rivalName, starterId: journey.rivalStarterId },
+    starterId: journey.starterId,
+    prologue: 'tutorial',
+    location: 'pallet',
+    party: structuredClone(journey.party),
+    box: [],
+  };
+}
+
+/** Migrations from version N to N + 1. */
+const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> = {
+  // Version 1 saves come from before the prologue (the sandbox party): they become a journey already at Viridian,
+  // with the default names; the first Pokémon counts as the starter.
+  1: old => ({
+    ...old,
+    version: 2,
+    player: { name: DEFAULT_NAMES.player },
+    rival: { name: DEFAULT_NAMES.rival, starterId: 7 },
+    starterId: (old.party as Pokemon[])[0]?.speciesId ?? 4,
+    prologue: 'done',
+    location: 'viridian',
+  }),
+};
 
 export type LoadResult =
   | { status: 'none' }
@@ -68,6 +111,14 @@ export function findProblem(data: Record<string, unknown>): string | null {
   if (!Array.isArray(data.box)) return 'box missing';
   const settings = data.settings as Settings | undefined;
   if (!settings || !isLanguage(settings.language)) return 'settings missing';
+  const validName = (name: unknown) => typeof name === 'string' && name.trim().length > 0 && name.length <= MAX_NAME_LENGTH;
+  const player = data.player as Save['player'] | undefined;
+  const rival = data.rival as Save['rival'] | undefined;
+  if (!player || !validName(player.name)) return 'bad player name';
+  if (!rival || !validName(rival.name) || !hasSpecies(rival.starterId)) return 'bad rival';
+  if (typeof data.starterId !== 'number' || !hasSpecies(data.starterId)) return 'bad starter';
+  if (!PROLOGUE_STAGES.includes(data.prologue as PrologueStage)) return 'bad prologue stage';
+  if (typeof data.location !== 'string' || data.location.length === 0) return 'bad location';
   for (const [i, p] of [...party, ...data.box].entries()) {
     const problem = pokemonProblem(p as Pokemon);
     if (problem) return `Pokémon ${i}: ${problem}`;

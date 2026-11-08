@@ -51,7 +51,8 @@ Run all three before saying a task is done. CI (`.github/workflows/ci.yml`) runs
   console error and stubs requests to other sites.
 - Browser tests can't import game code that loads the JSON data (Node needs an import attribute): use type imports,
   or copy small constants into `e2e/helpers.ts`. `openGame(page, params, { save })` starts from a saved game
-  (`fixture('save-v1-….json')`).
+  (`fixture('save-v2-….json')`). By default it opens Training (`scene: 'training'`, the demo without a save); pass
+  `scene: 'title'` (or `'city'`, with a journey save) to start elsewhere. `window.__pf.scene()` says where the app is.
 - Never use `waitForTimeout` to wait for the game to do something: step the clock, or `expect.poll` for real-clock
   tests. (Waiting is only fine to prove that nothing happens, as in `e2e/boot.spec.ts`.)
 - Balance numbers (frame data, damage, catch rates) are pinned in tests on purpose. A change that breaks them is either

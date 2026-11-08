@@ -8,7 +8,8 @@ import { newSave, parseSave, SAVE_VERSION, serializeSave, type Save } from './sa
 import { BROKEN_SAVE_KEY, createSaveStore, SAVE_KEY } from './store';
 
 const party = () => [createPokemon(speciesBySlug('charmeleon').id, 30), createPokemon(speciesBySlug('kadabra').id, 30)];
-const save = () => newSave(party(), 1_700_000_000_000, 'en');
+const save = () =>
+  newSave({ playerName: 'Ana', rivalName: 'Bia', starterId: 5, rivalStarterId: 7, party: party() }, 1_700_000_000_000, 'en');
 const broken = (s: Save, change: (s: Save) => void) => {
   const copy = structuredClone(s);
   change(copy);
@@ -47,6 +48,23 @@ describe('save format', () => {
     expect(broken(save(), s => s.party[0].moves.push('not-a-move'))).toMatchObject({ reason: 'invalid' });
     expect(broken(save(), s => (s.party[0].specials.big = 'growl'))).toMatchObject({ reason: 'invalid' });
     expect(broken(save(), s => (s.settings.language = 'fr' as never))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => (s.player.name = ''))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => (s.rival.name = 'A name that is far too long'))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => (s.prologue = 'somewhere' as never))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => (s.starterId = 999))).toMatchObject({ reason: 'invalid' });
+  });
+
+  it('a new journey starts in Pallet Town, with the rival tutorial still to play', () => {
+    expect(save()).toMatchObject({ player: { name: 'Ana' }, rival: { name: 'Bia', starterId: 7 }, prologue: 'tutorial', location: 'pallet' });
+  });
+
+  it('version 1 saves (before the prologue existed) become a journey at Viridian City', () => {
+    const v1 = readFileSync(new URL('./fixtures/save-v1-new-game.json', import.meta.url), 'utf8');
+    const result = parseSave(v1);
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') return;
+    expect(result.save).toMatchObject({ version: SAVE_VERSION, prologue: 'done', location: 'viridian', player: { name: 'Kai' } });
+    expect(result.save.party).toEqual(JSON.parse(v1).party);
   });
 });
 

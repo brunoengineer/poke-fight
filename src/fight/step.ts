@@ -30,7 +30,7 @@ import {
   type SpecialSlot,
 } from './frame-data';
 import { Button, cleanDirections, has, type InputMask } from './input';
-import type { ActionKind, AttackInfo, FightEvent, FightState, Fighter } from './state';
+import type { ActionKind, AttackInfo, FightEvent, FightState, Fighter, HitSource } from './state';
 
 export interface StepResult {
   state: FightState;
@@ -356,6 +356,13 @@ interface Connection {
   away: number;
   /** A melee hit (tackle, beam, rush) rather than a projectile: it marks the attacker's move as hit or blocked. */
   melee: boolean;
+  source: HitSource;
+}
+
+function meleeSource(f: Fighter): HitSource {
+  if (f.action === 'airAttack') return 'air';
+  if (f.action === 'elemental' || f.action === 'big') return f.action;
+  return 'tackle';
 }
 
 function resolveHits(state: FightState, events: FightEvent[]) {
@@ -370,13 +377,13 @@ function resolveHits(state: FightState, events: FightEvent[]) {
     attacker.contact = 'hit';
     // By position, not facing: a jump or a rush can cross over.
     const away = defender.x === attacker.x ? attacker.facing : Math.sign(defender.x - attacker.x);
-    connections.push({ attacker, defender, hit: currentMove(attacker)!.hit, attack: meleeAttack(attacker), away, melee: true });
+    connections.push({ attacker, defender, hit: currentMove(attacker)!.hit, attack: meleeAttack(attacker), away, melee: true, source: meleeSource(attacker) });
   }
 
   state.projectiles = state.projectiles.filter(p => {
     const defender = state.fighters[p.owner === 0 ? 1 : 0];
     if (isInvincible(defender) || !overlaps(projectileBox(p), bodyBox(defender))) return true;
-    connections.push({ attacker: state.fighters[p.owner], defender, hit: p.hit, attack: p.attack, away: Math.sign(p.vx), melee: false });
+    connections.push({ attacker: state.fighters[p.owner], defender, hit: p.hit, attack: p.attack, away: Math.sign(p.vx), melee: false, source: p.slot });
     return false;
   });
 
@@ -391,7 +398,7 @@ function resolveHits(state: FightState, events: FightEvent[]) {
 /** Blocked hits freeze for less time than clean hits. */
 const blockHitstop = (hit: HitData) => Math.max(4, Math.floor(hit.hitstop / 2));
 
-function applyHit(state: FightState, { attacker, defender, hit, attack, away, melee }: Connection, events: FightEvent[]) {
+function applyHit(state: FightState, { attacker, defender, hit, attack, away, melee, source }: Connection, events: FightEvent[]) {
   const { damage: fullDamage, effectiveness } = computeDamage(attacker, defender, attack);
   if (isGuarding(defender)) {
     if (melee) attacker.contact = 'block';
@@ -399,7 +406,7 @@ function applyHit(state: FightState, { attacker, defender, hit, attack, away, me
     defender.hp = Math.max(0, defender.hp - chip);
     defender.combo = 0;
     state.hitstop = Math.max(state.hitstop, blockHitstop(hit));
-    events.push({ type: 'block', attacker: attacker.id, defender: defender.id, chip });
+    events.push({ type: 'block', attacker: attacker.id, defender: defender.id, chip, source });
     if (defender.hp === 0) return knockOut(defender, away, events);
     setAction(defender, 'blockstun', hit.blockstun);
     defender.actionFrame = 0; // blockstun starts on the next frame
@@ -411,7 +418,7 @@ function applyHit(state: FightState, { attacker, defender, hit, attack, away, me
   const air = defender.y > 0;
   // A type that can't touch the defender (Normal → Ghost, Electric → Ground…): it passes harmlessly.
   if (effectiveness === 0) {
-    events.push({ type: 'hit', attacker: attacker.id, defender: defender.id, damage: 0, effectiveness, air, big: hit.big, combo: defender.combo });
+    events.push({ type: 'hit', attacker: attacker.id, defender: defender.id, damage: 0, effectiveness, air, big: hit.big, combo: defender.combo, source });
     return;
   }
   const damage = Math.max(1, scaledDamage(fullDamage, defender.combo));
@@ -420,7 +427,7 @@ function applyHit(state: FightState, { attacker, defender, hit, attack, away, me
   defender.buffer = { physical: 0, special: 0, big: 0, dash: 0 };
   attacker.pp = Math.min(PP_MAX, attacker.pp + hit.ppGain);
   state.hitstop = Math.max(state.hitstop, hit.hitstop);
-  events.push({ type: 'hit', attacker: attacker.id, defender: defender.id, damage, effectiveness, air, big: hit.big, combo: defender.combo });
+  events.push({ type: 'hit', attacker: attacker.id, defender: defender.id, damage, effectiveness, air, big: hit.big, combo: defender.combo, source });
 
   if (defender.hp === 0) return knockOut(defender, away, events);
   if (air || hit.launch) {

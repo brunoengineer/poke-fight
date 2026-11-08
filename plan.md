@@ -48,6 +48,26 @@ Our own light narrative on top of the canonical Kanto structure (cities, gym ord
 - **Next region.** After the credits, you "travel" to region 2: a new journey with new cities, gyms and a League.
   ❓ What carries over (whole party? only one Pokémon? Pokédex and money?).
 
+**Built in milestone 6** (pinned by `tutorial.test.ts`, `save.test.ts`, `e2e/prologue.spec.ts`):
+
+- **Title**: Continue (with who and where), New game (asks before erasing a journey), Training, language.
+- **Story**: the Professor (no name: "Professor") talks in dialogue boxes, one line at a time. Original texts in
+  English and Portuguese. The player names themself and the rival (original defaults: **Kai** and **Ren**; up to
+  12 characters; empty → default).
+- **Starter**: Bulbasaur, Charmander or Squirtle, Lv. 5; the Professor teaches Vine Whip / Ember / Bubble; the rival
+  takes the starter that beats yours.
+- **Rival tutorial** (7 guided steps, each checked from real fight events): walk forward, jump, land a tackle, land
+  an air attack, guard the rival's attack, dash, land the elemental special. During the guided steps the rival only
+  attacks in the guard step, both Pokémon stay at full HP, the clock stops and the special step always has enough
+  PP. Then "Now win the battle!" against an easy CPU, with the rival at half HP. Win (XP) or lose, the story goes on;
+  the starter rests (full HP) and the player sets off to **Viridian City**.
+- **City screen** (milestone 7 fills it in): Battle field (training), Party, Title.
+- **Training**: with a journey, your party against Rattata, Pidgey and Geodude at your party's average level (XP
+  counts, Continue goes back to the city); without one, the Lv. 30 demo teams (no XP). Esc leaves Training. The
+  training tools (F1–F4, R) are off in the tutorial.
+- **Save version 2**: player and rival names, starter, prologue stage, location. Version 1 saves migrate to a
+  journey already at Viridian.
+
 ### Kanto progression (canonical order, simplified for menus)
 
 | # | City | Gym type | Unlocks after | Notes |
@@ -507,7 +527,7 @@ Each milestone ends with something playable, tests, and green CI.
 | 3 | ✅ **CPU** | AI with reaction delay, 3 difficulties × 4 styles; can play a fair fight against it |
 | 4 | ✅ **Pokémon data** | `build-data.mjs` (Gen 1: species, stats, types, moves, learnsets, evolutions, encounters, growth, catch rates); sprites in the fight; stat-based damage; type chart |
 | 5 | ✅ **Progression + save** | Party, XP, level up, move choice, evolution, save/load with versions |
-| 6 | **Prologue** | Title → starter → interactive rival tutorial → arrive at Viridian |
+| 6 | ✅ **Prologue** | Title → starter → interactive rival tutorial → arrive at Viridian |
 | 7 | **World loop** | World map, cities, hunt (grass/water/cave), capture with balls, Pokémon Center, first shop, box |
 | 8 | **Gyms** | KOF-style team battles, trainers, 8 gyms with AI styles, badges unlock cities, mall, Safari Zone |
 | 9 | **League** | Elite Four + Champion, credits, "next region" hook (scalability check) |

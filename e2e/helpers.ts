@@ -4,6 +4,8 @@
 //     the game draws its stand-in rectangles instead.
 //   - The game is opened in test mode (see src/test/hooks.ts): fixed seed and a manual clock.
 //   - Player 2 is a standing dummy unless the test asks for another opponent (the game's default is the CPU).
+//   - The game opens straight into Training (`scene: 'training'`) unless the test asks for the title
+//     (`scene: 'title'`). Training without a saved journey is the demo (Lv. 30 teams, no XP).
 
 import { readFileSync } from 'node:fs';
 import { test as base, expect, type Page } from '@playwright/test';
@@ -58,7 +60,7 @@ export async function openGame(page: Page, params: Record<string, string> = {}, 
       { key: SAVE_KEY, value: typeof setup.save === 'string' ? setup.save : JSON.stringify(setup.save) },
     );
   }
-  const query = new URLSearchParams({ test: '1', opponent: 'stand', ...params });
+  const query = new URLSearchParams({ test: '1', opponent: 'stand', scene: 'training', ...params });
   await page.goto(`/?${query}`);
   await page.waitForFunction(() => window.__pf !== undefined);
 }
@@ -70,6 +72,7 @@ export async function reload(page: Page) {
 }
 
 export const save = (page: Page) => page.evaluate(() => window.__pf!.save());
+export const scene = (page: Page) => page.evaluate(() => window.__pf!.scene());
 
 /** Walks into the opponent and tackles every 30 frames until the battle is over (the standing dummy never fights back). */
 export async function winBattle(page: Page, maxTackles = 300) {

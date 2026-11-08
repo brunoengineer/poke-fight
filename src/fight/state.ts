@@ -112,6 +112,9 @@ export interface Projectile {
 
 export type Winner = FighterId | 'draw' | null;
 
+/** The move behind a hit or a block. */
+export type HitSource = 'tackle' | 'air' | 'elemental' | 'big';
+
 export interface FightState {
   /** Simulated frames since the fight started. */
   frame: number;
@@ -137,8 +140,10 @@ export type FightEvent =
       air: boolean;
       big: boolean;
       combo: number;
+      /** What landed. */
+      source: HitSource;
     }
-  | { type: 'block'; attacker: FighterId; defender: FighterId; chip: number }
+  | { type: 'block'; attacker: FighterId; defender: FighterId; chip: number; source: HitSource }
   | { type: 'special'; fighter: FighterId; slot: SpecialSlot }
   | { type: 'ko'; loser: FighterId }
   | { type: 'timeout' };

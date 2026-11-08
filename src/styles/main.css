@@ -136,3 +136,57 @@ html, body {
   gap: 12px;
   margin-top: 6px;
 }
+
+.panel.title {
+  text-align: center;
+}
+
+.panel h1 {
+  margin: 0;
+  font-size: 34px;
+  letter-spacing: 2px;
+}
+
+.panel .subtitle {
+  margin: 4px 0 16px;
+  color: #9aa4c0;
+}
+
+.panel .buttons.column {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.panel .speaker {
+  color: #ffd23f;
+}
+
+.panel input[type='text'] {
+  font: inherit;
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #6b7799;
+  border-radius: 6px;
+  background: #11162a;
+  color: inherit;
+}
+
+.cards {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.panel .card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 140px;
+  padding: 12px;
+}
+
+.card img {
+  image-rendering: pixelated;
+}

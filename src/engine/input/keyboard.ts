@@ -16,6 +16,8 @@ export function attachKeyboard(target: Window, latch: KeyLatch, commands: Comman
   const onDown = (event: KeyboardEvent) => {
     // Leave browser shortcuts alone (Ctrl+R reloads, Alt+Tab…).
     if (event.ctrlKey || event.metaKey || event.altKey) return;
+    // Typing in a text field (a name) or choosing in a dropdown: the keys are for it.
+    if (event.target instanceof HTMLElement && event.target.matches('input, textarea, select')) return;
     if (options.paused?.()) {
       if (options.alwaysOn?.includes(event.code) && Object.hasOwn(commands, event.code)) {
         event.preventDefault();

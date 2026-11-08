@@ -69,6 +69,7 @@ export function render(ctx: CanvasRenderingContext2D, view: SandboxView): void {
   for (const f of round.fighters) drawFighter(ctx, f);
   drawProjectiles(ctx, round);
   drawHud(ctx, view);
+  drawBanner(ctx, view);
   drawEffect(ctx, view);
   if (view.debug) drawDebug(ctx, view);
   if (view.flash > 0) {
@@ -298,6 +299,37 @@ function drawEffect(ctx: CanvasRenderingContext2D, view: SandboxView) {
   ctx.restore();
 }
 
+/** The tutorial's instruction, under the HUD. */
+function drawBanner(ctx: CanvasRenderingContext2D, view: SandboxView) {
+  const { banner } = view;
+  if (!banner) return;
+  const text = t(banner.key, banner.params);
+  ctx.save();
+  ctx.font = 'bold 10px monospace';
+  const width = Math.min(VIEW_W - 20, Math.ceil(ctx.measureText(text).width) + 24);
+  const top = 50;
+  ctx.fillStyle = 'rgba(10, 12, 20, 0.85)';
+  ctx.fillRect((VIEW_W - width) / 2, top, width, banner.step ? 30 : 20);
+  ctx.textAlign = 'center';
+  let y = top + 5;
+  if (banner.step) {
+    ctx.font = '8px monospace';
+    ctx.fillStyle = '#9aa4c0';
+    ctx.fillText(t('tutorial.step', { step: banner.step.number, total: banner.step.total }), VIEW_W / 2, y);
+    y += 11;
+    ctx.font = 'bold 10px monospace';
+  }
+  ctx.fillStyle = '#ffd23f';
+  ctx.fillText(text, VIEW_W / 2, y);
+  ctx.restore();
+}
+
+/** The arena with nobody in it: behind the title, the story and the city menus. */
+export function renderBackdrop(ctx: CanvasRenderingContext2D): void {
+  ctx.imageSmoothingEnabled = false;
+  drawArena(ctx);
+}
+
 // ── HUD ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView) {
@@ -356,10 +388,11 @@ function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView) {
   const p2 = view.opponent.startsWith('cpu-')
     ? t('hud.cpu', { difficulty: t(`difficulty.${view.opponent.slice(4)}` as MessageKey), style: t(`style.${view.style}` as MessageKey) })
     : t('hud.dummy', { mode: t(`dummy.${view.opponent}` as MessageKey) });
-  ctx.fillText(`${p2}${view.infinitePp ? ` · ${t('hud.infinitePp')}` : ''}`, VIEW_W / 2, 24);
+  // Who plays player 2 only matters in training (the tutorial's rival is part of the story).
+  if (view.tools) ctx.fillText(`${p2}${view.infinitePp ? ` · ${t('hud.infinitePp')}` : ''}`, VIEW_W / 2, 24);
 
   ctx.fillText(t('controls.fight'), VIEW_W / 2, VIEW_H - 22);
-  ctx.fillText(t('controls.sandbox'), VIEW_W / 2, VIEW_H - 12);
+  if (view.tools) ctx.fillText(t('controls.sandbox'), VIEW_W / 2, VIEW_H - 12);
 }
 
 // ── Phases: KO, choosing the next Pokémon, battle over ───────────────────────────────────────────────────────────

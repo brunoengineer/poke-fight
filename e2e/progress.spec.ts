@@ -4,7 +4,7 @@ import { BROKEN_SAVE_KEY, expect, fixture, openGame, reload, save, SAVE_KEY, sna
 
 test.describe('after a battle', () => {
   test('winning gives XP, and the progress survives a reload', async ({ page }) => {
-    await openGame(page);
+    await openGame(page, {}, { save: fixture('save-v2-viridian.json') });
     const before = (await save(page)).party.map(p => p.xp);
     await winBattle(page);
     const results = page.getByTestId('results');
@@ -31,7 +31,7 @@ test.describe('after a battle', () => {
 
 test.describe('evolution', () => {
   test('a Pokémon that reaches its level can evolve after the battle', async ({ page }) => {
-    await openGame(page, {}, { save: fixture('save-v1-ready-to-evolve.json') });
+    await openGame(page, {}, { save: fixture('save-v2-ready-to-evolve.json') });
     expect((await snapshot(page)).fighters[0].name).toBe('Charmander');
     await winBattle(page);
     await expect(page.getByTestId('results-lines')).toContainText('Charmander grew to Lv. 16!');
@@ -41,11 +41,13 @@ test.describe('evolution', () => {
     await page.getByTestId('continue').click();
 
     expect((await save(page)).party[0].speciesId).toBe(5);
+    // Back in the city; the next battle has the evolved Pokémon.
+    await page.getByTestId('city-training').click();
     expect((await snapshot(page)).fighters[0].name).toBe('Charmeleon');
   });
 
   test('the evolution can be stopped', async ({ page }) => {
-    await openGame(page, {}, { save: fixture('save-v1-ready-to-evolve.json') });
+    await openGame(page, {}, { save: fixture('save-v2-ready-to-evolve.json') });
     await winBattle(page);
     await page.getByTestId('stop-evolution').click();
     await expect(page.getByTestId('results-lines')).toContainText('Charmander did not evolve.');
@@ -59,7 +61,7 @@ test.describe('evolution', () => {
 
 test.describe('party screen', () => {
   test('P opens it and pauses the fight; a new special is used from the next battle', async ({ page }) => {
-    await openGame(page);
+    await openGame(page, {}, { save: fixture('save-v2-viridian.json') });
     await page.keyboard.press('p');
     await expect(page.getByTestId('party')).toBeVisible();
     const frame = (await snapshot(page)).frame;
@@ -74,7 +76,7 @@ test.describe('party screen', () => {
   });
 
   test('Heal brings fainted Pokémon back', async ({ page }) => {
-    const hurt = fixture('save-v1-new-game.json') as { party: { hp: number }[] };
+    const hurt = fixture('save-v2-viridian.json') as { party: { hp: number }[] };
     hurt.party[1].hp = 0;
     await openGame(page, {}, { save: hurt });
     await page.keyboard.press('p');
@@ -85,7 +87,7 @@ test.describe('party screen', () => {
   });
 
   test('switching to Portuguese changes every text, and is remembered', async ({ page }) => {
-    await openGame(page);
+    await openGame(page, {}, { save: fixture('save-v2-viridian.json') });
     await page.keyboard.press('p');
     await page.getByTestId('language').selectOption('pt');
     await expect(page.getByTestId('party').getByRole('heading')).toHaveText('Equipe');
@@ -99,10 +101,12 @@ test.describe('party screen', () => {
 });
 
 test.describe('saves', () => {
-  test('a broken save does not crash the game: a new game starts and the broken one is kept', async ({ page }) => {
-    await openGame(page, {}, { save: '{this is not json' });
-    expect((await save(page)).party).toHaveLength(3);
+  test('a broken save does not crash the game: the title says so, and the broken save is kept', async ({ page }) => {
+    await openGame(page, { scene: 'title' }, { save: '{this is not json' });
+    await expect(page.getByTestId('title')).toContainText('could not be read');
+    await expect(page.getByTestId('continue-game')).toHaveCount(0);
+    expect(await save(page)).toBeNull();
     expect(await page.evaluate(key => localStorage.getItem(key), BROKEN_SAVE_KEY)).toBe('{this is not json');
-    expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!).version, SAVE_KEY)).toBe(1);
+    expect(await page.evaluate(key => localStorage.getItem(key), SAVE_KEY)).toBeNull();
   });
 });

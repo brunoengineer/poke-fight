@@ -166,7 +166,7 @@ test.describe('battle', () => {
 
 test.describe('CPU', () => {
   test('the game starts against the CPU (normal), which attacks on its own', async ({ page }) => {
-    await page.goto('/?test=1');
+    await page.goto('/?test=1&scene=training');
     await page.waitForFunction(() => window.__pf !== undefined);
     expect(await page.evaluate(() => window.__pf!.debug())).toMatchObject({ opponent: 'cpu-normal', style: 'balanced' });
     await step(page, 600);

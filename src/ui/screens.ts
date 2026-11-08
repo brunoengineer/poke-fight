@@ -90,3 +90,109 @@ function focusPrimary(root: HTMLElement) {
 export function pressPrimary(root: HTMLElement) {
   root.querySelector<HTMLButtonElement>('[data-primary]')?.click();
 }
+
+// ── Title, story and city ──────────────────────────────────────────────────────────────────────────────────────────
+
+export interface TitleView {
+  title: string;
+  subtitle: string;
+  /** Under the Continue button: who and where. */
+  continueInfo?: string;
+  buttons: Button[];
+  language: PartyView['language'];
+}
+
+export function renderTitle(root: HTMLElement, view: TitleView) {
+  root.replaceChildren(
+    h('section', { class: 'panel title', testid: 'title', attrs: { role: 'dialog', 'aria-label': view.title } }, [
+      h('h1', { text: view.title }),
+      h('p', { class: 'subtitle', text: view.subtitle }),
+      h('div', { class: 'buttons column' }, view.buttons.map(button)),
+      view.continueInfo ? h('small', { text: view.continueInfo, testid: 'continue-info' }) : null,
+      h('label', { class: 'language' }, [
+        h('span', { text: view.language.label }),
+        select(view.language.options, view.language.value, 'language', view.language.label, view.language.onChange),
+      ]),
+    ]),
+  );
+  focusPrimary(root);
+}
+
+export interface DialogView {
+  speaker: string;
+  text: string;
+  /** A text field (asking a name). */
+  input?: { label: string; value: string; maxLength: number };
+  button: Omit<Button, 'onClick'> & { onClick: (typed: string) => void };
+}
+
+export function renderDialog(root: HTMLElement, view: DialogView) {
+  const field = view.input
+    ? h('input', {
+        testid: 'name-input',
+        attrs: { type: 'text', value: view.input.value, maxlength: String(view.input.maxLength), 'aria-label': view.input.label, autocomplete: 'off' },
+      })
+    : null;
+  const submit = () => view.button.onClick(field?.value ?? '');
+  const ok = h('button', { text: view.button.label, testid: view.button.testid, class: 'primary', onClick: submit, attrs: { 'data-primary': '' } });
+  field?.addEventListener('keydown', event => {
+    if (event.key === 'Enter') submit();
+  });
+  root.replaceChildren(
+    h('section', { class: 'panel dialog', testid: 'dialog', attrs: { role: 'dialog', 'aria-label': view.speaker } }, [
+      h('strong', { class: 'speaker', text: view.speaker }),
+      h('p', { text: view.text, testid: 'dialog-text' }),
+      field,
+      h('div', { class: 'buttons' }, [ok]),
+    ]),
+  );
+  if (field) {
+    field.focus();
+    field.select();
+  } else {
+    ok.focus();
+  }
+}
+
+export interface StarterView {
+  title: string;
+  starters: { id: number; name: string; types: string; sprite: string; testid: string; onClick: () => void }[];
+}
+
+export function renderStarter(root: HTMLElement, view: StarterView) {
+  root.replaceChildren(
+    h('section', { class: 'panel starters', testid: 'starters', attrs: { role: 'dialog', 'aria-label': view.title } }, [
+      h('h2', { text: view.title }),
+      h(
+        'div',
+        { class: 'cards' },
+        view.starters.map(s =>
+          h('button', { class: 'card', testid: s.testid, onClick: s.onClick }, [
+            // crossorigin: the same request as the fight's sprites, so the browser reuses the download.
+            h('img', { attrs: { src: s.sprite, alt: '', width: '96', height: '96', crossorigin: 'anonymous' } }),
+            h('strong', { text: s.name }),
+            h('small', { text: s.types }),
+          ]),
+        ),
+      ),
+    ]),
+  );
+  root.querySelector<HTMLButtonElement>('.card')?.focus();
+}
+
+export interface CityView {
+  name: string;
+  info: string;
+  buttons: Button[];
+}
+
+export function renderCity(root: HTMLElement, view: CityView) {
+  root.replaceChildren(
+    h('section', { class: 'panel city', testid: 'city', attrs: { role: 'dialog', 'aria-label': view.name } }, [
+      h('h2', { text: view.name, testid: 'city-name' }),
+      h('p', { text: view.info }),
+      h('div', { class: 'buttons column' }, view.buttons.map(button)),
+    ]),
+  );
+  focusPrimary(root);
+}

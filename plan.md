@@ -112,6 +112,23 @@ with the debug overlay:
   feel, and it costs no input precision.
 - **Hitboxes / hurtboxes**: rectangles per move frame, shown by the debug overlay (F1).
 
+**Rules settled in milestone 1** (all pinned by tests in `src/fight/*.test.ts`):
+
+- **Frame counting**: the frame an action starts on is its frame 1. A press is used on the same frame it is read
+  (0 frames of input lag). A tap shorter than one frame still counts.
+- **Physical attack**: 21 frames in total (5 / 4 / 12), hits on frame 6, hits only once, and is **+3 on hit**. The fighter
+  can act again on frame 22. Holding the button doesn't repeat the attack.
+- **Jump**: 3 frames on the ground, 36 in the air (apex 85.5 px), 2 to land. The direction is the one held on the
+  **last grounded frame**, so up then up-forward still jumps forward. Holding up jumps again after landing. A jump
+  can go over the opponent, and both turn around after landing.
+- **Air attack**: one per jump. A hit in the air pops the defender up, then it stays down 20 frames after landing.
+- **Dash**: two taps of the same direction within 12 frames. Forward: 70 px. Back: 63 px, invincible on frames 1–6.
+- **Opposite directions cancel out** (left + right = neutral), on keyboard and controller.
+- **Hitstop 6 frames**: presses during hitstop are kept.
+- **Trades**: two hits on the same frame both land (a double KO is a draw).
+- **Facing** only changes while the fighter is free on the ground.
+- **Training dummy** (player 2 until the CPU): F2 cycles stand / jump / attack every 30 frames.
+
 ### 4.4 Specials come from the Pokémon's real moves
 
 Each Pokémon has **two special slots**, both filled from the damaging moves it has learned (official learnsets by
@@ -365,8 +382,8 @@ Each milestone ends with something playable, tests, and green CI.
 | # | Milestone | Done when |
 |---|-----------|-----------|
 | 0 | ✅ **Scaffold** | Vite + TS + Vitest + Playwright + CI; a blank canvas page; first e2e test passes in CI; `CLAUDE.md` with conventions |
-| 1 | **Fight sandbox** | Two placeholder fighters (rectangles), fixed-step loop, input (keyboard + gamepad), walk, jump, physical attack, hitboxes, HP, KO; debug overlay (F1: hitboxes, frame data, input history); latency + frame data tests |
-| 2 | **Full move set** | Air attacks, guard button, dash + invincible back dash, elemental special with charge + 3 archetypes (projectile, beam, rush), Power gauge + big special, hitstop, knockback, combo scaling, timer, next-Pokémon flow (6 vs 6) |
+| 1 | ✅ **Fight sandbox** | Two placeholder fighters (rectangles), fixed-step loop, input (keyboard + gamepad), walk, jump, dash + invincible back dash, physical attack (ground and air), hitboxes, hitstop, knockback, HP, KO; debug overlay (F1: hitboxes, frame data, frame advantage, input history); latency + frame data tests |
+| 2 | **Full move set** | Guard button, elemental special with charge + 3 archetypes (projectile, beam, rush), Power gauge + big special, hitstop, knockback, combo scaling, timer, next-Pokémon flow (6 vs 6) |
 | 3 | **CPU** | AI with reaction delay and 3 profiles; can play a fair fight against it |
 | 4 | **Pokémon data** | `build-data.mjs` (Gen 1: species, stats, types, moves, learnsets, evolutions, encounters, growth, catch rates); sprites in the fight; stat-based damage; type chart |
 | 5 | **Progression + save** | Party, XP, level up, move choice, evolution, save/load with versions |

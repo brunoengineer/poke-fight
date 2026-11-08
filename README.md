@@ -27,4 +27,4 @@ Test mode: open `http://localhost:5173/?test=1` for a fixed seed and a manual cl
 
 ## Status
 
-Milestone 0 (scaffold) done. Next: milestone 1, the fight sandbox. See [plan.md §9](plan.md#9-roadmap-milestones).
+Milestone 1 (fight sandbox) done: move with WASD or the arrows, J to attack, double-tap to dash, F1 for the debug overlay, F2 to change the dummy, R to reset. Next: milestone 2, the full move set. See [plan.md §9](plan.md#9-roadmap-milestones).

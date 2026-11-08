@@ -1,0 +1,23 @@
+// The training dummy (player 2 until the CPU arrives in milestone 3). F2 cycles its behavior.
+
+import { Button, type InputMask } from './input';
+
+export const DUMMY_MODES = ['stand', 'jump', 'attack'] as const;
+export type DummyMode = (typeof DUMMY_MODES)[number];
+
+/** How often the dummy presses its attack in 'attack' mode. */
+export const DUMMY_ATTACK_EVERY = 30;
+
+export function dummyInput(mode: DummyMode, frame: number): InputMask {
+  switch (mode) {
+    case 'stand':
+      return 0;
+    case 'jump':
+      return Button.Up; // held: it jumps again as soon as it lands
+    case 'attack':
+      return frame % DUMMY_ATTACK_EVERY === 0 ? Button.Physical : 0;
+  }
+}
+
+export const nextDummyMode = (mode: DummyMode): DummyMode =>
+  DUMMY_MODES[(DUMMY_MODES.indexOf(mode) + 1) % DUMMY_MODES.length];

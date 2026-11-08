@@ -1,9 +1,12 @@
-// Entry point: sets up the screen, the fixed-step clock and (in test mode) the test hooks.
+// Entry point: sets up the screen, the inputs, the fixed-step clock and (in test mode) the test hooks.
 
+import { readFirstPad } from './engine/input/gamepad';
+import { attachKeyboard } from './engine/input/keyboard';
+import { createKeyLatch } from './engine/input/keys';
 import { createFixedStep } from './engine/loop';
-import { createRng } from './engine/rng';
 import { render } from './render/renderer';
 import { fitCanvas } from './render/screen';
+import { createSandbox } from './screens/sandbox';
 import { installTestHooks, readTestOptions } from './test/hooks';
 
 const options = readTestOptions(location.search);
@@ -17,17 +20,28 @@ const fit = () => fitCanvas(canvas, window.innerWidth, window.innerHeight);
 fit();
 window.addEventListener('resize', fit);
 
-// The game state. For now it's only the frame counter; the fight state arrives in milestone 1.
-const state = { frame: 0 };
-// Not used yet: it's here so the seed plumbing (URL → game) is in place and tested from the start.
-const rng = createRng(options.enabled ? options.seed : (Date.now() >>> 0));
-void rng;
+const sandbox = createSandbox();
+const keys = createKeyLatch();
+const restartAfterKo = () => {
+  if (sandbox.view().state.winner !== null) sandbox.reset();
+};
+attachKeyboard(window, keys, {
+  F1: () => sandbox.toggleDebug(),
+  F2: () => sandbox.cycleDummy(),
+  KeyR: () => sandbox.reset(),
+  Enter: restartAfterKo,
+});
 
+// Inputs are read right before each simulated frame, so a press is used on the very next frame.
+let startWasHeld = false;
 const simulate = () => {
-  state.frame++;
+  const pad = readFirstPad();
+  if (pad.start && !startWasHeld) restartAfterKo();
+  startWasHeld = pad.start;
+  sandbox.tick(keys.sample() | pad.mask);
 };
 const clock = createFixedStep(simulate);
-const draw = () => render(ctx, state);
+const draw = () => render(ctx, sandbox.view());
 
 let last: number | undefined;
 function onAnimationFrame(now: number) {
@@ -40,12 +54,17 @@ requestAnimationFrame(onAnimationFrame);
 
 if (options.enabled) {
   installTestHooks({
-    frame: () => state.frame,
+    frame: () => sandbox.view().state.frame,
     step(frames) {
       if (!options.manualClock) throw new Error('step() needs the manual clock (remove &clock=real)');
       for (let i = 0; i < frames; i++) simulate();
       draw();
-      return state.frame;
+      return sandbox.view().state.frame;
+    },
+    snapshot: () => structuredClone(sandbox.view().state),
+    debug: () => {
+      const view = sandbox.view();
+      return { overlay: view.debug, dummy: view.dummy, advantage: view.advantage };
     },
     manualClock: options.manualClock,
     seed: options.seed,

@@ -6,14 +6,15 @@ import { ELEMENTAL_COST, MAX_HP, PP_MAX, PP_START, STAGE_WIDTH, px } from './con
 import { BIG, ELEMENTAL, PHYSICAL, moveLength, type BigShape, type ElementalShape } from './frame-data';
 import { Button } from './input';
 import { createFight, type FightOptions, type Loadout } from './state';
-import { at, fightAt, on, run } from './testing';
+import { at, fightAt, on, run, specialDamage, TACKLE_DAMAGE } from './testing';
 
 const { Physical, Special, Big, Up } = Button;
 
+/** Normal-type test specials (the test fighters are Normal: same-type bonus). A big rush is physical. */
 function loadout(elemental: ElementalShape, big: BigShape): Loadout {
   return {
-    elemental: { name: 'Test', type: 'normal', shape: elemental },
-    big: { name: 'Test Big', type: 'normal', shape: big },
+    elemental: { name: 'Test', type: 'normal', power: 40, category: 'special', shape: elemental },
+    big: { name: 'Test Big', type: 'normal', power: 110, category: big === 'rush' ? 'physical' : 'special', shape: big },
   };
 }
 
@@ -67,7 +68,7 @@ describe('elemental special (K)', () => {
     const p15 = at(r, 15).projectiles[0];
     expect(at(r, 16).projectiles[0].x - p15.x).toBe(px(4));
     const hit = r.events.find(e => e.type === 'hit');
-    expect(hit).toMatchObject({ attacker: 0, damage: ELEMENTAL.projectile.hit.damage, frame: 28 });
+    expect(hit).toMatchObject({ attacker: 0, damage: specialDamage('elemental', setup(100, 'projectile', 'beam')), frame: 28 });
     // Used up on contact.
     expect(at(r, 28).projectiles).toHaveLength(0);
     expect(r.final.fighters[0].pp).toBe(PP_START - ELEMENTAL_COST + ELEMENTAL.projectile.hit.ppGain);
@@ -79,7 +80,7 @@ describe('elemental special (K)', () => {
       id: 1,
       owner: 0,
       slot: 'elemental',
-      type: 'normal',
+      attack: { power: 40, type: 'normal', category: 'special' },
       x: STAGE_WIDTH + px(4),
       halfWidth: px(8),
       y1: px(18),
@@ -149,7 +150,7 @@ describe('big special (I)', () => {
     for (const f of state.fighters) f.loadout = loadout('projectile', 'beam');
     const r = run(60, on(Big, 1), 0, state);
     const hit = r.events.find(e => e.type === 'hit');
-    expect(hit).toMatchObject({ frame: 41, damage: BIG.beam.hit.damage, big: true });
+    expect(hit).toMatchObject({ frame: 41, damage: specialDamage('big', state), big: true });
   });
 
   it('knocks the opponent down, with a long hitstop', () => {
@@ -161,7 +162,8 @@ describe('big special (I)', () => {
 
   it('rush: charges through the opponent, hits it, and ends up on the other side', () => {
     const r = run(120, on(Big, 1), 0, setup(100, 'projectile', 'rush', { pp: [PP_MAX, 50] }));
-    expect(r.events.find(e => e.type === 'hit')).toMatchObject({ attacker: 0, damage: BIG.rush.hit.damage, big: true });
+    const state = setup(100, 'projectile', 'rush', { pp: [PP_MAX, 50] });
+    expect(r.events.find(e => e.type === 'hit')).toMatchObject({ attacker: 0, damage: specialDamage('big', state), big: true });
     expect(r.final.fighters[0].x).toBeGreaterThan(r.final.fighters[1].x);
   });
 
@@ -186,7 +188,7 @@ describe('big special (I)', () => {
 
 describe('combo scaling', () => {
   it('each hit in a combo does 10% less, down to 40%', async () => {
-    const { scaledDamage } = await import('./step');
+    const { scaledDamage } = await import('./damage');
     expect([0, 1, 2, 3, 4, 5, 6, 7, 8].map(hits => scaledDamage(100, hits))).toEqual([100, 90, 80, 70, 60, 50, 40, 40, 40]);
   });
 
@@ -195,6 +197,6 @@ describe('combo scaling', () => {
     const r = run(80, f => (f <= 3 ? Up | Button.Right : 0) | (f === 30 || f === 46 ? Physical : 0), 0, fightAt(90));
     const hits = r.events.filter(e => e.type === 'hit');
     expect(hits).toHaveLength(2);
-    expect(hits[1]).toMatchObject({ combo: 2, damage: Math.floor(PHYSICAL.hit.damage * 0.9) });
+    expect(hits[1]).toMatchObject({ combo: 2, damage: Math.floor(TACKLE_DAMAGE * 0.9) });
   });
 });

@@ -5,10 +5,24 @@ import type { KeyLatch } from './keys';
 /** KeyboardEvent.code → what to do when it is pressed. */
 export type Commands = Readonly<Record<string, () => void>>;
 
-export function attachKeyboard(target: Window, latch: KeyLatch, commands: Commands): () => void {
+export interface KeyboardOptions {
+  /** While true (a menu is open), the game ignores keys, so Enter, Space and arrows work on the menu. */
+  paused?: () => boolean;
+  /** Commands that still work while paused (opening/closing menus). */
+  alwaysOn?: readonly string[];
+}
+
+export function attachKeyboard(target: Window, latch: KeyLatch, commands: Commands, options: KeyboardOptions = {}): () => void {
   const onDown = (event: KeyboardEvent) => {
     // Leave browser shortcuts alone (Ctrl+R reloads, Alt+Tab…).
     if (event.ctrlKey || event.metaKey || event.altKey) return;
+    if (options.paused?.()) {
+      if (options.alwaysOn?.includes(event.code) && Object.hasOwn(commands, event.code)) {
+        event.preventDefault();
+        if (!event.repeat) commands[event.code]();
+      }
+      return;
+    }
     if (Object.hasOwn(commands, event.code)) {
       event.preventDefault();
       if (!event.repeat) commands[event.code]();

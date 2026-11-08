@@ -3,10 +3,10 @@
 import { describe, expect, it } from 'vitest';
 import { createAdvantageTracker, trackAdvantage } from './advantage';
 import { CHIP_DIVISOR, MAX_HP, PP_START } from './constants';
-import { ELEMENTAL, GUARD } from './frame-data';
+import { GUARD } from './frame-data';
 import { Button } from './input';
 import { step } from './step';
-import { at, fightAt, on, run } from './testing';
+import { at, fightAt, on, run, specialDamage } from './testing';
 
 const { Guard, Physical, Special, Right, Up, Dash } = Button;
 
@@ -55,7 +55,7 @@ describe('guard', () => {
 
   it(`specials do 1/${CHIP_DIVISOR} of their damage through a guard`, () => {
     const r = run(60, on(Special, 1), Guard, fightAt(100));
-    const chip = Math.floor(ELEMENTAL.projectile.hit.damage / CHIP_DIVISOR);
+    const chip = Math.floor(specialDamage('elemental') / CHIP_DIVISOR);
     expect(r.events.find(e => e.type === 'block')).toMatchObject({ chip });
     expect(r.final.fighters[1].hp).toBe(MAX_HP - chip);
   });

@@ -10,16 +10,11 @@
 
 import { PP_START } from './constants';
 import { Button, cleanDirections, has, type InputMask } from './input';
-import { createFight, type FightEvent, type FightState, type FighterId, type Loadout } from './state';
+import { createFight, type FightEvent, type FightState, type FighterId, type FighterSetup } from './state';
 import { step } from './step';
 
-export interface TeamMember {
-  name: string;
-  type: string;
-  maxHp: number;
-  hp: number;
-  loadout: Loadout;
-}
+/** A Pokémon in a battle team: everything the fight needs except PP (each one enters with half a bar). */
+export type TeamMember = Omit<FighterSetup, 'pp'>;
 
 export type BattlePhase = 'fight' | 'ko' | 'choose' | 'over';
 
@@ -36,6 +31,8 @@ export interface BattleState {
   /** Player 1's input on the last frame (menu presses). */
   held: InputMask;
   winner: FighterId | 'draw' | null;
+  /** For each opponent (by team index), player 1's Pokémon that fought it: they share its XP (game/rewards.ts). */
+  fought: number[][];
 }
 
 export type BattleEvent = FightEvent | { type: 'roundStart'; round: number } | { type: 'battleOver' };
@@ -52,7 +49,7 @@ export function createBattle(teams: readonly [readonly TeamMember[], readonly Te
   const copy = structuredClone(teams) as [TeamMember[], TeamMember[]];
   const active: [number, number] = [alive(copy[0])[0], alive(copy[1])[0]];
   if (active.some(i => i === undefined)) throw new Error('each team needs a Pokémon that can fight');
-  return {
+  const battle: BattleState = {
     teams: copy,
     active,
     round: newRound(copy, active, [PP_START, PP_START]),
@@ -62,18 +59,14 @@ export function createBattle(teams: readonly [readonly TeamMember[], readonly Te
     cursor: 0,
     held: 0,
     winner: null,
+    fought: copy[1].map(() => []),
   };
+  noteWhoFights(battle);
+  return battle;
 }
 
 function newRound(teams: BattleState['teams'], active: [number, number], pp: [number, number]): FightState {
-  const member = (side: FighterId) => teams[side][active[side]];
-  return createFight({
-    pp,
-    fighters: [0, 1].map(side => {
-      const m = member(side as FighterId);
-      return { name: m.name, type: m.type, maxHp: m.maxHp, hp: m.hp, loadout: m.loadout };
-    }) as [TeamMember, TeamMember],
-  });
+  return createFight({ pp, fighters: [teams[0][active[0]], teams[1][active[1]]] });
 }
 
 export interface BattleStepResult {
@@ -158,9 +151,15 @@ function startRound(battle: BattleState, events: BattleEvent[]) {
   ) as [number, number];
   battle.round = newRound(battle.teams, battle.active, pp);
   battle.rounds++;
+  noteWhoFights(battle);
   battle.phase = 'fight';
   battle.phaseFrame = 0;
   events.push({ type: 'roundStart', round: battle.rounds });
+}
+
+function noteWhoFights(battle: BattleState) {
+  const [mine, theirs] = battle.active;
+  if (!battle.fought[theirs].includes(mine)) battle.fought[theirs].push(mine);
 }
 
 /** How many Pokémon a team still has. */

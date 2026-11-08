@@ -222,7 +222,34 @@ More archetypes can come later (status effects: paralysis = slower, burn = damag
     version group is set per region).
 - **Combo scaling**: each hit in a combo does less damage (100%, 90%, 80%, … minimum 40%), so a lucky combo can't
   end a fight.
-- **Physical attack type**: Normal (STAB for Normal-type Pokémon). ❓
+- **Physical attack type** (decided in milestone 4): the tackle has **no type** (always ×1, no STAB). With Normal,
+  a Ghost could never be tackled, and a Normal-type knowing only Normal moves could never win against one.
+
+**Built in milestone 4** (pinned by `data.test.ts`, `game.test.ts`, `damage.test.ts`):
+
+- **Data**: `npm run data` (scripts/build-data.mjs) pulls Gen 1 from PokeAPI once into `src/data/generated/`
+  (committed): 151 species (modern types and stats, base XP, growth rate, catch rate, evolutions, Red/Blue level-up
+  learnsets, Red/Blue wild encounters), the 146 moves those learnsets use (+ the starters' gift moves and Struggle),
+  and the 18-type chart. Evolutions into later generations (Eevee → Espeon) are ignored until their region exists.
+- **Stats**: official Gen 3+ formula, every IV 15 for now (captures will roll their own), no EVs or natures.
+- **Damage**: official formula with STAB and the type chart, **no random roll** (precision). × `DAMAGE_SCALE` 0.6:
+  about 12 tackles between two equal average Pokémon at Lv. 50 (fewer at low levels).
+- **HP in the fight is in tenths of real HP** (`HP_UNITS` = 10), so small low-level damage keeps chip and combo
+  scaling meaningful; menus show real HP.
+- **Big special = the move's own power** (not ×2: a super-effective, same-type big special one-shot).
+- **No effect** (×0): the hit passes harmlessly (no damage, no hitstun) and says "No effect".
+- **Speed**: base Speed sets walk, dash and jump speeds from 85% to 115%; frame data never changes.
+- **Default specials**: elemental = strongest move of its own type (else strongest), big = strongest; "strongest"
+  counts the same-type bonus; ties go to the move learned last. Never Self-Destruct, Explosion or Dream Eater.
+  No damaging move: Struggle.
+- **Sprites**: Gen 5 front sprites **loaded by URL** (decided: no local copy), trimmed to their pixels, mirrored to
+  face right, posed by code (bob, squash, lean, shake, white flash, fall), with a shadow. Both teams preload when a
+  battle starts. While a sprite loads (or in the browser tests, where images are stubbed) a type-colored rectangle
+  stands in.
+- **Sandbox teams**: Charmeleon, Kadabra, Machoke vs Geodude, Gastly, Butterfree (Lv. 30–34), with "Super
+  effective!" / "Not very effective…" / "No effect" messages.
+- Type advantage is strong, as in the games: a same-type, super-effective elemental special takes ~40% of an equal
+  Pokémon's HP. Something to watch when we balance the journey.
 
 ### 4.6 Fight formats
 
@@ -308,6 +335,31 @@ More archetypes can come later (status effects: paralysis = slower, burn = damag
 - **Party and PC**: 6 in the party, the rest in a box (simple list screen).
 - **Money**: from trainer, gym and League wins. Wild battles give little or none.
 - **Pokédex**: seen / caught.
+
+**Built in milestone 5** (pinned by `progress.test.ts`, `save.test.ts`, `i18n.test.ts`, `e2e/progress.spec.ts`):
+
+- **XP**: base experience × level / 7, ×1.5 from trainers (the sandbox counts as a trainer), shared equally by the
+  player's Pokémon that fought each knocked-out opponent and are still standing at the end. The 6 official growth
+  curves (checked against PokeAPI's tables). Lv. 100 is the cap.
+- **Level up**: several levels at once if the XP reaches; stats follow; current HP rises by as much as max HP;
+  the moves of each new level are learned. **All moves are kept** (no 4-move limit: only the 2 special slots).
+- **Evolution by level**, asked after the battle ("What? X is evolving!": Evolve / Stop, as in the games; a stopped
+  Pokémon is asked again after its next battle). It keeps level, XP, moves and specials, and learns the new form's
+  moves at that level. Stones and trades: the data is ready, the items come with the shop (milestone 8).
+- **Party screen (P)**: pauses the fight; level, HP, XP to the next level; pick each special from the known damaging
+  moves; Heal (sandbox stand-in for the Pokémon Center); New game; language. Changes start a new battle.
+- **Results screen** after every battle (outcome, XP, level ups, new moves, evolutions). If nobody can fight, the
+  sandbox heals the party for the next battle.
+- **Saves**: localStorage key `poke-fight.save`, JSON with a version (1) and a migration chain for later versions;
+  strict validation; a broken or newer save is kept aside (`poke-fight.save.broken`) and a new game starts (a
+  warning, never a crash); blocked storage just means nothing is remembered. Fixtures in `src/state/fixtures/` must
+  always load (unit test) and are used by the browser tests.
+- **Languages: English and Portuguese** (decided after milestone 4). Every player-facing text goes through `t()`;
+  a test checks both languages have every text with the same placeholders. Pokémon and move names stay in English
+  (as Brazilian players know them). Portuguese for Portuguese browsers, English otherwise; changeable in the party
+  screen; saved. The debug overlay (F1) stays in English (a developer tool).
+- Menus: mouse and keyboard (Enter/Space on the focused button, P, Escape); a controller's Start presses the main
+  button. Full controller navigation of menus comes with the world menus (milestone 7).
 
 ## 6. The world (menus)
 
@@ -453,8 +505,8 @@ Each milestone ends with something playable, tests, and green CI.
 | 1 | ✅ **Fight sandbox** | Two placeholder fighters (rectangles), fixed-step loop, input (keyboard + gamepad), walk, jump, dash + invincible back dash, physical attack (ground and air), hitboxes, hitstop, knockback, HP, KO; debug overlay (F1: hitboxes, frame data, frame advantage, input history); latency + frame data tests |
 | 2 | ✅ **Full move set** | Guard button, PP bar, elemental range special with charge (projectile, beam), big special (projectile, beam, rush), hitstop, knockback, combo scaling, timer, next-Pokémon flow (6 vs 6) |
 | 3 | ✅ **CPU** | AI with reaction delay, 3 difficulties × 4 styles; can play a fair fight against it |
-| 4 | **Pokémon data** | `build-data.mjs` (Gen 1: species, stats, types, moves, learnsets, evolutions, encounters, growth, catch rates); sprites in the fight; stat-based damage; type chart |
-| 5 | **Progression + save** | Party, XP, level up, move choice, evolution, save/load with versions |
+| 4 | ✅ **Pokémon data** | `build-data.mjs` (Gen 1: species, stats, types, moves, learnsets, evolutions, encounters, growth, catch rates); sprites in the fight; stat-based damage; type chart |
+| 5 | ✅ **Progression + save** | Party, XP, level up, move choice, evolution, save/load with versions |
 | 6 | **Prologue** | Title → starter → interactive rival tutorial → arrive at Viridian |
 | 7 | **World loop** | World map, cities, hunt (grass/water/cave), capture with balls, Pokémon Center, first shop, box |
 | 8 | **Gyms** | KOF-style team battles, trainers, 8 gyms with AI styles, badges unlock cities, mall, Safari Zone |
@@ -490,6 +542,11 @@ sprites won't save it.
 | PP bar | Replaces the Power gauge. One per Pokémon, starts half full, fills only when your hits land |
 | Big dash | A shape of the big special: physical moves become a Rush that passes through the opponent |
 | Dash through | The dash passes through the opponent (no push box), to attack from behind |
+| Sprites | Loaded by URL (no local copy) |
+| Tackle type | None: always neutral, no same-type bonus |
+| Big special power | The move's own power (no ×2) |
+| Languages | English and Portuguese (Pokémon and move names in English) |
+| Tackle loop | Kept as it is: a fast tackle spammer beating the hard CPU is accepted |
 | Back dash | Invincible on its first 6 frames, punishable after |
 | Capture failure | One throw per win; if it breaks free, it flees |
 
@@ -498,6 +555,4 @@ sprites won't save it.
 1. **Mall**: Saffron (your idea) or Celadon (canonical department store)?
 2. **Trade evolutions**: an item (Link Cable) or another rule?
 3. **Next region**: what carries over to the new journey?
-4. **Sprites**: load by URL (needs internet) or download once to a local, git-ignored folder?
-5. **Language**: English only, or PT + EN like poke-gacha?
-6. **Physical attack type**: always Normal, or the Pokémon's first type?
+(none right now: new questions come up as we build)

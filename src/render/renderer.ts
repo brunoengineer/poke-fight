@@ -1,22 +1,38 @@
 // Draws one picture of the sandbox. It only reads the state and never changes it.
-// Fighters are placeholder rectangles in their type's color until the Pokémon sprites arrive (milestone 4).
+// Pokémon are drawn from their sprites, animated by code (bob, squash, lean, shake, flash, fall); while a sprite
+// loads, or if it can't, a rectangle in the Pokémon's type color stands in.
 
 import { activeHitbox, bodyBox, currentMove, isGuarding, isInvincible, movePhase, projectileBox, type WorldBox } from '../fight/boxes';
 import { ELEMENTAL_COST, PP_MAX, SUB } from '../fight/constants';
 import { Button, has, type InputMask } from '../fight/input';
 import type { Fighter, FightState } from '../fight/state';
-import type { SandboxView } from '../screens/sandbox';
+import { EFFECT_FRAMES, type SandboxView } from '../screens/sandbox';
+import { displayHp } from '../game/pokemon';
+import { t, type MessageKey } from '../i18n';
 import { VIEW_H, VIEW_W } from './screen';
+import { getSprite, type Sprite } from './sprites';
 
 export const FLOOR_Y = 230;
 
 export const TYPE_COLORS: Record<string, string> = {
-  normal: '#b8b08d',
-  fire: '#ee7f30',
+  normal: '#a8a878',
+  fighting: '#c03028',
+  flying: '#a890f0',
+  poison: '#a040a0',
+  ground: '#e0c068',
+  rock: '#b8a038',
+  bug: '#a8b820',
+  ghost: '#705898',
+  steel: '#b8b8d0',
+  fire: '#f08030',
   water: '#6890f0',
   grass: '#78c850',
   electric: '#f8d030',
-  rock: '#b8a038',
+  psychic: '#f85888',
+  ice: '#98d8d8',
+  dragon: '#7038f8',
+  dark: '#705848',
+  fairy: '#ee99ac',
 };
 const typeColor = (type: string) => TYPE_COLORS[type] ?? '#a0a0a0';
 
@@ -49,9 +65,11 @@ export function render(ctx: CanvasRenderingContext2D, view: SandboxView): void {
   ctx.imageSmoothingEnabled = false;
   ctx.textBaseline = 'top';
   drawArena(ctx);
+  for (const f of round.fighters) drawShadow(ctx, f);
   for (const f of round.fighters) drawFighter(ctx, f);
   drawProjectiles(ctx, round);
   drawHud(ctx, view);
+  drawEffect(ctx, view);
   if (view.debug) drawDebug(ctx, view);
   if (view.flash > 0) {
     ctx.fillStyle = `rgba(255, 255, 255, ${(0.5 * view.flash) / 8})`;
@@ -79,7 +97,96 @@ function strokeBox(ctx: CanvasRenderingContext2D, b: WorldBox) {
 
 // ── Fighters ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
+/** A shadow on the floor, so jumps read clearly. */
+function drawShadow(ctx: CanvasRenderingContext2D, f: Fighter) {
+  const width = Math.max(10, 28 - Math.round(f.y / SUB / 6));
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.beginPath();
+  ctx.ellipse(sx(f.x), FLOOR_Y + 1, width / 2, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+const spriteOf = (f: Fighter) => (f.speciesId !== null ? getSprite(f.speciesId) : null);
+
 function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter) {
+  const sprite = spriteOf(f);
+  if (sprite) drawPokemon(ctx, f, sprite);
+  else drawPlaceholder(ctx, f);
+  drawMoveEffects(ctx, f, sprite !== null);
+}
+
+/**
+ * The sprite, posed by code. Front sprites look to the screen's left, so a Pokémon facing right is mirrored.
+ * All movement comes from the fight state (frames), never from real time.
+ */
+function drawPokemon(ctx: CanvasRenderingContext2D, f: Fighter, sprite: Sprite) {
+  const move = currentMove(f);
+  const phase = move ? movePhase(move, f.actionFrame) : null;
+  let [dx, dy, scaleX, scaleY, angle, alpha] = [0, 0, 1, 1, 0, 1];
+  const bob = (period: number) => Math.round(1 - Math.cos((f.actionFrame / period) * Math.PI * 2));
+
+  switch (f.action) {
+    case 'idle':
+    case 'guard':
+      dy = -bob(60);
+      break;
+    case 'walkForward':
+    case 'walkBack':
+      dy = -bob(16);
+      break;
+    case 'prejump':
+    case 'land':
+      [scaleX, scaleY] = [1.12, 0.86];
+      break;
+    case 'jump':
+      if (f.vy > 0) [scaleX, scaleY] = [0.94, 1.08];
+      break;
+    case 'attack':
+    case 'airAttack':
+      // Wind up, then lunge forward.
+      dx = f.facing * (phase === 'startup' ? -2 : phase === 'active' ? 6 : 2);
+      angle = f.facing * (phase === 'active' ? 0.12 : 0);
+      break;
+    case 'elemental':
+    case 'big':
+      if (phase === 'startup') dx = f.actionFrame % 2 === 0 ? 1 : -1; // trembling while charging
+      if (phase === 'active') dx = f.facing * 3;
+      break;
+    case 'dash':
+    case 'backdash':
+      angle = f.facing * (f.action === 'dash' ? 0.15 : -0.15);
+      break;
+    case 'hitstun':
+    case 'blockstun':
+      dx = f.actionFrame <= 6 ? (f.actionFrame % 2 === 0 ? 2 : -2) : 0;
+      angle = f.action === 'hitstun' ? -f.facing * 0.12 : 0;
+      break;
+    case 'airHitstun':
+      angle = -f.facing * 0.6;
+      break;
+    case 'ko':
+      angle = -f.facing * (f.y === 0 ? Math.PI / 2 : 0.8);
+      alpha = 0.75;
+      break;
+    default:
+      break;
+  }
+  if (isInvincible(f) && f.action !== 'ko') alpha = 0.5;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(sx(f.x) + dx, sy(f.y) + dy);
+  ctx.rotate(angle);
+  ctx.scale(f.facing === 1 ? -scaleX : scaleX, scaleY);
+  const justHit = (f.action === 'hitstun' || f.action === 'airHitstun') && f.actionFrame <= 3;
+  if (justHit) ctx.filter = 'brightness(0) invert(1)'; // a white flash
+  // Lying down (rotated a quarter turn), the sprite is lifted so it rests on the floor.
+  const lying = f.action === 'ko' && f.y === 0;
+  ctx.drawImage(sprite.image, -sprite.width / 2, lying ? -sprite.width / 2 - sprite.height / 2 : -sprite.height);
+  ctx.restore();
+}
+
+function drawPlaceholder(ctx: CanvasRenderingContext2D, f: Fighter) {
   ctx.save();
   if (f.action === 'ko' && f.y === 0) {
     ctx.fillStyle = COLORS.ko;
@@ -87,6 +194,22 @@ function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter) {
     ctx.restore();
     return;
   }
+
+  if (isInvincible(f)) ctx.globalAlpha = 0.5;
+  const justHit = (f.action === 'hitstun' || f.action === 'airHitstun') && f.actionFrame <= 3;
+  ctx.fillStyle = f.action === 'ko' ? COLORS.ko : justHit ? COLORS.hurt : typeColor(f.types[0]);
+  fillBox(ctx, bodyBox(f));
+
+  // Eye, on the side the fighter faces.
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(sx(f.x) + f.facing * 8 - 2, sy(f.y) - 40, 4, 4);
+  ctx.restore();
+}
+
+/** Charge glows, beams, the placeholder's attack "limb" and the guard shield, drawn over the Pokémon. */
+function drawMoveEffects(ctx: CanvasRenderingContext2D, f: Fighter, hasSprite: boolean) {
+  if (f.action === 'ko') return;
+  ctx.save();
   const move = currentMove(f);
   const phase = move ? movePhase(move, f.actionFrame) : null;
   const charging = (f.action === 'elemental' || f.action === 'big') && phase === 'startup';
@@ -95,18 +218,10 @@ function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter) {
   if (f.action === 'big' && move?.rush && phase === 'active') {
     ctx.globalAlpha = 0.3;
     ctx.fillStyle = typeColor(f.loadout.big.type);
-    for (const back of [24, 12]) fillBox(ctx, { ...bodyBox(f), x1: bodyBox(f).x1 - f.facing * back * SUB, x2: bodyBox(f).x2 - f.facing * back * SUB });
+    const body = bodyBox(f);
+    for (const back of [24, 12]) fillBox(ctx, { ...body, x1: body.x1 - f.facing * back * SUB, x2: body.x2 - f.facing * back * SUB });
     ctx.globalAlpha = 1;
   }
-
-  if (isInvincible(f)) ctx.globalAlpha = 0.5;
-  const justHit = (f.action === 'hitstun' || f.action === 'airHitstun') && f.actionFrame <= 3;
-  ctx.fillStyle = f.action === 'ko' ? COLORS.ko : justHit ? COLORS.hurt : typeColor(f.type);
-  fillBox(ctx, bodyBox(f));
-
-  // Eye, on the side the fighter faces.
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(sx(f.x) + f.facing * 8 - 2, sy(f.y) - 40, 4, 4);
 
   // Charging a special: a glow in front that grows with the charge (bigger for the big special).
   if (charging && move) {
@@ -121,12 +236,17 @@ function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter) {
     ctx.globalAlpha = 1;
   }
 
-  // Active hit box: the tackle's "limb", a beam, a rush's front.
+  // Beams are drawn as their hit box; with a sprite, the tackle and the rush show through the sprite's lunge.
   const hitbox = activeHitbox(f);
-  if (hitbox) {
-    const slot = f.action === 'big' ? 'big' : f.action === 'elemental' ? 'elemental' : null;
+  const slot = f.action === 'big' ? 'big' : f.action === 'elemental' ? 'elemental' : null;
+  if (hitbox && slot && f.loadout[slot].shape === 'beam') {
+    ctx.fillStyle = typeColor(f.loadout[slot].type);
+    ctx.globalAlpha = 0.8;
+    fillBox(ctx, hitbox);
+    ctx.globalAlpha = 1;
+  } else if (hitbox && !hasSprite) {
     ctx.fillStyle = slot ? typeColor(f.loadout[slot].type) : '#ffffff';
-    ctx.globalAlpha = slot ? 0.8 : 0.6;
+    ctx.globalAlpha = 0.6;
     fillBox(ctx, hitbox);
     ctx.globalAlpha = 1;
   }
@@ -145,7 +265,7 @@ function drawProjectiles(ctx: CanvasRenderingContext2D, round: FightState) {
     const cx = (sx(b.x1) + sx(b.x2)) / 2;
     const cy = (sy(b.y1) + sy(b.y2)) / 2;
     const radius = Math.max(4, (sy(b.y1) - sy(b.y2)) / 2);
-    ctx.fillStyle = typeColor(p.type);
+    ctx.fillStyle = typeColor(p.attack.type ?? 'normal');
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fill();
@@ -156,6 +276,26 @@ function drawProjectiles(ctx: CanvasRenderingContext2D, round: FightState) {
     ctx.fill();
     ctx.globalAlpha = 1;
   }
+}
+
+/** "Super effective!" and friends, floating up above the Pokémon that was hit. */
+function drawEffect(ctx: CanvasRenderingContext2D, view: SandboxView) {
+  const { effect } = view;
+  if (!effect) return;
+  const f = view.battle.round.fighters[effect.fighter];
+  const rise = Math.round((EFFECT_FRAMES - effect.frames) / 3);
+  ctx.save();
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'center';
+  ctx.globalAlpha = Math.min(1, effect.frames / 10);
+  ctx.fillStyle = '#000000';
+  const x = Math.min(VIEW_W - 60, Math.max(60, sx(f.x)));
+  const y = sy(f.y) - 80 - rise;
+  const text = t(effect.text);
+  ctx.fillText(text, x + 1, y + 1);
+  ctx.fillStyle = effect.text === 'effect.super' ? '#ffd23f' : effect.text === 'effect.none' ? '#c0c0c0' : '#9ad0ff';
+  ctx.fillText(text, x, y);
+  ctx.restore();
 }
 
 // ── HUD ───────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -192,12 +332,12 @@ function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView) {
     ctx.font = '8px monospace';
     ctx.fillStyle = COLORS.text;
     ctx.textAlign = f.id === 0 ? 'left' : 'right';
-    const label = `${f.name}  PP ${f.pp}`;
+    const label = `${f.name} ${t('hud.level', { level: f.level })}  PP ${f.pp}`;
     ctx.fillText(label, f.id === 0 ? left : left + barWidth, 27);
     const team = battle.teams[f.id];
     team.forEach((member, i) => {
       const x = f.id === 0 ? left + i * 9 : left + barWidth - 6 - i * 9;
-      ctx.fillStyle = member.hp > 0 ? typeColor(member.type) : COLORS.ko;
+      ctx.fillStyle = member.hp > 0 ? typeColor(member.types[0]) : COLORS.ko;
       ctx.fillRect(x, 37, 6, 6);
       if (i === battle.active[f.id]) {
         ctx.strokeStyle = COLORS.text;
@@ -213,11 +353,13 @@ function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView) {
   ctx.fillText(String(Math.ceil(battle.round.timer / 60)).padStart(2, '0'), VIEW_W / 2, 6);
   ctx.font = '8px monospace';
   ctx.fillStyle = COLORS.dim;
-  const p2 = view.opponent.startsWith('cpu-') ? `CPU ${view.opponent.slice(4)} · ${view.style}` : `dummy: ${view.opponent}`;
-  ctx.fillText(`${p2}${view.infinitePp ? ' · ∞ PP' : ''}`, VIEW_W / 2, 24);
+  const p2 = view.opponent.startsWith('cpu-')
+    ? t('hud.cpu', { difficulty: t(`difficulty.${view.opponent.slice(4)}` as MessageKey), style: t(`style.${view.style}` as MessageKey) })
+    : t('hud.dummy', { mode: t(`dummy.${view.opponent}` as MessageKey) });
+  ctx.fillText(`${p2}${view.infinitePp ? ` · ${t('hud.infinitePp')}` : ''}`, VIEW_W / 2, 24);
 
-  ctx.fillText('WASD move · J tackle · K special · I big · L guard · Space dash', VIEW_W / 2, VIEW_H - 22);
-  ctx.fillText('F1 debug · F2 opponent · F3 infinite PP · F4 CPU style · R reset', VIEW_W / 2, VIEW_H - 12);
+  ctx.fillText(t('controls.fight'), VIEW_W / 2, VIEW_H - 22);
+  ctx.fillText(t('controls.sandbox'), VIEW_W / 2, VIEW_H - 12);
 }
 
 // ── Phases: KO, choosing the next Pokémon, battle over ───────────────────────────────────────────────────────────
@@ -228,7 +370,7 @@ function drawPhase(ctx: CanvasRenderingContext2D, view: SandboxView) {
   if (battle.phase === 'ko') {
     ctx.fillStyle = COLORS.text;
     ctx.font = 'bold 32px monospace';
-    ctx.fillText(battle.round.timeOver ? 'TIME' : 'K.O.', VIEW_W / 2, 80);
+    ctx.fillText(t(battle.round.timeOver ? 'fight.time' : 'fight.ko'), VIEW_W / 2, 80);
     return;
   }
   if (battle.phase === 'choose') {
@@ -238,7 +380,7 @@ function drawPhase(ctx: CanvasRenderingContext2D, view: SandboxView) {
     ctx.fillRect(VIEW_W / 2 - 110, top - 8, 220, 24 + team.length * 16);
     ctx.font = '10px monospace';
     ctx.fillStyle = COLORS.text;
-    ctx.fillText('Choose your next Pokémon (↑ ↓, J)', VIEW_W / 2, top);
+    ctx.fillText(t('battle.choose'), VIEW_W / 2, top);
     team.forEach((member, i) => {
       const y = top + 16 + i * 16;
       const selected = i === battle.cursor;
@@ -246,18 +388,14 @@ function drawPhase(ctx: CanvasRenderingContext2D, view: SandboxView) {
       ctx.textAlign = 'left';
       ctx.fillText(`${selected ? '▶' : ' '} ${member.name}`, VIEW_W / 2 - 96, y);
       ctx.textAlign = 'right';
-      ctx.fillText(member.hp === 0 ? 'fainted' : `${member.hp}/${member.maxHp}`, VIEW_W / 2 + 96, y);
+      ctx.fillText(member.hp === 0 ? t('battle.fainted') : `${displayHp(member.hp)}/${displayHp(member.maxHp)}`, VIEW_W / 2 + 96, y);
     });
     return;
   }
   if (battle.phase === 'over') {
-    ctx.fillStyle = COLORS.text;
-    ctx.font = 'bold 20px monospace';
-    const winner = battle.winner;
-    ctx.fillText(winner === 'draw' ? 'Draw' : winner === 0 ? 'You win the battle!' : 'You lost the battle', VIEW_W / 2, 80);
-    ctx.font = '10px monospace';
-    ctx.fillStyle = COLORS.dim;
-    ctx.fillText('Enter / Start: battle again', VIEW_W / 2, 108);
+    // The results screen (src/ui/results.ts) shows over a dimmed fight.
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
   }
 }
 

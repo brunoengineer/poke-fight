@@ -7,7 +7,7 @@ import { PHYSICAL, moveLength } from './frame-data';
 import { Button } from './input';
 import { createFight } from './state';
 import { step } from './step';
-import { at, fightAt, on, run } from './testing';
+import { at, fightAt, on, run, TACKLE_DAMAGE } from './testing';
 
 const J = Button.Physical;
 const CLOSE = 40; // px between centers: in range of the physical attack
@@ -36,7 +36,7 @@ describe('physical attack', () => {
 
   it('hits on frame 6, its first active frame', () => {
     const r = run(10, on(J, 1), 0, fightAt(CLOSE));
-    expect(r.events[0]).toMatchObject({ type: 'hit', attacker: 0, defender: 1, damage: PHYSICAL.hit.damage, frame: 6 });
+    expect(r.events[0]).toMatchObject({ type: 'hit', attacker: 0, defender: 1, damage: TACKLE_DAMAGE, frame: 6 });
   });
 
   it('misses an opponent out of range', () => {
@@ -48,7 +48,7 @@ describe('physical attack', () => {
   it('hits only once, even with 4 active frames', () => {
     const r = run(60, on(J, 1), 0, fightAt(CLOSE));
     expect(r.events.filter(e => e.type === 'hit')).toHaveLength(1);
-    expect(r.final.fighters[1].hp).toBe(MAX_HP - PHYSICAL.hit.damage);
+    expect(r.final.fighters[1].hp).toBe(MAX_HP - TACKLE_DAMAGE);
   });
 
   it('holding the button does not repeat the attack', () => {

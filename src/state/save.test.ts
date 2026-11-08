@@ -1,0 +1,100 @@
+// The save: round trip, versions, validation, broken saves kept aside, storage that throws, and every fixture.
+
+import { readdirSync, readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { speciesBySlug } from '../data/pokedex';
+import { createPokemon } from '../game/pokemon';
+import { newSave, parseSave, SAVE_VERSION, serializeSave, type Save } from './save';
+import { BROKEN_SAVE_KEY, createSaveStore, SAVE_KEY } from './store';
+
+const party = () => [createPokemon(speciesBySlug('charmeleon').id, 30), createPokemon(speciesBySlug('kadabra').id, 30)];
+const save = () => newSave(party(), 1_700_000_000_000, 'en');
+const broken = (s: Save, change: (s: Save) => void) => {
+  const copy = structuredClone(s);
+  change(copy);
+  return parseSave(JSON.stringify(copy));
+};
+
+function memoryStorage() {
+  const map = new Map<string, string>();
+  return {
+    map,
+    getItem: (k: string) => map.get(k) ?? null,
+    setItem: (k: string, v: string) => void map.set(k, v),
+    removeItem: (k: string) => void map.delete(k),
+  };
+}
+
+describe('save format', () => {
+  it('survives a round trip', () => {
+    const s = save();
+    expect(parseSave(serializeSave(s))).toEqual({ status: 'ok', save: s });
+    expect(s.version).toBe(SAVE_VERSION);
+  });
+
+  it('no save yet is not an error', () => {
+    expect(parseSave(null)).toEqual({ status: 'none' });
+  });
+
+  it('refuses garbage, saves from a newer version, and invalid content', () => {
+    expect(parseSave('{not json')).toMatchObject({ status: 'broken', reason: 'unreadable' });
+    expect(parseSave(JSON.stringify({ ...save(), version: SAVE_VERSION + 1 }))).toMatchObject({ status: 'broken', reason: 'newer' });
+    expect(parseSave(JSON.stringify({ party: [] }))).toMatchObject({ status: 'broken', reason: 'invalid' });
+    expect(broken(save(), s => (s.party = []))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => (s.party[0].speciesId = 999))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => (s.party[0].level = 101))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => (s.party[0].hp = 99_999))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => s.party[0].moves.push('not-a-move'))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => (s.party[0].specials.big = 'growl'))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => (s.settings.language = 'fr' as never))).toMatchObject({ reason: 'invalid' });
+  });
+});
+
+describe('save store', () => {
+  it('writes and loads the save', () => {
+    const storage = memoryStorage();
+    const store = createSaveStore(storage);
+    const s = save();
+    store.write(s);
+    expect(store.load()).toEqual({ status: 'ok', save: s });
+  });
+
+  it('keeps a broken save aside instead of losing it', () => {
+    const storage = memoryStorage();
+    storage.setItem(SAVE_KEY, '{oops');
+    expect(createSaveStore(storage).load()).toMatchObject({ status: 'broken' });
+    expect(storage.map.get(BROKEN_SAVE_KEY)).toBe('{oops');
+    expect(storage.map.has(SAVE_KEY)).toBe(false);
+  });
+
+  it('still runs when storage is blocked (it just remembers nothing)', () => {
+    const throwing = {
+      getItem: () => {
+        throw new Error('blocked');
+      },
+      setItem: () => {
+        throw new Error('blocked');
+      },
+      removeItem: () => {
+        throw new Error('blocked');
+      },
+    };
+    const store = createSaveStore(throwing);
+    expect(store.load()).toEqual({ status: 'none' });
+    expect(() => store.write(save())).not.toThrow();
+    expect(createSaveStore(null).load()).toEqual({ status: 'none' });
+  });
+});
+
+describe('fixtures (real saves kept for compatibility)', () => {
+  const dir = new URL('./fixtures/', import.meta.url);
+  const files = readdirSync(dir).filter(f => f.endsWith('.json'));
+
+  it('there is at least one', () => {
+    expect(files.length).toBeGreaterThan(0);
+  });
+
+  it.each(files)('%s still loads', file => {
+    expect(parseSave(readFileSync(new URL(file, dir), 'utf8')).status).toBe('ok');
+  });
+});

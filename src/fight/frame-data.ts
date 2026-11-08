@@ -3,7 +3,8 @@
 //
 // Frame counting: the frame an action starts on is its frame 1. An attack with startup 5 hits from frame 6.
 // For specials, "startup" is the charge. A fighter that gets hit starts its hitstun on the next frame.
-// Damage values are placeholders (out of 1000 HP) until Pokémon stats and the damage formula arrive (milestone 4).
+// Damage is not here: it comes from the official formula when a hit lands (fight/damage.ts), from the move's power
+// (the tackle's below, specials' from the Pokémon's moves) and both Pokémon's stats and types.
 
 import { px } from './constants';
 
@@ -17,9 +18,8 @@ export interface Box {
 
 const box = (x1: number, x2: number, y1: number, y2: number): Box => ({ x1: px(x1), x2: px(x2), y1: px(y1), y2: px(y2) });
 
-/** What a move does when it connects. */
+/** What a move does when it connects (besides damage). */
 export interface HitData {
-  damage: number;
   /** Hitstun of a grounded opponent (moves with `launch` knock down instead). */
   hitstun: number;
   blockstun: number;
@@ -66,12 +66,19 @@ export const moveLength = (move: MoveData) => move.startup + move.active + move.
 
 // ── Physical ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
+/**
+ * The tackle has no type: always neutral, no STAB (decided in milestone 4). Otherwise a Ghost could never be tackled,
+ * and a Normal-type knowing only Normal moves could never win against one. The specials carry the type game.
+ */
+export const PHYSICAL_POWER = 40;
+export const AIR_PHYSICAL_POWER = 35;
+
 /** J on the ground: the tackle. A short lunge with a quick hit. +3 on hit, -1 on block. */
 export const PHYSICAL: MoveData = {
   startup: 5,
   active: 4,
   recovery: 12,
-  hit: { damage: 80, hitstun: 18, blockstun: 14, knockback: px(3), hitstop: 6, ppGain: 15, chip: false, big: false },
+  hit: { hitstun: 18, blockstun: 14, knockback: px(3), hitstop: 6, ppGain: 15, chip: false, big: false },
   hitbox: box(10, 46, 18, 40),
   lunge: { until: 9, speed: px(1.5) },
 };
@@ -81,7 +88,7 @@ export const AIR_PHYSICAL: MoveData = {
   startup: 4,
   active: 6,
   recovery: 0,
-  hit: { damage: 70, hitstun: 18, blockstun: 14, knockback: px(2), hitstop: 6, ppGain: 15, chip: false, big: false },
+  hit: { hitstun: 18, blockstun: 14, knockback: px(2), hitstop: 6, ppGain: 15, chip: false, big: false },
   hitbox: box(4, 34, -6, 26),
 };
 
@@ -99,32 +106,33 @@ export const ELEMENTAL: Record<ElementalShape, MoveData> = {
     startup: 14,
     active: 1,
     recovery: 18,
-    hit: { damage: 60, hitstun: 18, blockstun: 16, knockback: px(3), hitstop: 6, ppGain: 5, chip: true, big: false },
+    hit: { hitstun: 18, blockstun: 16, knockback: px(3), hitstop: 6, ppGain: 5, chip: true, big: false },
     projectile: { speed: px(4), halfWidth: px(8), y1: px(18), y2: px(34), spawnX: px(24) },
   },
   beam: {
     startup: 14,
     active: 6,
     recovery: 18,
-    hit: { damage: 50, hitstun: 18, blockstun: 16, knockback: px(2), hitstop: 6, ppGain: 5, chip: true, big: false },
+    hit: { hitstun: 18, blockstun: 16, knockback: px(2), hitstop: 6, ppGain: 5, chip: true, big: false },
     hitbox: box(16, 216, 20, 32),
   },
 };
 
-/** I: needs and spends the full PP bar. Long charge, big damage, knocks down. Ground only. */
+/** I: needs and spends the full PP bar. Long charge, knocks down. Ground only. Uses the move's own power (strong moves
+ * are already 90–120; doubling it made a super-effective big special a one-hit KO). */
 export const BIG: Record<BigShape, MoveData> = {
   projectile: {
     startup: 40,
     active: 1,
     recovery: 30,
-    hit: { damage: 220, hitstun: 30, blockstun: 24, knockback: px(4), hitstop: 14, ppGain: 0, chip: true, launch: BIG_LAUNCH, big: true },
+    hit: { hitstun: 30, blockstun: 24, knockback: px(4), hitstop: 14, ppGain: 0, chip: true, launch: BIG_LAUNCH, big: true },
     projectile: { speed: px(6), halfWidth: px(16), y1: px(6), y2: px(46), spawnX: px(32) },
   },
   beam: {
     startup: 40,
     active: 10,
     recovery: 30,
-    hit: { damage: 200, hitstun: 30, blockstun: 24, knockback: px(3), hitstop: 14, ppGain: 0, chip: true, launch: BIG_LAUNCH, big: true },
+    hit: { hitstun: 30, blockstun: 24, knockback: px(3), hitstop: 14, ppGain: 0, chip: true, launch: BIG_LAUNCH, big: true },
     hitbox: box(16, 480, 10, 42),
   },
   /** The "big dash": a physical charge through the opponent (Take Down, Body Slam…). */
@@ -132,7 +140,7 @@ export const BIG: Record<BigShape, MoveData> = {
     startup: 40,
     active: 24,
     recovery: 30,
-    hit: { damage: 250, hitstun: 30, blockstun: 24, knockback: px(4), hitstop: 14, ppGain: 0, chip: true, launch: BIG_LAUNCH, big: true },
+    hit: { hitstun: 30, blockstun: 24, knockback: px(4), hitstop: 14, ppGain: 0, chip: true, launch: BIG_LAUNCH, big: true },
     hitbox: box(-8, 30, 4, 44),
     rush: { speed: px(9) },
   },

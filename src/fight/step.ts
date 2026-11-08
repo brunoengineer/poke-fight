@@ -10,25 +10,19 @@
 //   7. Round timer.
 
 import { activeHitbox, bodyBox, currentMove, isGuarding, isInvincible, moveOf, overlaps, passesThrough, projectileBox } from './boxes';
-import {
-  BODY_HALF_WIDTH,
-  BODY_HEIGHT,
-  BUFFER_FRAMES,
-  CHIP_DIVISOR,
-  COMBO_SCALING,
-  ELEMENTAL_COST,
-  PP_MAX,
-  STAGE_WIDTH,
-} from './constants';
+import { BODY_HALF_WIDTH, BODY_HEIGHT, BUFFER_FRAMES, CHIP_DIVISOR, ELEMENTAL_COST, PP_MAX, STAGE_WIDTH } from './constants';
+import { computeDamage, scaledDamage } from './damage';
 import {
   AIR_CONTROL,
   AIR_HIT,
+  AIR_PHYSICAL_POWER,
   BACKDASH,
   DASH,
   GUARD,
   JUMP,
   KO_POP,
   PHYSICAL,
+  PHYSICAL_POWER,
   WALK,
   dashLength,
   moveLength,
@@ -36,7 +30,7 @@ import {
   type SpecialSlot,
 } from './frame-data';
 import { Button, cleanDirections, has, type InputMask } from './input';
-import type { ActionKind, FightEvent, FightState, Fighter } from './state';
+import type { ActionKind, AttackInfo, FightEvent, FightState, Fighter } from './state';
 
 export interface StepResult {
   state: FightState;
@@ -171,10 +165,13 @@ function startSpecial(f: Fighter, slot: SpecialSlot, events: FightEvent[]) {
   events.push({ type: 'special', fighter: f.id, slot });
 }
 
+/** A horizontal speed, adjusted by the Pokémon's speed (mobility %). Frame data never changes. */
+const bySpeed = (f: Fighter, speed: number) => Math.round((speed * f.mobility) / 100);
+
 /** Leaves the floor, in the direction held on the last grounded frame. */
 function launch(f: Fighter) {
-  if (f.jumpDirection === 1) f.vx = JUMP.forwardSpeed * f.facing;
-  else if (f.jumpDirection === -1) f.vx = -JUMP.backSpeed * f.facing;
+  if (f.jumpDirection === 1) f.vx = bySpeed(f, JUMP.forwardSpeed) * f.facing;
+  else if (f.jumpDirection === -1) f.vx = -bySpeed(f, JUMP.backSpeed) * f.facing;
   else f.vx = 0;
   f.vy = JUMP.launchSpeed;
   f.airAttackUsed = false;
@@ -196,8 +193,8 @@ function dashSpeed(frame: number, dash: typeof DASH) {
 /** Steers a jump towards the held direction's speed (no direction held: keeps the current speed). */
 function steer(f: Fighter) {
   let target: number;
-  if (has(f.held, Button.Right)) target = f.facing === 1 ? JUMP.forwardSpeed : JUMP.backSpeed;
-  else if (has(f.held, Button.Left)) target = -(f.facing === -1 ? JUMP.forwardSpeed : JUMP.backSpeed);
+  if (has(f.held, Button.Right)) target = bySpeed(f, f.facing === 1 ? JUMP.forwardSpeed : JUMP.backSpeed);
+  else if (has(f.held, Button.Left)) target = -bySpeed(f, f.facing === -1 ? JUMP.forwardSpeed : JUMP.backSpeed);
   else return;
   if (f.vx < target) f.vx = Math.min(target, f.vx + AIR_CONTROL.accel);
   else f.vx = Math.max(target, f.vx - AIR_CONTROL.accel);
@@ -213,16 +210,16 @@ function move(f: Fighter) {
   if (!airborne) {
     switch (f.action) {
       case 'walkForward':
-        f.vx = WALK.forward * f.facing;
+        f.vx = bySpeed(f, WALK.forward) * f.facing;
         break;
       case 'walkBack':
-        f.vx = -WALK.back * f.facing;
+        f.vx = -bySpeed(f, WALK.back) * f.facing;
         break;
       case 'dash':
-        f.vx = dashSpeed(f.actionFrame, DASH) * f.facing;
+        f.vx = bySpeed(f, dashSpeed(f.actionFrame, DASH)) * f.facing;
         break;
       case 'backdash':
-        f.vx = -dashSpeed(f.actionFrame, BACKDASH) * f.facing;
+        f.vx = -bySpeed(f, dashSpeed(f.actionFrame, BACKDASH)) * f.facing;
         break;
       case 'attack': {
         const lunge = PHYSICAL.lunge;
@@ -303,7 +300,7 @@ function spawnProjectiles(state: FightState) {
       id: state.frame * 2 + f.id,
       owner: f.id,
       slot,
-      type: f.loadout[slot].type,
+      attack: specialAttack(f, slot),
       x: f.x + f.facing * p.spawnX,
       halfWidth: p.halfWidth,
       y1: f.y + p.y1,
@@ -312,6 +309,17 @@ function spawnProjectiles(state: FightState) {
       hit: move.hit,
     });
   }
+}
+
+function specialAttack(f: Fighter, slot: 'elemental' | 'big'): AttackInfo {
+  const { power, type, category } = f.loadout[slot];
+  return { power, type, category };
+}
+
+/** What the fighter's current melee move does to HP (the tackle is typeless). */
+function meleeAttack(f: Fighter): AttackInfo {
+  if (f.action === 'elemental' || f.action === 'big') return specialAttack(f, f.action);
+  return { power: f.action === 'airAttack' ? AIR_PHYSICAL_POWER : PHYSICAL_POWER, type: null, category: 'physical' };
 }
 
 function moveProjectiles(state: FightState) {
@@ -343,6 +351,7 @@ interface Connection {
   attacker: Fighter;
   defender: Fighter;
   hit: HitData;
+  attack: AttackInfo;
   /** The direction the defender is pushed: away from the attacker (or along the projectile's flight). */
   away: number;
   /** A melee hit (tackle, beam, rush) rather than a projectile: it marks the attacker's move as hit or blocked. */
@@ -361,13 +370,13 @@ function resolveHits(state: FightState, events: FightEvent[]) {
     attacker.contact = 'hit';
     // By position, not facing: a jump or a rush can cross over.
     const away = defender.x === attacker.x ? attacker.facing : Math.sign(defender.x - attacker.x);
-    connections.push({ attacker, defender, hit: currentMove(attacker)!.hit, away, melee: true });
+    connections.push({ attacker, defender, hit: currentMove(attacker)!.hit, attack: meleeAttack(attacker), away, melee: true });
   }
 
   state.projectiles = state.projectiles.filter(p => {
     const defender = state.fighters[p.owner === 0 ? 1 : 0];
     if (isInvincible(defender) || !overlaps(projectileBox(p), bodyBox(defender))) return true;
-    connections.push({ attacker: state.fighters[p.owner], defender, hit: p.hit, away: Math.sign(p.vx), melee: false });
+    connections.push({ attacker: state.fighters[p.owner], defender, hit: p.hit, attack: p.attack, away: Math.sign(p.vx), melee: false });
     return false;
   });
 
@@ -379,16 +388,14 @@ function resolveHits(state: FightState, events: FightEvent[]) {
   if (state.winner === null && (aOut || bOut)) state.winner = aOut && bOut ? 'draw' : aOut ? 1 : 0;
 }
 
-export const scaledDamage = (damage: number, comboHits: number) =>
-  Math.floor((damage * Math.max(COMBO_SCALING.min, 100 - COMBO_SCALING.step * comboHits)) / 100);
-
 /** Blocked hits freeze for less time than clean hits. */
 const blockHitstop = (hit: HitData) => Math.max(4, Math.floor(hit.hitstop / 2));
 
-function applyHit(state: FightState, { attacker, defender, hit, away, melee }: Connection, events: FightEvent[]) {
+function applyHit(state: FightState, { attacker, defender, hit, attack, away, melee }: Connection, events: FightEvent[]) {
+  const { damage: fullDamage, effectiveness } = computeDamage(attacker, defender, attack);
   if (isGuarding(defender)) {
     if (melee) attacker.contact = 'block';
-    const chip = hit.chip ? Math.floor(hit.damage / CHIP_DIVISOR) : 0;
+    const chip = hit.chip ? Math.floor(fullDamage / CHIP_DIVISOR) : 0;
     defender.hp = Math.max(0, defender.hp - chip);
     defender.combo = 0;
     state.hitstop = Math.max(state.hitstop, blockHitstop(hit));
@@ -402,13 +409,18 @@ function applyHit(state: FightState, { attacker, defender, hit, away, melee }: C
   }
 
   const air = defender.y > 0;
-  const damage = scaledDamage(hit.damage, defender.combo);
+  // A type that can't touch the defender (Normal → Ghost, Electric → Ground…): it passes harmlessly.
+  if (effectiveness === 0) {
+    events.push({ type: 'hit', attacker: attacker.id, defender: defender.id, damage: 0, effectiveness, air, big: hit.big, combo: defender.combo });
+    return;
+  }
+  const damage = Math.max(1, scaledDamage(fullDamage, defender.combo));
   defender.combo++;
   defender.hp = Math.max(0, defender.hp - damage);
   defender.buffer = { physical: 0, special: 0, big: 0, dash: 0 };
   attacker.pp = Math.min(PP_MAX, attacker.pp + hit.ppGain);
   state.hitstop = Math.max(state.hitstop, hit.hitstop);
-  events.push({ type: 'hit', attacker: attacker.id, defender: defender.id, damage, air, big: hit.big, combo: defender.combo });
+  events.push({ type: 'hit', attacker: attacker.id, defender: defender.id, damage, effectiveness, air, big: hit.big, combo: defender.combo });
 
   if (defender.hp === 0) return knockOut(defender, away, events);
   if (air || hit.launch) {

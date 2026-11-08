@@ -16,6 +16,7 @@ npm run dev        # http://localhost:5173
 npm test           # Vitest: rules and simulation (src/**/*.test.ts), through scripts/vitest.mjs
 npm run e2e        # Playwright: the real game in Chromium (e2e/)
 npm run typecheck  # src + e2e
+npm run data       # rebuild src/data/generated/ from PokeAPI (committed; the game never calls PokeAPI)
 ```
 
 Run all three before saying a task is done. CI (`.github/workflows/ci.yml`) runs the same on every push.
@@ -28,7 +29,19 @@ Run all three before saying a task is done. CI (`.github/workflows/ci.yml`) runs
 - The simulation advances in fixed 1/60 s steps (`engine/loop.ts`). Rendering only reads the state.
 - Fight positions are whole numbers in sub-pixels (planned: 1 px = 256 units), never floats.
 - Menus are DOM (with `data-testid` for tests); only the fight is drawn on the canvas (480×270, whole-number scale).
-- Content (regions, cities, gyms, shops, encounters) is data, not code.
+- Content (regions, cities, gyms, shops, encounters) is data, not code. Pokémon data comes from
+  `scripts/build-data.mjs` into `src/data/generated/`; read it through `src/data/pokedex.ts` and `src/data/types.ts`.
+- Layers: `data/` (generated + typed access) → `game/` (Pokémon, stats, moves: owned Pokémon → fighters) →
+  `fight/` (the fight, which only knows `FighterSetup`, never species). `fight/` may read `data/types.ts` (the chart).
+- Damage is never a fixed number: tests compute expected damage with `fight/damage.ts` (helpers in `fight/testing.ts`).
+
+## Texts and saves
+
+- **Every text a player sees goes through `t()`** (`src/i18n/`), in English (`en.ts`) and Portuguese (`pt.ts`). A test
+  fails if a text is missing in either language or their `{placeholders}` differ. Pokémon and move names come from
+  the data (English) and are not translated. The debug overlay may stay in English.
+- **Changing the save format**: bump `SAVE_VERSION` in `src/state/save.ts`, add a migration from the old version, and
+  keep a fixture of the old format in `src/state/fixtures/` (every fixture must keep loading).
 
 ## Testing rules
 
@@ -36,6 +49,9 @@ Run all three before saying a task is done. CI (`.github/workflows/ci.yml`) runs
 - Playwright opens the game with `?test=1` (see `src/test/hooks.ts`): fixed seed, **manual clock** (`window.__pf.step(n)`),
   read-only access through `window.__pf`. Use `e2e/helpers.ts` (`openGame`, `step`, `frame`); it fails a test on any
   console error and stubs requests to other sites.
+- Browser tests can't import game code that loads the JSON data (Node needs an import attribute): use type imports,
+  or copy small constants into `e2e/helpers.ts`. `openGame(page, params, { save })` starts from a saved game
+  (`fixture('save-v1-….json')`).
 - Never use `waitForTimeout` to wait for the game to do something: step the clock, or `expect.poll` for real-clock
   tests. (Waiting is only fine to prove that nothing happens, as in `e2e/boot.spec.ts`.)
 - Balance numbers (frame data, damage, catch rates) are pinned in tests on purpose. A change that breaks them is either

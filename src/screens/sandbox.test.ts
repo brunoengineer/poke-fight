@@ -3,7 +3,7 @@ import { PP_MAX } from '../fight/constants';
 import { DUMMY_ATTACK_EVERY, DUMMY_SPECIAL_EVERY } from '../fight/dummy';
 import { Button } from '../fight/input';
 import { createSandbox, isOpponent, OPPONENTS, type Sandbox } from './sandbox';
-import { DUMMY_TEAM, PLAYER_TEAM } from './sandbox-teams';
+import { OPPONENT_TEAM, PLAYER_TEAM } from './sandbox-teams';
 
 const ticks = (sandbox: Sandbox, frames: number, input = 0) => {
   for (let i = 0; i < frames; i++) sandbox.tick(input);
@@ -14,12 +14,12 @@ describe('sandbox', () => {
     const view = createSandbox().view();
     expect(view).toMatchObject({ debug: false, opponent: 'stand', infinitePp: false, cpu: null });
     expect(view.battle.round.frame).toBe(0);
-    expect(view.battle.teams.map(t => t.length)).toEqual([PLAYER_TEAM.length, DUMMY_TEAM.length]);
-    expect(view.battle.round.fighters.map(f => f.name)).toEqual([PLAYER_TEAM[0].name, DUMMY_TEAM[0].name]);
+    expect(view.battle.teams.map(t => t.length)).toEqual([PLAYER_TEAM.length, OPPONENT_TEAM.length]);
+    expect(view.battle.round.fighters.map(f => f.name)).toEqual([PLAYER_TEAM[0].name, OPPONENT_TEAM[0].name]);
   });
 
   it('every special shape is in the sandbox teams', () => {
-    const all = [...PLAYER_TEAM, ...DUMMY_TEAM];
+    const all = [...PLAYER_TEAM, ...OPPONENT_TEAM];
     expect(new Set(all.map(m => m.loadout.elemental.shape))).toEqual(new Set(['projectile', 'beam']));
     expect(new Set(all.map(m => m.loadout.big.shape))).toEqual(new Set(['projectile', 'beam', 'rush']));
   });

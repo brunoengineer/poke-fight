@@ -17,15 +17,17 @@ test.describe('responsive controls', () => {
     expect((await snapshot(page)).fighters[0].action).toBe('attack');
   });
 
-  test('D and the right arrow both walk forward, 2 px per frame', async ({ page }) => {
+  test("D and the right arrow both walk forward, 2 px per frame (adjusted by the Pokémon's speed)", async ({ page }) => {
     await openGame(page);
-    const x0 = (await snapshot(page)).fighters[0].x;
+    const start = await snapshot(page);
+    const x0 = start.fighters[0].x;
     for (const key of ['d', 'ArrowRight']) {
       await page.keyboard.down(key);
       await step(page, 10);
       await page.keyboard.up(key);
     }
-    expect((await snapshot(page)).fighters[0].x - x0).toBe(20 * 2 * 256);
+    const perFrame = Math.round((2 * 256 * start.fighters[0].mobility) / 100);
+    expect((await snapshot(page)).fighters[0].x - x0).toBe(20 * perFrame);
   });
 
   test('Space dashes forward, Space + back dashes back', async ({ page }) => {
@@ -119,7 +121,7 @@ test.describe('specials and guard', () => {
 });
 
 test.describe('battle', () => {
-  test('beat the whole dummy team: each KO brings in the next one; Enter starts a new battle', async ({ page }) => {
+  test('beat the whole dummy team: each KO brings in the next one; Continue starts a new battle', async ({ page }) => {
     await openGame(page);
     const names: string[] = [];
     await page.keyboard.down('d');
@@ -133,9 +135,12 @@ test.describe('battle', () => {
     await page.keyboard.up('d');
     const over = await battle(page);
     expect(over).toMatchObject({ phase: 'over', winner: 0, rounds: 3 });
-    expect(names).toEqual(['Sprout', 'Spark', 'Boulder']);
+    expect(names).toEqual(['Geodude', 'Gastly', 'Butterfree']);
 
+    // The results screen; Enter presses its focused Continue button.
+    await expect(page.getByTestId('results')).toBeVisible();
     await page.keyboard.press('Enter');
+    await expect(page.getByTestId('results')).toBeHidden();
     expect(await battle(page)).toMatchObject({ phase: 'fight', rounds: 1, winner: null });
   });
 
@@ -155,7 +160,7 @@ test.describe('battle', () => {
     await step(page, 1);
     const next = await battle(page);
     expect(next.phase).toBe('fight');
-    expect(next.round.fighters[0].name).toBe('Brawler');
+    expect(next.round.fighters[0].name).toBe('Machoke');
   });
 });
 

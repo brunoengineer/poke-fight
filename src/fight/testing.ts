@@ -1,8 +1,10 @@
 // Helpers for the fight tests: run scripted inputs frame by frame and collect what happened.
 
 import { px } from './constants';
+import { computeDamage } from './damage';
+import { PHYSICAL_POWER } from './frame-data';
 import type { InputMask } from './input';
-import { createFight, type FightEvent, type FightOptions, type FightState } from './state';
+import { createFight, type AttackInfo, type FightEvent, type FightOptions, type FightState, type FighterId } from './state';
 import { step } from './step';
 
 /** Player input for a frame: a fixed mask, or a function of the frame number (1 = the first simulated frame). */
@@ -45,4 +47,18 @@ export const between = (mask: InputMask, from: number, to: number) => (frame: nu
 export function fightAt(distance: number, options: Omit<FightOptions, 'x'> = {}): FightState {
   const center = 240;
   return createFight({ ...options, x: [px(center - distance / 2), px(center + distance / 2)] });
+}
+
+/** The damage an attack from this fighter does to the other one, in this state (no combo scaling). */
+export function damageOf(state: FightState, attacker: FighterId, attack: AttackInfo): number {
+  return computeDamage(state.fighters[attacker], state.fighters[attacker === 0 ? 1 : 0], attack).damage;
+}
+
+/** A tackle between the two default test fighters (Lv. 50, all stats 100). */
+export const TACKLE_DAMAGE = damageOf(createFight(), 0, { power: PHYSICAL_POWER, type: null, category: 'physical' });
+
+/** The default test fighter's specials (from DEFAULT_LOADOUT) on the other default fighter. */
+export function specialDamage(slot: 'elemental' | 'big', state: FightState = createFight(), attacker: FighterId = 0): number {
+  const { power, type, category } = state.fighters[attacker].loadout[slot];
+  return damageOf(state, attacker, { power, type, category });
 }

@@ -1,43 +1,18 @@
-// Placeholder teams for the sandbox, one of each special shape, until real Pokémon arrive (milestone 4).
-// Names are generic on purpose: these are rectangles with a type color, not Pokémon yet.
+// The sandbox teams: real Pokémon at Lv. 30–34 with their default specials, chosen to show every special shape and
+// some type matchups:
+//   - Charmeleon (projectiles) vs Butterfree: Fire is super effective on Bug.
+//   - Kadabra (beams) vs Gastly: Psychic is super effective on Poison.
+//   - Machoke (Rush) vs Geodude: Fighting is super effective on Rock; but Karate Chop can't touch Gastly (Ghost).
 
+import { speciesBySlug } from '../data/pokedex';
 import type { TeamMember } from '../fight/battle';
-import { MAX_HP } from '../fight/constants';
+import { createPokemon, toFighter, type Pokemon } from '../game/pokemon';
 
-const member = (name: string, type: string, loadout: TeamMember['loadout']): TeamMember => ({
-  name,
-  type,
-  maxHp: MAX_HP,
-  hp: MAX_HP,
-  loadout,
-});
+const member = (slug: string, level: number): TeamMember => toFighter(createPokemon(speciesBySlug(slug).id, level));
 
-export const PLAYER_TEAM: TeamMember[] = [
-  member('Flame', 'fire', {
-    elemental: { name: 'Ember', type: 'fire', shape: 'projectile' },
-    big: { name: 'Fire Blast', type: 'fire', shape: 'projectile' },
-  }),
-  member('Wave', 'water', {
-    elemental: { name: 'Bubble Beam', type: 'water', shape: 'beam' },
-    big: { name: 'Hydro Pump', type: 'water', shape: 'beam' },
-  }),
-  member('Brawler', 'normal', {
-    elemental: { name: 'Swift', type: 'normal', shape: 'projectile' },
-    big: { name: 'Take Down', type: 'normal', shape: 'rush' },
-  }),
-];
+/** The party a new game starts with, until the prologue gives a starter (milestone 6). */
+export const sandboxParty = (): Pokemon[] => ['charmeleon', 'kadabra', 'machoke'].map(slug => createPokemon(speciesBySlug(slug).id, 30));
 
-export const DUMMY_TEAM: TeamMember[] = [
-  member('Sprout', 'grass', {
-    elemental: { name: 'Razor Leaf', type: 'grass', shape: 'projectile' },
-    big: { name: 'Solar Beam', type: 'grass', shape: 'beam' },
-  }),
-  member('Spark', 'electric', {
-    elemental: { name: 'Thunder Shock', type: 'electric', shape: 'beam' },
-    big: { name: 'Thunder', type: 'electric', shape: 'projectile' },
-  }),
-  member('Boulder', 'rock', {
-    elemental: { name: 'Rock Throw', type: 'rock', shape: 'projectile' },
-    big: { name: 'Double-Edge', type: 'normal', shape: 'rush' },
-  }),
-];
+export const PLAYER_TEAM: TeamMember[] = sandboxParty().map(toFighter);
+
+export const OPPONENT_TEAM: TeamMember[] = [member('geodude', 30), member('gastly', 30), member('butterfree', 34)];

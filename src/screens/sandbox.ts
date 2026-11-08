@@ -9,11 +9,29 @@ import { battleStep, createBattle, type BattleEvent, type BattleState, type Team
 import { PP_MAX } from '../fight/constants';
 import { DUMMY_MODES, dummyInput, type DummyMode } from '../fight/dummy';
 import { cleanDirections, type InputMask } from '../fight/input';
-import type { FightEvent } from '../fight/state';
-import { DUMMY_TEAM, PLAYER_TEAM } from './sandbox-teams';
+import type { FightEvent, FighterId } from '../fight/state';
+import { OPPONENT_TEAM, PLAYER_TEAM } from './sandbox-teams';
 
 /** Frames of white flash after a big special lands. */
 export const BIG_HIT_FLASH = 8;
+
+/** How long a type effectiveness message stays on screen. */
+export const EFFECT_FRAMES = 45;
+
+export interface EffectMessage {
+  text: 'effect.super' | 'effect.weak' | 'effect.none';
+  /** The Pokémon that was hit (the message floats above it). */
+  fighter: FighterId;
+  frames: number;
+}
+
+/** The message for a hit's type effectiveness (a translation key), or null for a neutral hit. */
+export function effectText(effectiveness: number): EffectMessage['text'] | null {
+  if (effectiveness === 0) return 'effect.none';
+  if (effectiveness > 1) return 'effect.super';
+  if (effectiveness < 1) return 'effect.weak';
+  return null;
+}
 
 /** Who plays player 2: a dummy behavior or a CPU difficulty. F2 cycles through them. */
 export const OPPONENTS = [...DUMMY_MODES, ...DIFFICULTIES.map(d => `cpu-${d}` as const)] as const;
@@ -35,12 +53,16 @@ export interface SandboxView {
   advantage: AdvantageTracker['last'];
   /** Frames left of the big-hit flash. */
   flash: number;
+  /** The last type effectiveness message, while it shows. */
+  effect: EffectMessage | null;
 }
 
 export interface Sandbox {
   /** Simulates one frame with player 1's input. Returns that frame's events. */
   tick(p1: InputMask): BattleEvent[];
   reset(): void;
+  /** A new battle with this player team (after the party changed: XP, evolution, specials, healing). */
+  setPlayerTeam(team: TeamMember[]): void;
   toggleDebug(): void;
   cycleOpponent(): void;
   cycleStyle(): void;
@@ -60,8 +82,8 @@ const difficultyOf = (opponent: Opponent): Difficulty | null =>
   opponent.startsWith('cpu-') ? (opponent.slice(4) as Difficulty) : null;
 
 export function createSandbox(options: SandboxOptions = {}): Sandbox {
-  const player = options.player ?? PLAYER_TEAM;
-  const opponentTeam = options.opponentTeam ?? DUMMY_TEAM;
+  let player = options.player ?? PLAYER_TEAM;
+  const opponentTeam = options.opponentTeam ?? OPPONENT_TEAM;
   const seed = options.seed ?? 1;
   const newBattle = () => createBattle([player, opponentTeam]);
 
@@ -73,6 +95,7 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
   let style: Style = 'balanced';
   let infinitePp = false;
   let flash = 0;
+  let effect: EffectMessage | null = null;
 
   const newCpu = (): CpuState | null => {
     const difficulty = difficultyOf(opponent);
@@ -104,12 +127,22 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
       }
       advantage = trackAdvantage(advantage, battle.round, fightEvents);
       flash = result.events.some(e => e.type === 'hit' && e.big) ? BIG_HIT_FLASH : Math.max(0, flash - 1);
+      effect = effect && effect.frames > 1 ? { ...effect, frames: effect.frames - 1 } : null;
+      for (const e of result.events) {
+        const text = e.type === 'hit' ? effectText(e.effectiveness) : null;
+        if (e.type === 'hit' && text) effect = { text, fighter: e.defender, frames: EFFECT_FRAMES };
+      }
       return result.events;
+    },
+    setPlayerTeam(team) {
+      player = team;
+      this.reset();
     },
     reset() {
       battle = newBattle();
       advantage = createAdvantageTracker();
       flash = 0;
+      effect = null;
       cpu = newCpu();
     },
     toggleDebug() {
@@ -136,6 +169,7 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
       history,
       advantage: advantage.last,
       flash,
+      effect,
     }),
   };
 }

@@ -17,7 +17,10 @@ npm run dev        # http://localhost:5173
 npm test           # game logic tests (Vitest)
 npm run e2e        # plays the real game in a browser (Playwright)
 npm run typecheck  # type check (game + browser tests)
+npm run data       # rebuild src/data/generated/ from PokeAPI (only when the data script changes)
 ```
+
+Sprites are loaded from the PokeAPI sprites repository on GitHub, so playing needs an internet connection.
 
 `npx playwright test --ui` shows the browser tests running. After a failure, `npx playwright show-report` has
 screenshots and a step-by-step trace.
@@ -27,8 +30,10 @@ Test mode: open `http://localhost:5173/?test=1` for a fixed seed and a manual cl
 
 ## Status
 
-Milestone 3 (CPU) done: a 3 vs 3 battle against the CPU, still with placeholder rectangles.
+Milestone 5 (progression and saves) done: a 3 vs 3 battle of real Pokémon against the CPU; winning gives XP,
+Pokémon level up, learn moves and evolve; P opens the party (specials, heal, language); progress is saved in the
+browser. English and Portuguese.
 WASD or arrows move (steer jumps in the air), J tackle, K elemental special (¼ PP), I big special (full PP), L guard,
 Space dash (+ back: back dash). F1 debug overlay, F2 player 2 (dummy behaviors, CPU easy / normal / hard), F3 infinite
-PP, F4 CPU style, R reset. `?opponent=cpu-hard` (or `stand`, `guard`…) in the URL picks player 2. Next: milestone 4,
-Pokémon data. See [plan.md §9](plan.md#9-roadmap-milestones).
+PP, F4 CPU style, P party, R reset. `?opponent=cpu-hard` (or `stand`, `guard`…) in the URL picks player 2. Next:
+milestone 6, the prologue (starter and rival tutorial). See [plan.md §9](plan.md#9-roadmap-milestones).

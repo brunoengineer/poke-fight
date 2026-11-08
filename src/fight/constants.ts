@@ -18,7 +18,19 @@ export const BODY_HEIGHT = px(48);
 
 export const START_X: readonly [number, number] = [px(160), px(320)];
 
-/** Placeholder HP until Pokémon stats arrive (milestone 4). */
+/**
+ * HP inside the fight is in tenths of real HP: at low levels the damage formula gives small numbers (3–5), and the
+ * extra precision keeps chip damage and combo scaling meaningful. Menus show real HP (fight HP / 10, rounded up).
+ */
+export const HP_UNITS = 10;
+
+/**
+ * Damage scale on top of the official formula, so fights last: about 12 tackles between two equal Pokémon at Lv. 50
+ * (fewer at low levels, as in the games).
+ */
+export const DAMAGE_SCALE = 0.6;
+
+/** HP of the default test fighter (real Pokémon get theirs from their stats). */
 export const MAX_HP = 1000;
 
 /** A button press is remembered this many frames, so it fires as soon as the current action ends. */

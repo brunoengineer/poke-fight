@@ -27,21 +27,43 @@ export type ActionKind =
 
 export type FighterId = 0 | 1;
 
-/** A Pokémon's two specials. Names and types are for display until real moves arrive (milestone 4). */
+/** What a hit does to HP: the move's power, type (null = typeless, like the tackle) and category. */
+export interface AttackInfo {
+  power: number;
+  type: string | null;
+  category: 'physical' | 'special';
+}
+
+/** A Pokémon's two specials, as the fight needs them (built from its moves by game/pokemon.ts). */
 export interface Loadout {
-  elemental: { name: string; type: string; shape: ElementalShape };
-  big: { name: string; type: string; shape: BigShape };
+  elemental: { name: string; type: string; power: number; category: 'physical' | 'special'; shape: ElementalShape };
+  big: { name: string; type: string; power: number; category: 'physical' | 'special'; shape: BigShape };
 }
 
 export const DEFAULT_LOADOUT: Loadout = {
-  elemental: { name: 'Ember', type: 'fire', shape: 'projectile' },
-  big: { name: 'Fire Blast', type: 'fire', shape: 'projectile' },
+  elemental: { name: 'Ember', type: 'fire', power: 40, category: 'special', shape: 'projectile' },
+  big: { name: 'Fire Blast', type: 'fire', power: 110, category: 'special', shape: 'projectile' },
 };
+
+/** Battle stats (HP is separate: maxHp, in fight units). */
+export interface FightStats {
+  atk: number;
+  def: number;
+  spa: number;
+  spd: number;
+  spe: number;
+}
 
 export interface Fighter {
   id: FighterId;
+  /** For the sprite; null for test fighters. */
+  speciesId: number | null;
   name: string;
-  type: string;
+  types: string[];
+  level: number;
+  stats: FightStats;
+  /** Walk, dash and jump speed in % (from base Speed: game/stats.ts). */
+  mobility: number;
   loadout: Loadout;
   /** Sub-pixels (see constants.ts). */
   x: number;
@@ -79,7 +101,7 @@ export interface Projectile {
   id: number;
   owner: FighterId;
   slot: SpecialSlot;
-  type: string;
+  attack: AttackInfo;
   x: number;
   halfWidth: number;
   y1: number;
@@ -105,7 +127,17 @@ export interface FightState {
 }
 
 export type FightEvent =
-  | { type: 'hit'; attacker: FighterId; defender: FighterId; damage: number; air: boolean; big: boolean; combo: number }
+  | {
+      type: 'hit';
+      attacker: FighterId;
+      defender: FighterId;
+      damage: number;
+      /** Type multiplier: 0 (no effect), ¼, ½, 1, 2 or 4. */
+      effectiveness: number;
+      air: boolean;
+      big: boolean;
+      combo: number;
+    }
   | { type: 'block'; attacker: FighterId; defender: FighterId; chip: number }
   | { type: 'special'; fighter: FighterId; slot: SpecialSlot }
   | { type: 'ko'; loser: FighterId }
@@ -113,8 +145,13 @@ export type FightEvent =
 
 /** Who is fighting: everything that comes from the Pokémon (the rest is the fight's own state). */
 export interface FighterSetup {
+  speciesId: number | null;
   name: string;
-  type: string;
+  types: string[];
+  level: number;
+  stats: FightStats;
+  mobility: number;
+  /** In fight units (HP_UNITS per real HP). */
   maxHp: number;
   hp: number;
   pp: number;
@@ -132,8 +169,12 @@ export interface FightOptions {
 function createFighter(id: FighterId, x: number, setup: FighterSetup): Fighter {
   return {
     id,
+    speciesId: setup.speciesId,
     name: setup.name,
-    type: setup.type,
+    types: [...setup.types],
+    level: setup.level,
+    stats: { ...setup.stats },
+    mobility: setup.mobility,
     loadout: structuredClone(setup.loadout),
     x,
     y: 0,
@@ -156,9 +197,14 @@ function createFighter(id: FighterId, x: number, setup: FighterSetup): Fighter {
   };
 }
 
+/** The test fighter: Lv. 50, every stat 100, Normal type, average speed. */
 const DEFAULT_SETUP: FighterSetup = {
+  speciesId: null,
   name: 'Fighter',
-  type: 'normal',
+  types: ['normal'],
+  level: 50,
+  stats: { atk: 100, def: 100, spa: 100, spd: 100, spe: 100 },
+  mobility: 100,
   maxHp: MAX_HP,
   hp: MAX_HP,
   pp: PP_START,

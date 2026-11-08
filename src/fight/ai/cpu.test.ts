@@ -72,8 +72,14 @@ const withLoadout = (state: FightState, loadout: Loadout, who: 0 | 1 = 0) => {
   state.fighters[who].loadout = loadout;
   return state;
 };
-const BEAM: Loadout = { elemental: { name: 'Beam', type: 'water', shape: 'beam' }, big: { name: 'Big', type: 'water', shape: 'beam' } };
-const RUSH: Loadout = { elemental: { name: 'Shot', type: 'normal', shape: 'projectile' }, big: { name: 'Rush', type: 'normal', shape: 'rush' } };
+const BEAM: Loadout = {
+  elemental: { name: 'Beam', type: 'water', power: 40, category: 'special', shape: 'beam' },
+  big: { name: 'Big', type: 'water', power: 110, category: 'special', shape: 'beam' },
+};
+const RUSH: Loadout = {
+  elemental: { name: 'Shot', type: 'normal', power: 40, category: 'special', shape: 'projectile' },
+  big: { name: 'Rush', type: 'normal', power: 110, category: 'physical', shape: 'rush' },
+};
 const contacts = (d: Duel) => d.events.filter(e => e.type === 'hit' || e.type === 'block');
 
 describe('the CPU sees the opponent late', () => {

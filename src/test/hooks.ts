@@ -7,6 +7,7 @@
 import type { ContactKind } from '../fight/advantage';
 import type { BattleState } from '../fight/battle';
 import type { FightState } from '../fight/state';
+import type { Save } from '../state/save';
 
 export interface TestOptions {
   enabled: boolean;
@@ -45,6 +46,8 @@ export interface TestApi {
     infinitePp: boolean;
     advantage: { kind: ContactKind; value: number } | null;
   };
+  /** A copy of the current save. */
+  save(): Save;
   /** Whether the clock only moves through step(). */
   manualClock: boolean;
   seed: number;

@@ -8,7 +8,7 @@
 // The Pokémon that stays keeps the HP and PP it has left; a Pokémon coming in starts with half a PP bar. HP carries
 // over to the team (and, later, out of the battle). Both start a new round from their starting positions.
 
-import { PP_START } from './constants';
+import { PP_START, ROUND_FRAMES } from './constants';
 import { Button, cleanDirections, has, type InputMask } from './input';
 import { createFight, type FightEvent, type FightState, type FighterId, type FighterSetup } from './state';
 import { step } from './step';
@@ -31,6 +31,8 @@ export interface BattleState {
   /** Player 1's input on the last frame (menu presses). */
   held: InputMask;
   winner: FighterId | 'draw' | null;
+  /** Frames on each round's timer. */
+  roundFrames: number;
   /** For each opponent (by team index), player 1's Pokémon that fought it: they share its XP (game/rewards.ts). */
   fought: number[][];
 }
@@ -44,29 +46,36 @@ export const MAX_TEAM = 6;
 
 const alive = (team: readonly TeamMember[]) => team.flatMap((m, i) => (m.hp > 0 ? [i] : []));
 
-export function createBattle(teams: readonly [readonly TeamMember[], readonly TeamMember[]]): BattleState {
+export interface BattleOptions {
+  /** Each round's timer (default: 99 seconds; the Safari Zone is shorter). */
+  roundFrames?: number;
+}
+
+export function createBattle(teams: readonly [readonly TeamMember[], readonly TeamMember[]], options: BattleOptions = {}): BattleState {
   if (teams.some(team => team.length === 0 || team.length > MAX_TEAM)) throw new Error('teams need 1 to 6 Pokémon');
   const copy = structuredClone(teams) as [TeamMember[], TeamMember[]];
   const active: [number, number] = [alive(copy[0])[0], alive(copy[1])[0]];
   if (active.some(i => i === undefined)) throw new Error('each team needs a Pokémon that can fight');
+  const roundFrames = options.roundFrames ?? ROUND_FRAMES;
   const battle: BattleState = {
     teams: copy,
     active,
-    round: newRound(copy, active, [PP_START, PP_START]),
+    round: newRound(copy, active, [PP_START, PP_START], roundFrames),
     rounds: 1,
     phase: 'fight',
     phaseFrame: 0,
     cursor: 0,
     held: 0,
     winner: null,
+    roundFrames,
     fought: copy[1].map(() => []),
   };
   noteWhoFights(battle);
   return battle;
 }
 
-function newRound(teams: BattleState['teams'], active: [number, number], pp: [number, number]): FightState {
-  return createFight({ pp, fighters: [teams[0][active[0]], teams[1][active[1]]] });
+function newRound(teams: BattleState['teams'], active: [number, number], pp: [number, number], timer: number): FightState {
+  return createFight({ pp, timer, fighters: [teams[0][active[0]], teams[1][active[1]]] });
 }
 
 export interface BattleStepResult {
@@ -149,7 +158,7 @@ function startRound(battle: BattleState, events: BattleEvent[]) {
   const pp = ([0, 1] as const).map(side =>
     previous.fighters[side].hp > 0 ? previous.fighters[side].pp : PP_START,
   ) as [number, number];
-  battle.round = newRound(battle.teams, battle.active, pp);
+  battle.round = newRound(battle.teams, battle.active, pp, battle.roundFrames);
   battle.rounds++;
   noteWhoFights(battle);
   battle.phase = 'fight';

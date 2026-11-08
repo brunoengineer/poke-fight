@@ -424,6 +424,26 @@ World map (cities unlocked by badges)
   badges they need), **Pokédex** (seen / caught counts).
 - **Save version 3**: money, bag, Pokédex (version 2 saves migrate).
 
+**Built in milestone 8** (pinned by `gym.test.ts`, `save.test.ts`, `e2e/gyms.spec.ts`):
+
+- **8 gyms** with the Red/Blue leaders, badges and teams (Brock's Geodude Lv. 12 and Onix Lv. 14 … Giovanni's five,
+  up to Rhydon Lv. 50), as the official-data rule asks. The leaders' lines are original (EN/PT). Each leader fights
+  with a CPU style that suits the type: Brock and Erika defensive, Misty zoner, Lt. Surge aggressive (normal);
+  Koga and Sabrina zoner, Blaine aggressive, Giovanni balanced (hard).
+- A gym: the leader's intro → their whole team, one at a time → on a win the **badge**, **99 × their highest level**
+  (Brock: ₽1386, as in Red/Blue) and 1.5× XP → the leader's last word. Losing: as any loss (half the money). No
+  gym trainers before the leader and no rematches (for now). Viridian's gym needs 7 badges.
+- **Badges open Kanto** (the world map), and the 8th removes the "stronger than yours" catch penalty.
+- **Evolution items**: Fire, Water, Thunder, Leaf and Moon Stones, and the **Link Cable for trade evolutions**
+  (Kadabra, Machoke, Graveler, Haunter; decided default, the question had no answer), sold at the **Saffron mall**
+  (₽2100), used from the party screen.
+- **Safari Zone** (Fuchsia, 4 badges): ₽500 for 30 Safari Balls (×1.5, never in the bag); each encounter is a
+  30-second fight against its rare Pokémon (Chansey, Kangaskhan, Tauros…): knock it out in time and throw, or it
+  flees. The party recovers after every encounter; losing costs nothing.
+- **Fair journey fights**: the training tools (F1–F4, R: infinite PP, switching the opponent…) work only in the
+  practice demo, never in a journey fight.
+- **Save version 4**: badges.
+
 ## 7. Architecture
 
 ### 7.1 Stack (same as poke-gacha)
@@ -549,7 +569,7 @@ Each milestone ends with something playable, tests, and green CI.
 | 5 | ✅ **Progression + save** | Party, XP, level up, move choice, evolution, save/load with versions |
 | 6 | ✅ **Prologue** | Title → starter → interactive rival tutorial → arrive at Viridian |
 | 7 | ✅ **World loop** | World map, cities, hunt (grass/water/cave), capture with balls, Pokémon Center, first shop, box |
-| 8 | **Gyms** | KOF-style team battles, trainers, 8 gyms with AI styles, badges unlock cities, mall, Safari Zone |
+| 8 | ✅ **Gyms** | KOF-style team battles, trainers, 8 gyms with AI styles, badges unlock cities, mall, Safari Zone |
 | 9 | **League** | Elite Four + Champion, credits, "next region" hook (scalability check) |
 | 10 | **Juice & polish** | Sound effects, music, cries, screen shake, particles, rebinding UI, options, balance pass |
 
@@ -589,10 +609,12 @@ sprites won't save it.
 | Tackle loop | Kept as it is: a fast tackle spammer beating the hard CPU is accepted |
 | Water hunting | Needs a fishing rod; rods are bought (Old: Viridian, Good: Pewter, Super: Saffron mall) |
 | PC box | Swap Pokémon freely in any city |
+| Trade evolutions | A Link Cable item (default chosen in milestone 8: easy to change) |
+| Gym leaders | The Red/Blue leaders, badges and teams; their lines are original |
 | Back dash | Invincible on its first 6 frames, punishable after |
 | Capture failure | One throw per win; if it breaks free, it flees |
 
 ### Still open
 
-1. **Trade evolutions** (Kadabra, Machoke, Graveler, Haunter): an item (Link Cable) or another rule? (milestone 8)
-2. **Next region**: what carries over to the new journey? (milestone 9)
+1. **Next region**: what carries over to the new journey? (milestone 9)
+2. **Gym trainers and rematches**: trainers to beat before each leader, and rematching leaders later?

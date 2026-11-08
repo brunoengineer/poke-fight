@@ -103,6 +103,12 @@ export interface SandboxOptions {
   director?: Director;
   /** A message over the first seconds of the battle ("A wild Pidgey appeared!"). */
   intro?: Banner;
+  /** The CPU's style (default: balanced). */
+  style?: Style;
+  /** Each round's timer, in frames (default: 99 seconds). */
+  roundFrames?: number;
+  /** Training tools (F1–F4, R). Default: on, unless a director runs the fight. Journey fights turn them off. */
+  tools?: boolean;
 }
 
 /** How long the intro message stays (frames). */
@@ -115,14 +121,14 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
   let player = options.player ?? PLAYER_TEAM;
   const opponentTeam = options.opponentTeam ?? OPPONENT_TEAM;
   const seed = options.seed ?? 1;
-  const newBattle = () => createBattle([player, opponentTeam]);
+  const newBattle = () => createBattle([player, opponentTeam], { roundFrames: options.roundFrames });
 
   let battle = newBattle();
   let history: HistoryEntry[] = [];
   let advantage = createAdvantageTracker();
   let debug = false;
   let opponent: Opponent = options.opponent ?? 'stand';
-  let style: Style = 'balanced';
+  let style: Style = options.style ?? 'balanced';
   let infinitePp = false;
   let flash = 0;
   let effect: EffectMessage | null = null;
@@ -134,7 +140,7 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
   let cpu = newCpu();
 
   const director = options.director ?? null;
-  const tools = director === null;
+  const tools = options.tools ?? director === null;
 
   const player2Input = (): InputMask => {
     if (director) return battle.phase === 'fight' ? director.input(battle.round) : 0;

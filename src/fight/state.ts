@@ -169,6 +169,8 @@ export interface FightOptions {
   hp?: readonly [number, number];
   pp?: readonly [number, number];
   fighters?: readonly [Partial<FighterSetup>, Partial<FighterSetup>];
+  /** Frames on the round timer (default: 99 seconds). */
+  timer?: number;
 }
 
 function createFighter(id: FighterId, x: number, setup: FighterSetup): Fighter {
@@ -232,7 +234,7 @@ export function createFight(options: FightOptions = {}): FightState {
   return {
     frame: 0,
     hitstop: 0,
-    timer: ROUND_FRAMES,
+    timer: options.timer ?? ROUND_FRAMES,
     fighters: [createFighter(0, x[0], setup(0)), createFighter(1, x[1], setup(1))],
     projectiles: [],
     winner: null,

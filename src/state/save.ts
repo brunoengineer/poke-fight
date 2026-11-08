@@ -5,6 +5,7 @@
 
 import { isItemId } from '../data/items';
 import { hasSpecies, move } from '../data/pokedex';
+import { GYMS } from '../data/regions/kanto';
 import { START_BAG, START_MONEY, type Bag } from '../game/economy';
 import { maxHpOf, type Pokemon } from '../game/pokemon';
 import { specialOptions } from '../game/progress';
@@ -12,7 +13,7 @@ import { DEFAULT_NAMES, MAX_NAME_LENGTH } from '../game/story';
 import { MAX_LEVEL } from '../game/xp';
 import { isLanguage, type Language } from '../i18n';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export interface Settings {
   language: Language;
@@ -40,6 +41,8 @@ export interface Save {
   bag: Bag;
   /** Species ids seen in battle and caught (the Pokédex). */
   dex: { seen: number[]; caught: number[] };
+  /** Badges won (gym badge ids), in the order they were won. */
+  badges: string[];
 }
 
 export const MAX_PARTY = 6;
@@ -68,6 +71,7 @@ export function newSave(journey: NewJourney, createdAt: number, language: Langua
     money: START_MONEY,
     bag: { ...START_BAG },
     dex: { seen: [...new Set([journey.starterId, journey.rivalStarterId])], caught: [journey.starterId] },
+    badges: [],
   };
 }
 
@@ -96,6 +100,8 @@ const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string
       dex: { seen: [...new Set([...owned, rival])], caught: [...new Set(owned)] },
     };
   },
+  // Version 3 saves (before the gyms opened): no badges yet.
+  3: old => ({ ...old, version: 4, badges: [] }),
 };
 
 export type LoadResult =
@@ -149,6 +155,9 @@ export function findProblem(data: Record<string, unknown>): string | null {
   const dex = data.dex as Save['dex'] | undefined;
   const speciesList = (list: unknown) => Array.isArray(list) && list.every(id => Number.isInteger(id) && hasSpecies(id));
   if (!dex || !speciesList(dex.seen) || !speciesList(dex.caught)) return 'bad Pokédex';
+  const badges = data.badges;
+  const known = GYMS.map(g => g.badge);
+  if (!Array.isArray(badges) || badges.some(b => !known.includes(b)) || new Set(badges).size !== badges.length) return 'bad badges';
   for (const [i, p] of [...party, ...data.box].entries()) {
     const problem = pokemonProblem(p as Pokemon);
     if (problem) return `Pokémon ${i}: ${problem}`;

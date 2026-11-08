@@ -1,22 +1,25 @@
 // The app: the save, the language, the scenes (title, the Professor's story, starter choice, fights, the city and
 // its menus) and the menus over fights (results, party), tied together. A fight only runs while no menu is open over it.
 
-import { BALLS, ITEMS, type BallId, type ItemId, type PotionId } from './data/items';
+import { BALLS, EVOLUTION_ITEMS, ITEMS, type BallId, type ItemId, type PotionId } from './data/items';
 import { move, species } from './data/pokedex';
-import { city, isUnlocked, KANTO, type HuntKind } from './data/regions/kanto';
+import { city, gymIn, isUnlocked, KANTO, type Gym, type HuntKind } from './data/regions/kanto';
 import { readFirstPad } from './engine/input/gamepad';
 import { attachKeyboard } from './engine/input/keyboard';
 import { createKeyLatch } from './engine/input/keys';
 import { createFixedStep } from './engine/loop';
 import { createRng } from './engine/rng';
+import type { Style } from './fight/ai/profiles';
 import type { TeamMember } from './fight/battle';
 import { afterBattle, type ReportLine } from './game/after-battle';
 import { addCaught, canSendToBox, canTakeFromBox, sendToBox, takeFromBox } from './game/box';
 import { catchValue, throwBall } from './game/capture';
 import { buy, canUsePotion, countOf, MAX_MONEY, moneyAfterLoss, prizeMoney, removeItem, usePotion } from './game/economy';
-import { bestRod, encounterTable, rollEncounter, wildPokemon } from './game/encounters';
+import { bestRod, encounterTable, rollEncounter, tableForAreas, wildPokemon } from './game/encounters';
+import { canChallenge, gymTeam, leaderPrize } from './game/gym';
 import { displayHp, maxHpOf, toFighter, type Pokemon } from './game/pokemon';
-import { evolve, heal, setSpecial, specialOptions } from './game/progress';
+import { evolve, heal, itemEvolution, setSpecial, specialOptions } from './game/progress';
+import { SAFARI_BALLS, SAFARI_ENTRANCE, SAFARI_SECONDS } from './game/safari';
 import { cleanName, createStarter, DEFAULT_NAMES, MAX_NAME_LENGTH, RIVAL_PICK, STARTERS, STARTER_GIFTS, trainingOpponents } from './game/story';
 import { MAX_LEVEL, xpForLevel } from './game/xp';
 import { detectLanguage, isLanguage, language, LANGUAGE_NAMES, LANGUAGES, setLanguage, t, type Language, type MessageKey } from './i18n';
@@ -37,9 +40,10 @@ type Said = Line & { speaker: string };
 
 /**
  * Fights: the demo (Training without a journey: Lv. 30 demo teams, no XP), trainers (the battle field: XP and prize
- * money), a wild Pokémon (hunting: XP and a chance to catch it), and the rival tutorial.
+ * money), a gym leader (a badge), a wild Pokémon (hunting: XP and a chance to catch it), a Safari Zone Pokémon
+ * (30 seconds, Safari Balls), and the rival tutorial.
  */
-type FightMode = 'demo' | 'trainer' | 'wild' | 'tutorial';
+type FightMode = 'demo' | 'trainer' | 'gym' | 'wild' | 'safari' | 'tutorial';
 type Scene = 'title' | 'story' | 'starter' | 'fight' | 'city' | 'menu';
 
 interface ResultsState {
@@ -118,6 +122,10 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
   let tutorial: TutorialDirector | null = null;
   /** The wild Pokémon being fought (it can be caught after the battle). */
   let wild: Pokemon | null = null;
+  /** The gym being challenged. */
+  let gym: Gym | null = null;
+  /** The Safari Game in progress (its balls are not in the bag). */
+  let safari: { balls: number } | null = null;
   /** A menu over the fight (which pauses it). */
   let modal: 'none' | 'results' | 'party' = 'none';
   let results: ResultsState | null = null;
@@ -283,13 +291,30 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
         return { label: t(`hunt.${kind}`), testid: `hunt-${kind}`, onClick: () => startHunt(kind) };
       });
     if (hunts[0]) hunts[0].primary = true;
+    const g = gymIn(here.id);
+    const gymButton: Button[] = !g
+      ? []
+      : s.badges.includes(g.badge)
+        ? [{ label: t('city.gymBeaten', { badge: t(`badge.${g.badge}` as MessageKey) }), testid: 'city-gym', disabled: true, onClick: () => {} }]
+        : canChallenge(g, s.badges)
+          ? [{ label: t('city.gym', { leader: g.leader, type: t(`type.${g.type}` as MessageKey) }), testid: 'city-gym', onClick: () => startGym(g) }]
+          : [{ label: t('city.gymLocked', { badges: g.badges }), testid: 'city-gym', disabled: true, onClick: () => {} }];
+    const safariButton: Button[] = here.safari
+      ? [{ label: t('city.safari', { price: SAFARI_ENTRANCE }), testid: 'city-safari', disabled: s.money < SAFARI_ENTRANCE, onClick: enterSafari }]
+      : [];
     renderMenu(overlayRoot, {
       title: t(cityKey(s.location)),
       testid: 'city',
-      info: [moneyLine(s), t('city.dex', { seen: s.dex.seen.length, caught: s.dex.caught.length })],
+      info: [
+        moneyLine(s),
+        t('city.dex', { seen: s.dex.seen.length, caught: s.dex.caught.length }),
+        t('city.badges', { count: s.badges.length }),
+      ],
       sections: [],
       buttons: [
         ...hunts,
+        ...gymButton,
+        ...safariButton,
         { label: t('city.training'), testid: 'city-training', onClick: startTrainer },
         { label: t('city.center'), testid: 'city-center', onClick: () => showCenter(null) },
         ...(here.shop ? [{ label: t('city.shop'), testid: 'city-shop', onClick: () => showShop(null) }] : []),
@@ -423,7 +448,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
   function showMap() {
     if (!save) return;
     const s = save;
-    const badges = 0;
+    const badges = s.badges.length;
     scene = 'menu';
     show();
     renderMenu(overlayRoot, {
@@ -468,6 +493,8 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     director?: Director;
     intro?: Banner;
     opponent?: Opponent;
+    style?: Style;
+    roundFrames?: number;
   }
 
   function enterFight(next: FightMode, player: TeamMember[], opponents: TeamMember[], setup: FightSetup = {}) {
@@ -483,6 +510,10 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       seed,
       director: setup.director,
       intro: setup.intro,
+      style: setup.style,
+      roundFrames: setup.roundFrames,
+      // The training tools (infinite PP, switching the opponent…) are for the practice demo only, never the journey.
+      tools: next === 'demo',
     });
     preloadSprites([...player, ...opponents].map(member => member.speciesId));
     keys.clear();
@@ -505,6 +536,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     const party = readyParty();
     const opponents = trainingOpponents(party);
     wild = null;
+    gym = null;
     update(s => ({ ...s, dex: register(s, opponents.map(p => p.speciesId)) }));
     enterFight('trainer', party.map(toFighter), opponents.map(toFighter), {
       intro: { step: null, key: 'trainer.challenge', params: {} },
@@ -519,6 +551,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     if (table.length === 0) return;
     const party = readyParty();
     wild = wildPokemon(rollEncounter(table, rng), rng);
+    gym = null;
     const found = wild;
     update(current => ({ ...current, dex: register(current, [found.speciesId]) }));
     enterFight('wild', party.map(toFighter), [toFighter(found)], {
@@ -527,10 +560,74 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     });
   }
 
-  /** Esc during a fight: back to where it was started from (running away from a wild Pokémon; not in the tutorial). */
+  /** A gym: the leader's words, then their whole team, one Pokémon at a time, with a CPU style that suits the type. */
+  function startGym(g: Gym) {
+    if (!save || !canChallenge(g, save.badges)) return;
+    tell([{ speaker: g.leader, key: `leader.${g.badge}.intro` as MessageKey, params: {} }], () => {
+      const party = readyParty();
+      const team = gymTeam(g);
+      gym = g;
+      wild = null;
+      update(s => ({ ...s, dex: register(s, team.map(p => p.speciesId)) }));
+      enterFight('gym', party.map(toFighter), team.map(toFighter), {
+        opponent: `cpu-${g.ai.difficulty}`,
+        style: g.ai.style,
+        intro: { step: null, key: 'gym.challenge', params: { leader: g.leader } },
+      });
+    });
+  }
+
+  /** The Safari Zone: pay, get 30 Safari Balls, and meet its Pokémon until the balls run out or you leave. */
+  function enterSafari() {
+    if (!save || save.money < SAFARI_ENTRANCE) return;
+    update(s => ({ ...s, money: s.money - SAFARI_ENTRANCE }));
+    safari = { balls: SAFARI_BALLS };
+    showSafari();
+  }
+
+  function showSafari() {
+    if (!save || !safari) return goCity();
+    leaveFight();
+    scene = 'menu';
+    show();
+    const over = safari.balls === 0;
+    renderMenu(overlayRoot, {
+      title: t('safari.title'),
+      testid: 'safari',
+      info: [t('safari.balls', { count: safari.balls }), t(over ? 'safari.over' : 'safari.rule')],
+      sections: [],
+      buttons: [
+        ...(over ? [] : [{ label: t('safari.search'), testid: 'safari-search', primary: true, onClick: searchSafari }]),
+        { label: t('safari.leave'), testid: 'safari-leave', primary: over, onClick: leaveSafari },
+      ],
+    });
+  }
+
+  function searchSafari() {
+    if (!save || !safari) return;
+    const table = tableForAreas(city(save.location).safari ?? [], 'walk');
+    if (table.length === 0) return;
+    const found = wildPokemon(rollEncounter(table, rng), rng);
+    gym = null;
+    update(s => ({ ...s, dex: register(s, [found.speciesId]) }));
+    enterFight('safari', save.party.map(toFighter), [toFighter(found)], {
+      opponent: 'cpu-easy',
+      roundFrames: SAFARI_SECONDS * 60,
+      intro: { step: null, key: 'wild.appeared', params: { name: nameOf(found) } },
+    });
+    wild = found;
+  }
+
+  function leaveSafari() {
+    safari = null;
+    goCity();
+  }
+
+  /** Esc during a fight: back to where it was started from (running away; not in the tutorial). */
   function leaveCurrentFight() {
     if (scene !== 'fight' || modal !== 'none' || mode === 'tutorial') return;
     if (mode === 'demo') goTitle();
+    else if (mode === 'safari') showSafari();
     else goCity();
   }
 
@@ -551,14 +648,16 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
 
     if (state.capture && s) {
       const target = state.capture.pokemon;
-      const balls = BALLS.filter(ball => countOf(s.bag, ball) > 0);
+      // In the Safari Zone only Safari Balls can be thrown; elsewhere, the bag's balls.
+      const ballsLeft = (ball: BallId) => (ball === 'safari-ball' ? (safari?.balls ?? 0) : countOf(s.bag, ball));
+      const balls = mode === 'safari' ? (['safari-ball'] as BallId[]) : BALLS.filter(ball => ballsLeft(ball) > 0);
       renderResults(overlayRoot, {
         title,
         lines,
         prompt: t('capture.prompt', { name: nameOf(target) }),
         buttons: [
           ...balls.map((ball, i) => ({
-            label: t('capture.throw', { ball: itemName(ball), count: countOf(s.bag, ball) }),
+            label: t('capture.throw', { ball: itemName(ball), count: ballsLeft(ball) }),
             testid: `throw-${ball}`,
             primary: i === 0,
             onClick: () => throwAt(ball),
@@ -599,10 +698,11 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       ball: ITEMS[ball].kind === 'ball' ? ITEMS[ball].bonus : 1,
       wildLevel: pokemon.level,
       playerLevel,
-      badges: 0,
+      badges: save.badges.length,
     });
     const thrown = throwBall(x, rng);
-    update(s => ({ ...s, bag: removeItem(s.bag, ball) }));
+    if (ball === 'safari-ball' && safari) safari.balls--;
+    else update(s => ({ ...s, bag: removeItem(s.bag, ball) }));
     const name = nameOf(pokemon);
     if (thrown.caught) {
       // A caught Pokémon arrives rested (it was knocked out in the battle).
@@ -680,15 +780,40 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
           endPrologue(outcome);
         },
       };
+    } else if (finished === 'safari') {
+      // Nothing in the Safari Zone hurts for long: the party recovers after every encounter, and losing costs nothing.
+      // A Pokémon that isn't knocked out in time flees.
+      const { party, report } = afterBattle(save.party, battle, false);
+      const lines = report.lines.map(line => lineFor(line, party));
+      const fled = outcome !== 'win' || battle.round.timeOver;
+      update(s => ({ ...s, party: party.map(heal) }));
+      if (fled && opponent) lines.push({ key: 'safari.fled', params: { name: nameOf(opponent) } });
+      const winner = battle.teams[0][battle.active[0]];
+      results = {
+        outcome: fled ? 'draw' : 'win',
+        lines,
+        capture: !fled && opponent && safari && safari.balls > 0 ? { pokemon: opponent, playerLevel: winner.level } : null,
+        evolutions: report.evolutions,
+        onContinue: () => {
+          closeModal();
+          showSafari();
+        },
+      };
     } else {
-      // Trainers give 1.5× XP and prize money; a wild Pokémon can be caught. Losing costs half the money (and heals).
-      const { party, report } = afterBattle(save.party, battle, finished === 'trainer');
+      // Trainers and leaders give 1.5× XP and prize money (leaders also a badge); a wild Pokémon can be caught.
+      // Losing costs half the money (and heals).
+      const { party, report } = afterBattle(save.party, battle, finished !== 'wild');
       const lines = report.lines.map(line => lineFor(line, party));
       let next = { ...save, party };
-      if (outcome === 'win' && finished === 'trainer') {
-        const prize = prizeMoney(battle.teams[1].map(m => m.level));
+      const leader = finished === 'gym' ? gym : null;
+      if (outcome === 'win' && (finished === 'trainer' || leader)) {
+        const prize = leader ? leaderPrize(leader) : prizeMoney(battle.teams[1].map(m => m.level));
         next = { ...next, money: Math.min(MAX_MONEY, next.money + prize) };
         lines.push({ key: 'results.prize', params: { money: prize } });
+      }
+      if (outcome === 'win' && leader) {
+        next = { ...next, badges: [...next.badges, leader.badge] };
+        lines.push({ key: 'gym.badgeEarned', params: { badge: t(`badge.${leader.badge}` as MessageKey) } });
       }
       if (outcome === 'loss') {
         const kept = moneyAfterLoss(next.money);
@@ -706,7 +831,10 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
         evolutions: outcome === 'loss' ? [] : report.evolutions,
         onContinue: () => {
           closeModal();
-          goCity();
+          if (!leader) return goCity();
+          // The leader has the last word.
+          const key = (outcome === 'win' ? `leader.${leader.badge}.beaten` : 'gym.lost') as MessageKey;
+          tell([{ speaker: leader.leader, key, params: {} }], goCity);
         },
       };
     }
@@ -730,6 +858,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
         partyChanged = true;
       };
       const potions = (['potion', 'super-potion', 'hyper-potion'] as PotionId[]).filter(id => countOf(s.bag, id) > 0 && canUsePotion(p));
+      const evolvers = EVOLUTION_ITEMS.filter(id => countOf(s.bag, id) > 0 && itemEvolution(p, id));
       return {
         name: sp.name,
         level: t('party.level', { level: p.level }),
@@ -753,7 +882,24 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
             partyChanged = true;
             showParty();
           },
-        })),
+        })).concat(
+          evolvers.map(id => ({
+            label: t('party.evolveWith', { item: itemName(id) }),
+            testid: `evolve-${id}-${index}`,
+            onClick: () => {
+              const to = itemEvolution(p, id)!.to;
+              preloadSprites([to]);
+              update(current => ({
+                ...current,
+                bag: removeItem(current.bag, id),
+                party: current.party.map((q, i) => (i === index ? evolve(q, to).pokemon : q)),
+                dex: register(current, [], [to]),
+              }));
+              partyChanged = true;
+              showParty();
+            },
+          })),
+        ),
       };
     };
     renderParty(overlayRoot, {
@@ -770,7 +916,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
    */
   function toggleParty() {
     if (!save || save.prologue !== 'done') return;
-    const inFight = scene === 'fight' && (mode === 'trainer' || mode === 'wild');
+    const inFight = scene === 'fight' && (mode === 'trainer' || mode === 'wild' || mode === 'gym');
     if (!inFight && scene !== 'city') return;
     if (modal === 'party') {
       modal = 'none';

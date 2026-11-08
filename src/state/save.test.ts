@@ -79,7 +79,7 @@ describe('save version 3', () => {
     expect(result.status).toBe('ok');
     if (result.status !== 'ok') return;
     const owned = v2.party.map((p: { speciesId: number }) => p.speciesId);
-    expect(result.save).toMatchObject({ version: 3, money: 3000, bag: { 'poke-ball': 5 } });
+    expect(result.save).toMatchObject({ version: SAVE_VERSION, money: 3000, bag: { 'poke-ball': 5 } });
     expect(result.save.dex.caught.sort()).toEqual([...new Set(owned)].sort());
     expect(result.save.dex.seen).toContain(v2.rival.starterId);
   });
@@ -89,6 +89,20 @@ describe('save version 3', () => {
     expect(broken(save(), s => ((s.bag as Record<string, number>)['rare-candy'] = 1))).toMatchObject({ reason: 'invalid' });
     expect(broken(save(), s => (s.bag = { 'poke-ball': 0 }))).toMatchObject({ reason: 'invalid' });
     expect(broken(save(), s => s.dex.caught.push(999))).toMatchObject({ reason: 'invalid' });
+  });
+});
+
+describe('save version 4', () => {
+  it('version 3 saves (before the gyms) have no badges', () => {
+    const v3 = readFileSync(new URL('./fixtures/save-v3-pallet-starter.json', import.meta.url), 'utf8');
+    const result = parseSave(v3);
+    expect(result).toMatchObject({ status: 'ok', save: { version: SAVE_VERSION, badges: [] } });
+  });
+
+  it('only real badges, each once', () => {
+    expect(broken(save(), s => (s.badges = ['boulder', 'cascade']))).toMatchObject({ status: 'ok' });
+    expect(broken(save(), s => (s.badges = ['shiny']))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => (s.badges = ['boulder', 'boulder']))).toMatchObject({ reason: 'invalid' });
   });
 });
 

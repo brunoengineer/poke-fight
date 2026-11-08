@@ -41,11 +41,15 @@ export function bestRod(owned: (rod: RodId) => boolean): RodId | null {
   return [...RODS].reverse().find(owned) ?? null;
 }
 
+/** Everything found in these areas with this method. */
+export const tableForAreas = (areas: readonly string[], method: Method): EncounterEntry[] =>
+  areas.flatMap(area => INDEX.get(area)?.get(method) ?? []);
+
 /** Everything that can appear when hunting this kind of ground in this city (water needs a rod). */
 export function encounterTable(city: City, kind: HuntKind, rod: RodId | null): EncounterEntry[] {
   const method: Method | null = kind === 'water' ? rod : 'walk';
   if (!method) return [];
-  return (city.hunts[kind] ?? []).flatMap(area => INDEX.get(area)?.get(method) ?? []);
+  return tableForAreas(city.hunts[kind] ?? [], method);
 }
 
 export interface WildRoll {

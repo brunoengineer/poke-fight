@@ -1,0 +1,106 @@
+{
+ "version": 4,
+ "createdAt": 1794096000000,
+ "settings": {
+  "language": "en"
+ },
+ "player": {
+  "name": "Kai"
+ },
+ "rival": {
+  "name": "Ren",
+  "starterId": 7
+ },
+ "starterId": 5,
+ "prologue": "done",
+ "location": "pewter",
+ "party": [
+  {
+   "speciesId": 5,
+   "level": 30,
+   "xp": 21760,
+   "ivs": {
+    "hp": 15,
+    "atk": 15,
+    "def": 15,
+    "spa": 15,
+    "spd": 15,
+    "spe": 15
+   },
+   "hp": 790,
+   "moves": [
+    "ember",
+    "growl",
+    "scratch",
+    "leer",
+    "rage"
+   ],
+   "specials": {
+    "elemental": "ember",
+    "big": "ember"
+   }
+  },
+  {
+   "speciesId": 64,
+   "level": 30,
+   "xp": 21760,
+   "ivs": {
+    "hp": 15,
+    "atk": 15,
+    "def": 15,
+    "spa": 15,
+    "spd": 15,
+    "spe": 15
+   },
+   "hp": 680,
+   "moves": [
+    "confusion",
+    "disable",
+    "teleport",
+    "psybeam"
+   ],
+   "specials": {
+    "elemental": "psybeam",
+    "big": "psybeam"
+   }
+  },
+  {
+   "speciesId": 67,
+   "level": 30,
+   "xp": 21760,
+   "ivs": {
+    "hp": 15,
+    "atk": 15,
+    "def": 15,
+    "spa": 15,
+    "spd": 15,
+    "spe": 15
+   },
+   "hp": 920,
+   "moves": [
+    "karate-chop",
+    "leer",
+    "low-kick"
+   ],
+   "specials": {
+    "elemental": "karate-chop",
+    "big": "karate-chop"
+   }
+  }
+ ],
+ "box": [],
+ "money": 3000,
+ "bag": {
+  "poke-ball": 5
+ },
+ "dex": {
+  "seen": [
+   5,
+   7
+  ],
+  "caught": [
+   5
+  ]
+ },
+ "badges": []
+}

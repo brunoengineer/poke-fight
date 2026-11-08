@@ -1,6 +1,7 @@
 // Growing: XP, level ups (stats and new moves), evolution and choosing specials. Pure: each function returns a new
 // Pokémon and never changes the one it was given.
 
+import type { EvolutionItemId } from '../data/items';
 import { species, type Evolution } from '../data/pokedex';
 import { isDamaging, STRUGGLE } from './moves';
 import { maxHpOf, type Pokemon } from './pokemon';
@@ -47,10 +48,23 @@ export function gainXp(pokemon: Pokemon, amount: number): XpResult {
   return { pokemon: p, levelUps };
 }
 
-/** A level evolution this Pokémon has reached (stones and trades come with the shop, milestone 8). */
+/** A level evolution this Pokémon has reached (stones and trades: itemEvolution). */
 export function levelEvolution(pokemon: Pokemon): Evolution | null {
   if (pokemon.hp === 0) return null;
   return species(pokemon.speciesId).evolutions.find(e => e.kind === 'level' && pokemon.level >= e.level) ?? null;
+}
+
+/**
+ * An evolution this item starts: a stone for stone evolutions, the Link Cable for trade evolutions (decided default:
+ * trading becomes an item). Fainted Pokémon can't evolve.
+ */
+export function itemEvolution(pokemon: Pokemon, item: EvolutionItemId): Evolution | null {
+  if (pokemon.hp === 0) return null;
+  return (
+    species(pokemon.speciesId).evolutions.find(e =>
+      item === 'link-cable' ? e.kind === 'trade' && !e.item : e.kind === 'item' && e.item === item,
+    ) ?? null
+  );
 }
 
 export interface EvolveResult {

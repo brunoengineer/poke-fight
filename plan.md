@@ -444,6 +444,23 @@ World map (cities unlocked by badges)
   practice demo, never in a journey fight.
 - **Save version 4**: badges.
 
+**Built in milestone 9** (pinned by `league.test.ts`, `save.test.ts`, `e2e/league.spec.ts`):
+
+- **The Pokémon League** at Indigo Plateau (8 badges): the Elite Four with their Red/Blue teams (Lorelei, Bruno,
+  Agatha, Lance) and the **Champion: the rival**, with the Red/Blue champion team that matches the starter they took
+  (ending with Blastoise, Venusaur or Charizard Lv. 65). All hard CPUs, with styles that suit them. Lines are
+  original (EN/PT).
+- **A run** is the five battles in a row. Between them, only a menu: who's next, the party (potions), Challenge or
+  Give up. HP carries over; a loss anywhere costs half the money and ends the run. No running away. Each win pays
+  99 × the opponent's strongest level.
+- **The ending**: the rival's and the Professor's last words, the **Hall of Fame** (saved, one entry per win), the
+  credits, and the **next-region hook**. Only Kanto exists, so the journey stays in Kanto as Champion (★ in the
+  city), and the League can be challenged again.
+- **Next region (decided default, the question had no answer)**: the party, box, money and Pokédex travel along;
+  badges and the League start over. `src/data/regions/index.ts` lists the regions in order; a new region is a new
+  data file plus its generated Pokémon data.
+- **Save version 5**: region, champion, Hall of Fame.
+
 ## 7. Architecture
 
 ### 7.1 Stack (same as poke-gacha)
@@ -570,7 +587,7 @@ Each milestone ends with something playable, tests, and green CI.
 | 6 | ✅ **Prologue** | Title → starter → interactive rival tutorial → arrive at Viridian |
 | 7 | ✅ **World loop** | World map, cities, hunt (grass/water/cave), capture with balls, Pokémon Center, first shop, box |
 | 8 | ✅ **Gyms** | KOF-style team battles, trainers, 8 gyms with AI styles, badges unlock cities, mall, Safari Zone |
-| 9 | **League** | Elite Four + Champion, credits, "next region" hook (scalability check) |
+| 9 | ✅ **League** | Elite Four + Champion, credits, "next region" hook (scalability check) |
 | 10 | **Juice & polish** | Sound effects, music, cries, screen shake, particles, rebinding UI, options, balance pass |
 
 Milestones 1–3 come **before** any Pokémon content on purpose: if the fight doesn't feel good with rectangles, the
@@ -611,10 +628,12 @@ sprites won't save it.
 | PC box | Swap Pokémon freely in any city |
 | Trade evolutions | A Link Cable item (default chosen in milestone 8: easy to change) |
 | Gym leaders | The Red/Blue leaders, badges and teams; their lines are original |
+| League | The Red/Blue Elite Four; the Champion is the rival with the matching Red/Blue team |
+| Next region | Party, box, money and Pokédex carry over; badges and League start over (default) |
 | Back dash | Invincible on its first 6 frames, punishable after |
 | Capture failure | One throw per win; if it breaks free, it flees |
 
 ### Still open
 
-1. **Next region**: what carries over to the new journey? (milestone 9)
-2. **Gym trainers and rematches**: trainers to beat before each leader, and rematching leaders later?
+1. **Gym trainers and rematches**: trainers to beat before each leader, and rematching leaders later?
+2. **Post-game**: legendary encounters (Articuno, Zapdos, Moltres, Mewtwo in Cerulean Cave), as in Red/Blue?

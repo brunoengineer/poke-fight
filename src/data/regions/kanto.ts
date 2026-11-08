@@ -152,3 +152,56 @@ export function city(id: string): City {
 }
 
 export const isUnlocked = (c: City, badges: number) => badges >= c.badges;
+
+/** The Pokémon League (Indigo Plateau, 8 badges): four battles in a row, then the Champion. */
+export interface LeagueMember {
+  id: string;
+  name: string;
+  type: string;
+  team: readonly (readonly [species: string, level: number])[];
+  ai: { difficulty: Difficulty; style: Style };
+}
+
+/** The Elite Four, with their Red/Blue teams. */
+export const ELITE_FOUR: readonly LeagueMember[] = [
+  {
+    id: 'lorelei',
+    name: 'Lorelei',
+    type: 'ice',
+    team: [['dewgong', 54], ['cloyster', 53], ['slowbro', 54], ['jynx', 56], ['lapras', 56]],
+    ai: { difficulty: 'hard', style: 'zoner' },
+  },
+  {
+    id: 'bruno',
+    name: 'Bruno',
+    type: 'fighting',
+    team: [['onix', 53], ['hitmonchan', 55], ['hitmonlee', 55], ['onix', 56], ['machamp', 58]],
+    ai: { difficulty: 'hard', style: 'aggressive' },
+  },
+  {
+    id: 'agatha',
+    name: 'Agatha',
+    type: 'ghost',
+    team: [['gengar', 56], ['golbat', 56], ['haunter', 55], ['arbok', 58], ['gengar', 60]],
+    ai: { difficulty: 'hard', style: 'defensive' },
+  },
+  {
+    id: 'lance',
+    name: 'Lance',
+    type: 'dragon',
+    team: [['gyarados', 58], ['dragonair', 56], ['dragonair', 56], ['aerodactyl', 60], ['dragonite', 62]],
+    ai: { difficulty: 'hard', style: 'aggressive' },
+  },
+];
+
+/** The Champion is the rival: their Red/Blue team depends on the starter they took (by species id). */
+export const CHAMPION_TEAMS: Record<number, readonly (readonly [species: string, level: number])[]> = {
+  7: [['pidgeot', 61], ['alakazam', 59], ['rhydon', 61], ['arcanine', 61], ['exeggutor', 63], ['blastoise', 65]],
+  1: [['pidgeot', 61], ['alakazam', 59], ['rhydon', 61], ['gyarados', 61], ['arcanine', 63], ['venusaur', 65]],
+  4: [['pidgeot', 61], ['alakazam', 59], ['rhydon', 61], ['exeggutor', 61], ['gyarados', 63], ['charizard', 65]],
+};
+
+export const CHAMPION_AI: LeagueMember['ai'] = { difficulty: 'hard', style: 'balanced' };
+
+/** Where the League is. */
+export const LEAGUE_CITY = 'indigo';

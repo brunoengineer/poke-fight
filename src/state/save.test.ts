@@ -106,6 +106,23 @@ describe('save version 4', () => {
   });
 });
 
+describe('save version 5', () => {
+  it('a new journey is in Kanto, not Champion yet, with an empty Hall of Fame', () => {
+    expect(save()).toMatchObject({ region: 'kanto', champion: false, hallOfFame: [] });
+  });
+
+  it('every older fixture reaches version 5', () => {
+    const v4 = readFileSync(new URL('./fixtures/save-v4-team.json', import.meta.url), 'utf8');
+    expect(parseSave(v4)).toMatchObject({ status: 'ok', save: { version: SAVE_VERSION, region: 'kanto', champion: false, hallOfFame: [] } });
+  });
+
+  it('refuses an unknown region or a broken Hall of Fame', () => {
+    expect(broken(save(), s => (s.region = 'johto' as never))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => (s.hallOfFame = [{ at: 1, team: [] }]))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => (s.hallOfFame = [{ at: 1, team: [{ speciesId: 6, level: 70 }] }]))).toMatchObject({ status: 'ok' });
+  });
+});
+
 describe('save store', () => {
   it('writes and loads the save', () => {
     const storage = memoryStorage();

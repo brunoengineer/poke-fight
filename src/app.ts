@@ -3,7 +3,8 @@
 
 import { BALLS, EVOLUTION_ITEMS, ITEMS, type BallId, type ItemId, type PotionId } from './data/items';
 import { move, species } from './data/pokedex';
-import { city, gymIn, isUnlocked, KANTO, type Gym, type HuntKind } from './data/regions/kanto';
+import { nextRegion } from './data/regions';
+import { city, gymIn, isUnlocked, KANTO, LEAGUE_CITY, type Gym, type HuntKind } from './data/regions/kanto';
 import { readFirstPad } from './engine/input/gamepad';
 import { attachKeyboard } from './engine/input/keyboard';
 import { createKeyLatch } from './engine/input/keys';
@@ -17,6 +18,7 @@ import { catchValue, throwBall } from './game/capture';
 import { buy, canUsePotion, countOf, MAX_MONEY, moneyAfterLoss, prizeMoney, removeItem, usePotion } from './game/economy';
 import { bestRod, encounterTable, rollEncounter, tableForAreas, wildPokemon } from './game/encounters';
 import { canChallenge, gymTeam, leaderPrize } from './game/gym';
+import { canEnterLeague, LEAGUE_SIZE, leagueOpponent, leaguePrize, type LeagueOpponent } from './game/league';
 import { displayHp, maxHpOf, toFighter, type Pokemon } from './game/pokemon';
 import { evolve, heal, itemEvolution, setSpecial, specialOptions } from './game/progress';
 import { SAFARI_BALLS, SAFARI_ENTRANCE, SAFARI_SECONDS } from './game/safari';
@@ -43,7 +45,7 @@ type Said = Line & { speaker: string };
  * money), a gym leader (a badge), a wild Pokémon (hunting: XP and a chance to catch it), a Safari Zone Pokémon
  * (30 seconds, Safari Balls), and the rival tutorial.
  */
-type FightMode = 'demo' | 'trainer' | 'gym' | 'wild' | 'safari' | 'tutorial';
+type FightMode = 'demo' | 'trainer' | 'gym' | 'wild' | 'safari' | 'league' | 'tutorial';
 type Scene = 'title' | 'story' | 'starter' | 'fight' | 'city' | 'menu';
 
 interface ResultsState {
@@ -126,6 +128,10 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
   let gym: Gym | null = null;
   /** The Safari Game in progress (its balls are not in the bag). */
   let safari: { balls: number } | null = null;
+  /** A League run in progress: which of the five battles comes next. */
+  let league: { stage: number } | null = null;
+  /** Where the party screen goes back to when it closes. */
+  let partyFrom: 'city' | 'league' | 'fight' = 'city';
   /** A menu over the fight (which pauses it). */
   let modal: 'none' | 'results' | 'party' = 'none';
   let results: ResultsState | null = null;
@@ -299,6 +305,12 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
         : canChallenge(g, s.badges)
           ? [{ label: t('city.gym', { leader: g.leader, type: t(`type.${g.type}` as MessageKey) }), testid: 'city-gym', onClick: () => startGym(g) }]
           : [{ label: t('city.gymLocked', { badges: g.badges }), testid: 'city-gym', disabled: true, onClick: () => {} }];
+    const leagueButton: Button[] =
+      here.id !== LEAGUE_CITY
+        ? []
+        : canEnterLeague(s.badges)
+          ? [{ label: t('city.league'), testid: 'city-league', onClick: startLeague }]
+          : [{ label: t('city.leagueLocked'), testid: 'city-league', disabled: true, onClick: () => {} }];
     const safariButton: Button[] = here.safari
       ? [{ label: t('city.safari', { price: SAFARI_ENTRANCE }), testid: 'city-safari', disabled: s.money < SAFARI_ENTRANCE, onClick: enterSafari }]
       : [];
@@ -309,11 +321,13 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
         moneyLine(s),
         t('city.dex', { seen: s.dex.seen.length, caught: s.dex.caught.length }),
         t('city.badges', { count: s.badges.length }),
+        ...(s.champion ? [t('city.champion')] : []),
       ],
       sections: [],
       buttons: [
         ...hunts,
         ...gymButton,
+        ...leagueButton,
         ...safariButton,
         { label: t('city.training'), testid: 'city-training', onClick: startTrainer },
         { label: t('city.center'), testid: 'city-center', onClick: () => showCenter(null) },
@@ -623,9 +637,120 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     goCity();
   }
 
-  /** Esc during a fight: back to where it was started from (running away; not in the tutorial). */
+  // ── The Pokémon League ────────────────────────────────────────────────────────────────────────────────────────
+  const whoIs = (opponent: LeagueOpponent) =>
+    opponent.kind === 'elite'
+      ? t('league.elite', { name: opponent.name, type: t(`type.${opponent.type}` as MessageKey) })
+      : t('league.champion', { name: opponent.name });
+  const leagueLine = (opponent: LeagueOpponent, moment: 'intro' | 'beaten'): Said => ({
+    speaker: opponent.name,
+    key: (opponent.kind === 'champion' ? `champion.${moment}` : `elite.${opponent.id}.${moment}`) as MessageKey,
+    params: { player: save?.player.name ?? '' },
+  });
+
+  function startLeague() {
+    if (!save || !canEnterLeague(save.badges)) return;
+    league = { stage: 0 };
+    showLeague();
+  }
+
+  /** Between League battles: who's next, the party (potions), or giving up. No Pokémon Center here. */
+  function showLeague() {
+    if (!save || !league) return goCity();
+    leaveFight();
+    scene = 'menu';
+    show();
+    const next = leagueOpponent(league.stage, save.rival);
+    renderMenu(overlayRoot, {
+      title: t('league.title'),
+      testid: 'league',
+      info: [t('league.progress', { n: league.stage + 1, total: LEAGUE_SIZE }), t('league.next', { who: whoIs(next) }), t('league.hint')],
+      sections: [],
+      buttons: [
+        { label: t('league.challenge'), testid: 'league-next', primary: true, onClick: fightLeague },
+        { label: t('city.party'), testid: 'league-party', onClick: toggleParty },
+        { label: t('league.giveUp'), testid: 'league-leave', onClick: leaveLeague },
+      ],
+    });
+  }
+
+  function fightLeague() {
+    if (!save || !league) return;
+    const opponent = leagueOpponent(league.stage, save.rival);
+    tell([leagueLine(opponent, 'intro')], () => {
+      if (!save) return;
+      gym = null;
+      wild = null;
+      update(s => ({ ...s, dex: register(s, opponent.team.map(p => p.speciesId)) }));
+      enterFight('league', save.party.map(toFighter), opponent.team.map(toFighter), {
+        opponent: `cpu-${opponent.ai.difficulty}`,
+        style: opponent.ai.style,
+        intro: { step: null, key: 'league.wants', params: { who: whoIs(opponent) } },
+      });
+    });
+  }
+
+  function leaveLeague() {
+    league = null;
+    goCity();
+  }
+
+  /** The Champion is beaten: the Professor, the Hall of Fame, the credits, and the next region (later). */
+  function championEnding() {
+    if (!save) return;
+    league = null;
+    const team = save.party.map(p => ({ speciesId: p.speciesId, level: p.level }));
+    update(s => ({ ...s, champion: true, hallOfFame: [...s.hallOfFame, { at: Date.now(), team }] }));
+    tell([professor('story.champion', { player: save.player.name })], showHallOfFame);
+  }
+
+  function showHallOfFame() {
+    if (!save) return;
+    scene = 'menu';
+    show();
+    const entry = save.hallOfFame[save.hallOfFame.length - 1];
+    renderMenu(overlayRoot, {
+      title: t('hof.title'),
+      testid: 'hall-of-fame',
+      info: [t('hof.entry', { n: save.hallOfFame.length })],
+      sections: [{ rows: entry.team.map(m => ({ label: species(m.speciesId).name, detail: t('party.level', { level: m.level }), buttons: [] })) }],
+      buttons: [{ label: t('dialog.next'), testid: 'hof-next', primary: true, onClick: showCredits }],
+    });
+  }
+
+  function showCredits() {
+    scene = 'menu';
+    show();
+    renderMenu(overlayRoot, {
+      title: t('credits.title'),
+      testid: 'credits',
+      info: [t('credits.study'), t('credits.data'), t('credits.rights')],
+      sections: [],
+      buttons: [{ label: t('dialog.next'), testid: 'credits-next', primary: true, onClick: showNextRegion }],
+    });
+  }
+
+  /** The hook for the next region: it doesn't exist yet, so the journey stays in Kanto (post-game). */
+  function showNextRegion() {
+    if (!save) return;
+    scene = 'menu';
+    show();
+    const next = nextRegion(save.region);
+    renderMenu(overlayRoot, {
+      title: t('next.title'),
+      testid: 'next-region',
+      info: [t('next.text')],
+      sections: [],
+      buttons: [
+        { label: t('next.go'), testid: 'next-region-go', disabled: next === null, onClick: () => {} },
+        { label: t('next.stay'), testid: 'next-region-stay', primary: true, onClick: goCity },
+      ],
+    });
+  }
+
+  /** Esc during a fight: back to where it was started from (running away; not in the tutorial or the League). */
   function leaveCurrentFight() {
-    if (scene !== 'fight' || modal !== 'none' || mode === 'tutorial') return;
+    if (scene !== 'fight' || modal !== 'none' || mode === 'tutorial' || mode === 'league') return;
     if (mode === 'demo') goTitle();
     else if (mode === 'safari') showSafari();
     else goCity();
@@ -780,6 +905,41 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
           endPrologue(outcome);
         },
       };
+    } else if (finished === 'league' && league) {
+      // HP carries over to the next battle; a win pays and moves on, anything else ends the run.
+      const run = league;
+      const opponent = leagueOpponent(run.stage, save.rival);
+      const { party, report } = afterBattle(save.party, battle, true);
+      const lines = report.lines.map(line => lineFor(line, party));
+      let next = { ...save, party };
+      const won = outcome === 'win';
+      if (won) {
+        const prize = leaguePrize(opponent.team);
+        next = { ...next, money: Math.min(MAX_MONEY, next.money + prize) };
+        lines.push({ key: 'results.prize', params: { money: prize } });
+      } else {
+        const kept = moneyAfterLoss(next.money);
+        lines.push({ key: 'results.whiteout', params: { money: next.money - kept } });
+        next = { ...next, money: kept, party: next.party.map(heal) };
+        league = null;
+      }
+      save = next;
+      persist();
+      results = {
+        outcome,
+        lines,
+        capture: null,
+        evolutions: won ? report.evolutions : [],
+        onContinue: () => {
+          closeModal();
+          if (!won) return goCity();
+          tell([leagueLine(opponent, 'beaten')], () => {
+            run.stage++;
+            if (run.stage >= LEAGUE_SIZE) championEnding();
+            else showLeague();
+          });
+        },
+      };
     } else if (finished === 'safari') {
       // Nothing in the Safari Zone hurts for long: the party recovers after every encounter, and losing costs nothing.
       // A Pokémon that isn't knocked out in time flees.
@@ -916,14 +1076,14 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
    */
   function toggleParty() {
     if (!save || save.prologue !== 'done') return;
-    const inFight = scene === 'fight' && (mode === 'trainer' || mode === 'wild' || mode === 'gym');
-    if (!inFight && scene !== 'city') return;
     if (modal === 'party') {
       modal = 'none';
-      if (inFight) {
+      if (partyFrom === 'fight') {
         hide();
         keys.clear();
         if (partyChanged && sandbox) sandbox.setPlayerTeam(save.party.map(toFighter));
+      } else if (partyFrom === 'league') {
+        showLeague();
       } else {
         goCity();
       }
@@ -931,6 +1091,10 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       return;
     }
     if (modal === 'results') return;
+    const inFight = scene === 'fight' && (mode === 'trainer' || mode === 'wild' || mode === 'gym');
+    const inLeagueMenu = scene === 'menu' && league !== null && !sandbox;
+    if (!inFight && !inLeagueMenu && scene !== 'city') return;
+    partyFrom = inFight ? 'fight' : inLeagueMenu ? 'league' : 'city';
     modal = 'party';
     show();
     showParty();

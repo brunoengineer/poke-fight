@@ -5,6 +5,7 @@
 
 import { isItemId } from '../data/items';
 import { hasSpecies, move } from '../data/pokedex';
+import { isRegion, type RegionId } from '../data/regions';
 import { GYMS } from '../data/regions/kanto';
 import { START_BAG, START_MONEY, type Bag } from '../game/economy';
 import { maxHpOf, type Pokemon } from '../game/pokemon';
@@ -13,7 +14,7 @@ import { DEFAULT_NAMES, MAX_NAME_LENGTH } from '../game/story';
 import { MAX_LEVEL } from '../game/xp';
 import { isLanguage, type Language } from '../i18n';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export interface Settings {
   language: Language;
@@ -43,6 +44,17 @@ export interface Save {
   dex: { seen: number[]; caught: number[] };
   /** Badges won (gym badge ids), in the order they were won. */
   badges: string[];
+  /** The region of the journey (only Kanto so far). */
+  region: RegionId;
+  /** This region's League has been beaten. */
+  champion: boolean;
+  /** Every winning team, newest last. */
+  hallOfFame: HallOfFameEntry[];
+}
+
+export interface HallOfFameEntry {
+  at: number;
+  team: { speciesId: number; level: number }[];
 }
 
 export const MAX_PARTY = 6;
@@ -72,6 +84,9 @@ export function newSave(journey: NewJourney, createdAt: number, language: Langua
     bag: { ...START_BAG },
     dex: { seen: [...new Set([journey.starterId, journey.rivalStarterId])], caught: [journey.starterId] },
     badges: [],
+    region: 'kanto',
+    champion: false,
+    hallOfFame: [],
   };
 }
 
@@ -102,6 +117,8 @@ const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string
   },
   // Version 3 saves (before the gyms opened): no badges yet.
   3: old => ({ ...old, version: 4, badges: [] }),
+  // Version 4 saves (before the League): in Kanto, not Champion yet.
+  4: old => ({ ...old, version: 5, region: 'kanto', champion: false, hallOfFame: [] }),
 };
 
 export type LoadResult =
@@ -158,6 +175,12 @@ export function findProblem(data: Record<string, unknown>): string | null {
   const badges = data.badges;
   const known = GYMS.map(g => g.badge);
   if (!Array.isArray(badges) || badges.some(b => !known.includes(b)) || new Set(badges).size !== badges.length) return 'bad badges';
+  if (typeof data.region !== 'string' || !isRegion(data.region)) return 'bad region';
+  if (typeof data.champion !== 'boolean') return 'bad champion flag';
+  const fame = data.hallOfFame as HallOfFameEntry[] | undefined;
+  const validEntry = (e: HallOfFameEntry) =>
+    Number.isFinite(e?.at) && Array.isArray(e.team) && e.team.length > 0 && e.team.every(m => hasSpecies(m.speciesId) && Number.isInteger(m.level));
+  if (!Array.isArray(fame) || !fame.every(validEntry)) return 'bad Hall of Fame';
   for (const [i, p] of [...party, ...data.box].entries()) {
     const problem = pokemonProblem(p as Pokemon);
     if (problem) return `Pokémon ${i}: ${problem}`;

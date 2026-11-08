@@ -30,14 +30,16 @@ Test mode: open `http://localhost:5173/?test=1` for a fixed seed and a manual cl
 
 ## Status
 
-Milestone 8 (gyms) done: after the prologue (title, the Professor, your starter, a tutorial fight against
+Milestone 9 (the League) done: the whole Kanto journey can be played to the end. after the prologue (title, the Professor, your starter, a tutorial fight against
 your rival), travel Kanto's cities on the world map, hunt in the grass, caves and water (with a fishing rod), catch
 wild Pokémon with Poké Balls, fight trainers on the battle field for money, buy items, heal at the Pokémon Center and
 organize your party in the PC box, beat the 8 gym leaders for their badges (each badge opens more of Kanto), visit
-the Safari Zone, and buy evolution stones at the Saffron mall. Pokémon level up, learn moves and evolve; progress is
-saved in the browser.
+the Safari Zone, buy evolution stones at the Saffron mall, then face the Elite Four and your rival, the Champion, at
+Indigo Plateau, and enter the Hall of Fame. Pokémon level up, learn moves and evolve; progress is saved in the
+browser.
 English and Portuguese. Training (from the title) is a practice mode with Lv. 30 teams.
 WASD or arrows move (steer jumps in the air), J tackle, K elemental special (¼ PP), I big special (full PP), L guard,
 Space dash (+ back: back dash). F1 debug overlay, F2 player 2 (dummy behaviors, CPU easy / normal / hard), F3 infinite
 PP, F4 CPU style, P party, R reset, Esc leave. `?opponent=cpu-hard` (or `stand`, `guard`…) in the URL picks player 2
-in fights. The training tools (F1–F4, R) work in the practice demo only. Next: milestone 9, the Pokémon League. See [plan.md §9](plan.md#9-roadmap-milestones).
+in fights. The training tools (F1–F4, R) work in the practice demo only. Next: milestone 10, polish (sound, music,
+cries, effects, key rebinding, balance). See [plan.md §9](plan.md#9-roadmap-milestones).

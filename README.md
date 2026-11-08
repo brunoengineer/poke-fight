@@ -27,7 +27,8 @@ Test mode: open `http://localhost:5173/?test=1` for a fixed seed and a manual cl
 
 ## Status
 
-Milestone 2 (full move set) done: a 3 vs 3 battle against a training dummy, still with placeholder rectangles.
+Milestone 3 (CPU) done: a 3 vs 3 battle against the CPU, still with placeholder rectangles.
 WASD or arrows move (steer jumps in the air), J tackle, K elemental special (¼ PP), I big special (full PP), L guard,
-Space dash (+ back: back dash). F1 debug overlay, F2 dummy behavior, F3 infinite PP, R reset. Next: milestone 3,
-the CPU. See [plan.md §9](plan.md#9-roadmap-milestones).
+Space dash (+ back: back dash). F1 debug overlay, F2 player 2 (dummy behaviors, CPU easy / normal / hard), F3 infinite
+PP, F4 CPU style, R reset. `?opponent=cpu-hard` (or `stand`, `guard`…) in the URL picks player 2. Next: milestone 4,
+Pokémon data. See [plan.md §9](plan.md#9-roadmap-milestones).

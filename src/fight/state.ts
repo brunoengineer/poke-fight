@@ -60,8 +60,8 @@ export interface Fighter {
   actionLength: number;
   /** Whether the fighter could act on the last simulated frame (standing, walking, guarding or just recovered). */
   actionable: boolean;
-  /** The current attack already hit (an attack hits once). */
-  connected: boolean;
+  /** What the current attack already did (an attack connects once): hit, blocked, or nothing yet. */
+  contact: 'hit' | 'block' | null;
   /** One air move (attack or elemental special) per jump. */
   airAttackUsed: boolean;
   /** Direction of the coming jump, read on each grounded frame of the prejump: 1 forward, -1 back, 0 straight up. */
@@ -75,6 +75,8 @@ export interface Fighter {
 }
 
 export interface Projectile {
+  /** Unique within a fight (the CPU decides once per projectile). */
+  id: number;
   owner: FighterId;
   slot: SpecialSlot;
   type: string;
@@ -145,7 +147,7 @@ function createFighter(id: FighterId, x: number, setup: FighterSetup): Fighter {
     actionFrame: 1,
     actionLength: 0,
     actionable: true,
-    connected: false,
+    contact: null,
     airAttackUsed: false,
     jumpDirection: 0,
     combo: 0,

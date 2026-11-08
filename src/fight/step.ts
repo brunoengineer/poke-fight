@@ -118,7 +118,7 @@ function think(f: Fighter, opponentX: number, events: FightEvent[]) {
 
     if (f.buffer.physical > 0) {
       f.buffer.physical = 0;
-      f.connected = false;
+      f.contact = null;
       setAction(f, 'attack', moveLength(PHYSICAL));
     } else if (f.buffer.special > 0) {
       startSpecial(f, 'elemental', events);
@@ -145,7 +145,7 @@ function think(f: Fighter, opponentX: number, events: FightEvent[]) {
   } else if (inJump) {
     if (f.buffer.physical > 0) {
       f.buffer.physical = 0;
-      f.connected = false;
+      f.contact = null;
       f.airAttackUsed = true;
       setAction(f, 'airAttack');
     } else if (f.buffer.special > 0) {
@@ -165,7 +165,7 @@ function startSpecial(f: Fighter, slot: SpecialSlot, events: FightEvent[]) {
   const airborne = f.y > 0 || f.vy > 0;
   f.buffer[slot === 'elemental' ? 'special' : 'big'] = 0;
   f.pp -= slot === 'elemental' ? ELEMENTAL_COST : PP_MAX;
-  f.connected = false;
+  f.contact = null;
   // In the air it lasts until landing, like the air attack.
   setAction(f, slot, airborne ? 0 : moveLength(moveOf(slot, f.loadout)!));
   events.push({ type: 'special', fighter: f.id, slot });
@@ -231,7 +231,9 @@ function move(f: Fighter) {
       }
       case 'big': {
         const big = currentMove(f)!;
-        const rushing = big.rush && f.actionFrame > big.startup && f.actionFrame <= big.startup + big.active;
+        // A guarded rush stops dead next to the defender (and can be punished); a rush that hits goes through.
+        const rushing =
+          big.rush && f.actionFrame > big.startup && f.actionFrame <= big.startup + big.active && f.contact !== 'block';
         f.vx = rushing ? big.rush!.speed * f.facing : 0;
         break;
       }
@@ -298,6 +300,7 @@ function spawnProjectiles(state: FightState) {
     const slot = f.action === 'big' ? 'big' : 'elemental';
     const p = move.projectile;
     state.projectiles.push({
+      id: state.frame * 2 + f.id,
       owner: f.id,
       slot,
       type: f.loadout[slot].type,
@@ -342,6 +345,8 @@ interface Connection {
   hit: HitData;
   /** The direction the defender is pushed: away from the attacker (or along the projectile's flight). */
   away: number;
+  /** A melee hit (tackle, beam, rush) rather than a projectile: it marks the attacker's move as hit or blocked. */
+  melee: boolean;
 }
 
 function resolveHits(state: FightState, events: FightEvent[]) {
@@ -349,19 +354,20 @@ function resolveHits(state: FightState, events: FightEvent[]) {
   const connections: Connection[] = [];
 
   for (const [attacker, defender] of [[a, b], [b, a]] as const) {
-    if (attacker.connected || isInvincible(defender)) continue;
+    if (attacker.contact || isInvincible(defender)) continue;
     const hitbox = activeHitbox(attacker);
     if (!hitbox || !overlaps(hitbox, bodyBox(defender))) continue;
-    attacker.connected = true;
+    // Marked as a hit for now; applyHit changes it to 'block' if the defender guards.
+    attacker.contact = 'hit';
     // By position, not facing: a jump or a rush can cross over.
     const away = defender.x === attacker.x ? attacker.facing : Math.sign(defender.x - attacker.x);
-    connections.push({ attacker, defender, hit: currentMove(attacker)!.hit, away });
+    connections.push({ attacker, defender, hit: currentMove(attacker)!.hit, away, melee: true });
   }
 
   state.projectiles = state.projectiles.filter(p => {
     const defender = state.fighters[p.owner === 0 ? 1 : 0];
     if (isInvincible(defender) || !overlaps(projectileBox(p), bodyBox(defender))) return true;
-    connections.push({ attacker: state.fighters[p.owner], defender, hit: p.hit, away: Math.sign(p.vx) });
+    connections.push({ attacker: state.fighters[p.owner], defender, hit: p.hit, away: Math.sign(p.vx), melee: false });
     return false;
   });
 
@@ -379,8 +385,9 @@ export const scaledDamage = (damage: number, comboHits: number) =>
 /** Blocked hits freeze for less time than clean hits. */
 const blockHitstop = (hit: HitData) => Math.max(4, Math.floor(hit.hitstop / 2));
 
-function applyHit(state: FightState, { attacker, defender, hit, away }: Connection, events: FightEvent[]) {
+function applyHit(state: FightState, { attacker, defender, hit, away, melee }: Connection, events: FightEvent[]) {
   if (isGuarding(defender)) {
+    if (melee) attacker.contact = 'block';
     const chip = hit.chip ? Math.floor(hit.damage / CHIP_DIVISOR) : 0;
     defender.hp = Math.max(0, defender.hp - chip);
     defender.combo = 0;

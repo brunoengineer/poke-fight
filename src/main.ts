@@ -6,7 +6,7 @@ import { createKeyLatch } from './engine/input/keys';
 import { createFixedStep } from './engine/loop';
 import { render } from './render/renderer';
 import { fitCanvas } from './render/screen';
-import { createSandbox } from './screens/sandbox';
+import { createSandbox, isOpponent } from './screens/sandbox';
 import { installTestHooks, readTestOptions } from './test/hooks';
 
 const options = readTestOptions(location.search);
@@ -20,15 +20,22 @@ const fit = () => fitCanvas(canvas, window.innerWidth, window.innerHeight);
 fit();
 window.addEventListener('resize', fit);
 
-const sandbox = createSandbox();
+// Player 2: the CPU (normal) by default; `?opponent=stand` (or jump, attack, guard, special, cpu-easy, cpu-hard…)
+// picks another one. The browser tests use it to choose a predictable opponent.
+const opponentParam = new URLSearchParams(location.search).get('opponent') ?? 'cpu-normal';
+const sandbox = createSandbox({
+  opponent: isOpponent(opponentParam) ? opponentParam : 'cpu-normal',
+  seed: options.enabled ? options.seed : Date.now() >>> 0,
+});
 const keys = createKeyLatch();
 const restartAfterBattle = () => {
   if (sandbox.view().battle.phase === 'over') sandbox.reset();
 };
 attachKeyboard(window, keys, {
   F1: () => sandbox.toggleDebug(),
-  F2: () => sandbox.cycleDummy(),
+  F2: () => sandbox.cycleOpponent(),
   F3: () => sandbox.toggleInfinitePp(),
+  F4: () => sandbox.cycleStyle(),
   KeyR: () => sandbox.reset(),
   Enter: restartAfterBattle,
 });
@@ -66,7 +73,7 @@ if (options.enabled) {
     battle: () => structuredClone(sandbox.view().battle),
     debug: () => {
       const view = sandbox.view();
-      return { overlay: view.debug, dummy: view.dummy, infinitePp: view.infinitePp, advantage: view.advantage };
+      return { overlay: view.debug, opponent: view.opponent, style: view.style, infinitePp: view.infinitePp, advantage: view.advantage };
     },
     manualClock: options.manualClock,
     seed: options.seed,

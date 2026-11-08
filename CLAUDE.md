@@ -22,7 +22,7 @@ Run all three before saying a task is done. CI (`.github/workflows/ci.yml`) runs
 
 ## Architecture rules
 
-- `src/fight/` and `src/game/` are **pure**: no DOM, no `window`, no time, no `Math.random`. They never import from
+- `src/fight/` (including `fight/ai/`, the CPU) and `src/game/` are **pure**: no DOM, no `window`, no time, no `Math.random`. They never import from
   `render/`, `screens/`, `state/` or `ui/`. Randomness comes from `engine/rng.ts` (seeded, its state lives in the
   game state).
 - The simulation advances in fixed 1/60 s steps (`engine/loop.ts`). Rendering only reads the state.

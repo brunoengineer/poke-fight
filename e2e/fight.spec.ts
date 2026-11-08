@@ -140,11 +140,9 @@ test.describe('battle', () => {
   });
 
   test('when your Pokémon faints, you choose the next one', async ({ page }) => {
-    await openGame(page);
     // The dummy fires specials on a rhythm, with infinite PP; player 1 just stands there.
+    await openGame(page, { opponent: 'special' });
     await page.keyboard.press('F3');
-    for (let i = 0; i < 4; i++) await page.keyboard.press('F2');
-    expect((await page.evaluate(() => window.__pf!.debug())).dummy).toBe('special');
     for (let i = 0; i < 40 && (await battle(page)).phase !== 'choose'; i++) await step(page, 60);
 
     const choosing = await battle(page);
@@ -161,6 +159,22 @@ test.describe('battle', () => {
   });
 });
 
+test.describe('CPU', () => {
+  test('the game starts against the CPU (normal), which attacks on its own', async ({ page }) => {
+    await page.goto('/?test=1');
+    await page.waitForFunction(() => window.__pf !== undefined);
+    expect(await page.evaluate(() => window.__pf!.debug())).toMatchObject({ opponent: 'cpu-normal', style: 'balanced' });
+    await step(page, 600);
+    expect((await snapshot(page)).fighters[0].hp).toBeLessThan(1000);
+  });
+
+  test('F4 changes the CPU style', async ({ page }) => {
+    await openGame(page, { opponent: 'cpu-hard' });
+    await page.keyboard.press('F4');
+    expect(await page.evaluate(() => window.__pf!.debug())).toMatchObject({ opponent: 'cpu-hard', style: 'aggressive' });
+  });
+});
+
 test.describe('sandbox', () => {
   test('R resets the battle at any time', async ({ page }) => {
     await openGame(page);
@@ -171,13 +185,13 @@ test.describe('sandbox', () => {
     expect((await snapshot(page)).frame).toBe(0);
   });
 
-  test('F1 shows the debug overlay, F2 changes the dummy', async ({ page }) => {
+  test('F1 shows the debug overlay, F2 changes player 2', async ({ page }) => {
     await openGame(page);
     const debug = () => page.evaluate(() => window.__pf!.debug());
-    expect(await debug()).toMatchObject({ overlay: false, dummy: 'stand' });
+    expect(await debug()).toMatchObject({ overlay: false, opponent: 'stand' });
     await page.keyboard.press('F1');
     await page.keyboard.press('F2');
-    expect(await debug()).toMatchObject({ overlay: true, dummy: 'jump' });
+    expect(await debug()).toMatchObject({ overlay: true, opponent: 'jump' });
     await step(page, 10);
     expect((await snapshot(page)).fighters[1].y).toBeGreaterThan(0);
   });

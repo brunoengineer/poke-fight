@@ -213,10 +213,11 @@ function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView) {
   ctx.fillText(String(Math.ceil(battle.round.timer / 60)).padStart(2, '0'), VIEW_W / 2, 6);
   ctx.font = '8px monospace';
   ctx.fillStyle = COLORS.dim;
-  ctx.fillText(`dummy: ${view.dummy}${view.infinitePp ? ' · ∞ PP' : ''}`, VIEW_W / 2, 24);
+  const p2 = view.opponent.startsWith('cpu-') ? `CPU ${view.opponent.slice(4)} · ${view.style}` : `dummy: ${view.opponent}`;
+  ctx.fillText(`${p2}${view.infinitePp ? ' · ∞ PP' : ''}`, VIEW_W / 2, 24);
 
   ctx.fillText('WASD move · J tackle · K special · I big · L guard · Space dash', VIEW_W / 2, VIEW_H - 22);
-  ctx.fillText('F1 debug · F2 dummy · F3 infinite PP · R reset', VIEW_W / 2, VIEW_H - 12);
+  ctx.fillText('F1 debug · F2 opponent · F3 infinite PP · F4 CPU style · R reset', VIEW_W / 2, VIEW_H - 12);
 }
 
 // ── Phases: KO, choosing the next Pokémon, battle over ───────────────────────────────────────────────────────────
@@ -253,7 +254,7 @@ function drawPhase(ctx: CanvasRenderingContext2D, view: SandboxView) {
     ctx.fillStyle = COLORS.text;
     ctx.font = 'bold 20px monospace';
     const winner = battle.winner;
-    ctx.fillText(winner === 'draw' ? 'Draw' : winner === 0 ? 'You win the battle!' : 'The dummy wins', VIEW_W / 2, 80);
+    ctx.fillText(winner === 'draw' ? 'Draw' : winner === 0 ? 'You win the battle!' : 'You lost the battle', VIEW_W / 2, 80);
     ctx.font = '10px monospace';
     ctx.fillStyle = COLORS.dim;
     ctx.fillText('Enter / Start: battle again', VIEW_W / 2, 108);
@@ -297,6 +298,7 @@ function drawDebug(ctx: CanvasRenderingContext2D, view: SandboxView) {
     const { kind, value } = view.advantage;
     ctx.fillText(`on ${kind}: ${value > 0 ? '+' : ''}${value}`, VIEW_W / 2, 46);
   }
+  if (view.cpu) ctx.fillText(`CPU ${view.cpu}`, VIEW_W / 2, 56);
 
   // Input history (player 1), newest on top.
   ctx.textAlign = 'left';

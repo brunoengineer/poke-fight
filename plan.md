@@ -246,6 +246,32 @@ More archetypes can come later (status effects: paralysis = slower, burn = damag
   - Wild: slow, random. Trainers: medium. Gym leaders: a style per type (Brock = defensive/guard, Misty = zoning,
     Surge = aggressive rush). Elite Four / Champion: fast reactions, punishes mistakes.
 
+**Built in milestone 3** (`src/fight/ai/`, pinned by `cpu.test.ts`):
+
+- `cpuStep(cpu, state) → { cpu, input }`: pure and seeded; the CPU's memory is plain data like the fight state.
+- **Fair by construction**: it only outputs an input mask (it presses and releases buttons like a player, no
+  turbo); it sees the opponent and projectiles **`reaction` frames late** but its own state now.
+- **Profile = difficulty × style.** Difficulty (skill): easy / normal / hard = reaction 30 / 18 / 10 frames,
+  guard 15 / 50 / 85%, anti-air 10 / 40 / 75%, punish 10 / 50 / 85%. Style (personality): balanced / aggressive /
+  defensive / zoner = how much it approaches, keeps its distance, fires specials, jumps, uses the big special, and
+  guards up close in advance.
+- **One roll per threat**: a projectile coming (guard, or jump over it, estimating where it is *now*), a beam or rush
+  being charged (guard), an attack up close (guard, lower chance: it can't really react to a 5-frame tackle), a
+  jump-in (anti-air tackle or guard). Plus: punish recovery nearby, **guard right after being hit up close**, and
+  **hit back right after blocking** (the tackle is −1 on block).
+- Otherwise a short **neutral plan** by distance and style: approach, retreat, wait, guard, tackle, special, jump in,
+  dash (through), back dash, big special (rush only from fairly close).
+- **Measured balance** (20 fixed-seed fights each): hard beats easy 19/20 and normal 17/20; normal beats easy
+  17/20; every level beats a player who does nothing in ~17–24 s; hard beats a slow tackle spammer 20/20.
+- **Known weakness**: a fast tackle spammer (walk forward + tackle every 22–30 frames) still beats hard ~60% of the
+  time. Partly the CPU, partly the frame data: the tackle is +3 on hit with a lunge and walking pushes back in, so
+  it's a strong loop for humans too. To revisit when tuning with real Pokémon (milestone 4): less pushback/lunge,
+  +1 on hit, or a CPU that reads repeated patterns.
+- **Changed while building it**: a **guarded Rush now stops** at the defender (and can be punished); before, it
+  carried on 100+ px past the defender and was safe even when guarded. A Rush that hits still passes through.
+- Sandbox: F2 cycles player 2 (dummy behaviors, then CPU easy / normal / hard), F4 cycles the CPU style. The game
+  starts against CPU normal; `?opponent=stand` (or any other) chooses player 2 from the URL (the browser tests do).
+
 ## 5. Progression systems
 
 - **XP**: official formula (`base_experience · level / 7`, ×1.5 for trainer battles), growth rates from the data
@@ -426,7 +452,7 @@ Each milestone ends with something playable, tests, and green CI.
 | 0 | ✅ **Scaffold** | Vite + TS + Vitest + Playwright + CI; a blank canvas page; first e2e test passes in CI; `CLAUDE.md` with conventions |
 | 1 | ✅ **Fight sandbox** | Two placeholder fighters (rectangles), fixed-step loop, input (keyboard + gamepad), walk, jump, dash + invincible back dash, physical attack (ground and air), hitboxes, hitstop, knockback, HP, KO; debug overlay (F1: hitboxes, frame data, frame advantage, input history); latency + frame data tests |
 | 2 | ✅ **Full move set** | Guard button, PP bar, elemental range special with charge (projectile, beam), big special (projectile, beam, rush), hitstop, knockback, combo scaling, timer, next-Pokémon flow (6 vs 6) |
-| 3 | **CPU** | AI with reaction delay and 3 profiles; can play a fair fight against it |
+| 3 | ✅ **CPU** | AI with reaction delay, 3 difficulties × 4 styles; can play a fair fight against it |
 | 4 | **Pokémon data** | `build-data.mjs` (Gen 1: species, stats, types, moves, learnsets, evolutions, encounters, growth, catch rates); sprites in the fight; stat-based damage; type chart |
 | 5 | **Progression + save** | Party, XP, level up, move choice, evolution, save/load with versions |
 | 6 | **Prologue** | Title → starter → interactive rival tutorial → arrive at Viridian |

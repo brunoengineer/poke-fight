@@ -38,7 +38,13 @@ export interface TestApi {
   /** A copy of the whole battle (teams, phase, round). */
   battle(): BattleState;
   /** Sandbox settings and the last measured frame advantage. */
-  debug(): { overlay: boolean; dummy: string; infinitePp: boolean; advantage: { kind: ContactKind; value: number } | null };
+  debug(): {
+    overlay: boolean;
+    opponent: string;
+    style: string;
+    infinitePp: boolean;
+    advantage: { kind: ContactKind; value: number } | null;
+  };
   /** Whether the clock only moves through step(). */
   manualClock: boolean;
   seed: number;

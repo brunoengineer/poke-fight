@@ -76,6 +76,7 @@ describe('elemental special (K)', () => {
   it('a projectile that reaches the edge of the screen disappears', () => {
     const state = createFight();
     state.projectiles.push({
+      id: 1,
       owner: 0,
       slot: 'elemental',
       type: 'normal',
@@ -162,6 +163,16 @@ describe('big special (I)', () => {
     const r = run(120, on(Big, 1), 0, setup(100, 'projectile', 'rush', { pp: [PP_MAX, 50] }));
     expect(r.events.find(e => e.type === 'hit')).toMatchObject({ attacker: 0, damage: BIG.rush.hit.damage, big: true });
     expect(r.final.fighters[0].x).toBeGreaterThan(r.final.fighters[1].x);
+  });
+
+  it('a guarded rush stops at the defender, stuck in its long recovery (it can be punished)', () => {
+    const r = run(70, on(Big, 1), Button.Guard, setup(100, 'projectile', 'rush', { pp: [PP_MAX, 50] }));
+    expect(r.events.filter(e => e.type === 'block' || e.type === 'hit').map(e => e.type)).toEqual(['block']);
+    const [rusher, defender] = r.final.fighters;
+    expect(rusher.x).toBeLessThan(defender.x);
+    expect(rusher).toMatchObject({ action: 'big' });
+    // Within reach of a punishing tackle: its hit box (46 px) + lunge (13.5 px) + the body's half width (16 px).
+    expect((defender.x - rusher.x) / 256).toBeLessThan(46 + 13.5 + 16);
   });
 
   it('a big projectile goes through a small one and still hits', () => {

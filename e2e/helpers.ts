@@ -2,6 +2,7 @@
 //   - Every test fails on a page error or a console error.
 //   - Requests to other sites (sprites, later) are stubbed, so tests run offline and fast.
 //   - The game is opened in test mode (see src/test/hooks.ts): fixed seed and a manual clock.
+//   - Player 2 is a standing dummy unless the test asks for another opponent (the game's default is the CPU).
 
 import { test as base, expect, type Page } from '@playwright/test';
 // Brings in the `window.__pf` type (the hooks file declares it globally).
@@ -31,7 +32,7 @@ export { expect };
 
 /** Opens the game in test mode and waits until the test hooks are ready. */
 export async function openGame(page: Page, params: Record<string, string> = {}) {
-  const query = new URLSearchParams({ test: '1', ...params });
+  const query = new URLSearchParams({ test: '1', opponent: 'stand', ...params });
   await page.goto(`/?${query}`);
   await page.waitForFunction(() => window.__pf !== undefined);
 }

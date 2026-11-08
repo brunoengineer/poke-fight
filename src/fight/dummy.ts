@@ -1,4 +1,4 @@
-// The training dummy (player 2 until the CPU arrives in milestone 3). F2 cycles its behavior.
+// The training dummy: simple fixed behaviors for practice (the sandbox also offers the CPU). F2 cycles them.
 
 import { Button, type InputMask } from './input';
 
@@ -23,6 +23,3 @@ export function dummyInput(mode: DummyMode, frame: number): InputMask {
       return frame % DUMMY_SPECIAL_EVERY === 0 ? Button.Special : 0;
   }
 }
-
-export const nextDummyMode = (mode: DummyMode): DummyMode =>
-  DUMMY_MODES[(DUMMY_MODES.indexOf(mode) + 1) % DUMMY_MODES.length];

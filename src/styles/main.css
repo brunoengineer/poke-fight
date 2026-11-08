@@ -1,0 +1,26 @@
+:root {
+  color-scheme: dark;
+  --bg: #0d0f14;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+/* The canvas is drawn at 480×270 and scaled by a whole number (see src/render/screen.ts), so pixels stay square. */
+#screen {
+  image-rendering: pixelated;
+  display: block;
+}

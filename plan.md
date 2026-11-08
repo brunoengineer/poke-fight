@@ -85,7 +85,7 @@ Our own light narrative on top of the canonical Kanto structure (cities, gym ord
 | Jump | ↑ (or W) | D-pad up / A | Neutral, forward and back jump arcs |
 | Physical attack | J | X / □ | Lunge at the opponent ("tackle"); also in the air |
 | Elemental special | K | Y / △ | Short charge, then the move; also in the air |
-| Big special | I | B / ○ | Needs a **full Power gauge** + a long charge; ground only |
+| Big special | I | B / ○ | Needs a **full PP bar** + a long charge; ground only |
 | Guard | L (hold) | R1 / RB (hold) | **Dedicated button**, ground only (no air guard); can't move while guarding |
 | Pause | Esc | Start | |
 
@@ -101,8 +101,8 @@ with the debug overlay:
 |------|---------|--------|----------|--------|-------|
 | Physical (ground) | 5 | 4 | 12 | knockback, short hitstun | Moves the attacker forward (the lunge) |
 | Physical (air) | 4 | 6 | lands | hits jumping-in | |
-| Elemental special | 14 (charge) | depends on archetype | 18 | depends on archetype | Vulnerable during charge; a hit cancels it |
-| Big special | 40 (charge) | depends on archetype | 30 | big knockback, long hitstop | Gauge is spent when the charge starts: get hit while charging and it's wasted |
+| Elemental special | 14 (charge) | depends on shape | 18 | depends on shape | Costs ¼ PP; vulnerable during charge; a hit cancels it |
+| Big special | 40 (charge) | depends on shape | 30 | big knockback, long hitstop | The full PP bar is spent when the charge starts: get hit while charging and it's wasted |
 | Jump | 3 (pre-jump) | ~36 airborne | 2 (landing) | — | **Can be steered in the air** (left/right) |
 | Guard | 1 | while held | 3 (release) | blockstun, chip damage on specials | Blocks everything (no lows yet) |
 | Dash (fwd / back) | 2 | ~14 moving | 4 | — | **Back dash: invincible on frames 1–6**, then hittable until it ends (so it can be punished) |
@@ -126,12 +126,36 @@ with the debug overlay:
   hit into the air can't be steered.
 - **Air attack**: one per jump. A hit in the air pops the defender up, then it stays down 20 frames after landing.
 - **Dash** (changed after playtesting: a button instead of a double tap): Space / LB, buffered like attacks. Forward:
-  70 px. Dash + back: back dash, 63 px, invincible on frames 1–6. Walking never dashes by itself.
+  70 px, and it **passes through the opponent** (no push box while dashing), so a dash from close range ends
+  behind it, ready to attack from the other side (not at the wall: no room). Dash + back: back dash, 63 px,
+  invincible on frames 1–6 (it still pushes). Walking never dashes by itself.
 - **Opposite directions cancel out** (left + right = neutral), on keyboard and controller.
 - **Hitstop 6 frames**: presses during hitstop are kept.
 - **Trades**: two hits on the same frame both land (a double KO is a draw).
 - **Facing** only changes while the fighter is free on the ground.
-- **Training dummy** (player 2 until the CPU): F2 cycles stand / jump / attack every 30 frames.
+- **Training dummy** (player 2 until the CPU): F2 cycles stand / jump / attack every 30 frames / guard / special
+  every 60 frames. F3 (training) keeps both PP bars full.
+
+**Rules settled in milestone 2** (pinned by `guard.test.ts`, `specials.test.ts`, `timer.test.ts`, `battle.test.ts`):
+
+- **Guard** (L / RB): active on the frame it is pressed, can't move while held, blocks everything on the ground from
+  both sides (a dash through doesn't get around it). You can attack straight out of a guard; letting go takes 3
+  frames. No air guard. Blocked hits give no PP. The tackle is **−1 on block**.
+- **Chip damage**: specials do ¼ of their damage through a guard, and chip can finish a Pokémon.
+- **PP bar**: 100, starts at 50. Elemental special −25, big special −100 (needs a full bar), paid when the charge
+  starts (lost if hit during the charge). Landing: tackle / air attack +15, elemental +5, big +0. A press without
+  enough PP does nothing.
+- **Elemental special**: 14-frame charge. Projectile: fired on frame 15 at 4 px/frame, 33 frames in total.
+  Beam: hits on frames 15–20, up to ~230 px. Also in the air (shares the one air move per jump); landing before the
+  charge ends loses it.
+- **Big special**: 40-frame charge, ground only, launches the opponent, 14 frames of hitstop and a white flash.
+  Projectile (6 px/frame), full-screen beam, or Rush (9 px/frame for 24 frames, passes through).
+- **Projectiles**: two elemental ones that meet cancel out; a big one goes through a small one.
+- **Combo scaling**: −10% per hit in the combo, down to 40% (a late jump-in into a tackle combos).
+- **Timer**: 99 s, paused during hitstop and after a KO. Time over: the lower HP % faints (both if equal).
+- **Battle (6 vs 6)**: after a KO the bodies fall for 90 frames; the opponent sends its next Pokémon in order;
+  player 1 picks from a menu (↑ ↓, J). The survivor keeps HP and PP, the newcomer starts at 50 PP, positions reset.
+  Double KO of the last Pokémon is a draw. The sandbox teams are 3 placeholders each, one per special shape.
 
 ### 4.4 Specials come from the Pokémon's real moves
 
@@ -140,30 +164,43 @@ level). You choose them in the party screen when the Pokémon learns a new move:
 
 | Slot | Button | Use | Default pick |
 |------|--------|-----|--------------|
-| **Elemental special** | K | Any time, short charge (14 frames), normal power | Best move of its own type (STAB) |
-| **Big special** | I | Only with a **full Power gauge**, long charge (40 frames), power ×2, screen flash + slowdown on hit | Highest-power move it knows |
+| **Elemental special** | K | **Always a range attack** (projectile or beam). Short charge (14 frames), normal power, costs **¼ of the PP bar** | Best move of its own type (STAB) |
+| **Big special** | I | Needs and spends the **full PP bar**, long charge (40 frames), power ×2, screen flash + slowdown on hit | Highest-power move it knows |
 
-- **Power gauge** (one per trainer, shown under the HP bar): fills when you deal damage, take damage or guard a
-  special. It carries over to your next Pokémon in team battles (like KOF). Rough target: one big special every
-  ~20–30 s of active fighting.
-- Why gauge **and** charge: the gauge controls *how often* (no spamming from across the screen), the charge adds
-  the *risk* (the opponent can see it coming and hit you first, and then the gauge is lost).
+Together with the tackle (J), every Pokémon has a close attack, a range attack and a big finisher.
+
+**PP bar** (decided): one per Pokémon, shown under its HP bar.
+
+- Starts **half full** when the Pokémon enters a fight, so it can open with a range attack (2 shots).
+- Fills **only when your attacks land**: the tackle and the air attack fill the most, so the loop is
+  "get in with physical hits → earn PP → spend it on range attacks or save it for the big special". Taking damage
+  or guarding does not fill it. Starting numbers to tune: tackle / air attack +15%, elemental special +5%,
+  big special +0%.
+- Not shared: in a 6 vs 6 battle, each Pokémon comes in with its own half-full bar.
+- Why PP **and** a charge: PP controls *how often* (no spamming projectiles from across the screen), the charge
+  adds the *risk* (the opponent can see it coming and hit you first; for the big special the PP is then lost).
+
+Other rules:
+
 - Both slots can hold the same move (useful early on, when a Pokémon knows only one damaging move).
-- A Pokémon with no damaging move at all (Magikarp, Abra, Metapod…) uses **Struggle** (Normal, rush), as in the
-  games.
+- A Pokémon with no damaging move at all (Magikarp, Abra, Metapod…) uses **Struggle** (Normal) in both slots, as in
+  the games: a weak shockwave as its range attack, a rush as its big special.
 - Starters get their first type move from the Professor (Ember / Bubble / Vine Whip), so the tutorial can teach
   the elemental special at Lv. 5.
 
-The move's **type and power** come from the data, and its **shape in the fight** comes from an *archetype* we
-assign (the same move can sit in either slot: the big version uses the same shape, bigger):
+The move's **type and power** come from the data; its **shape in the fight** comes from the slot and an
+*archetype* we assign to each move:
 
-| Archetype | Behavior | Examples |
-|-----------|----------|----------|
-| Projectile | Travels across the screen | Ember, Water Gun, Thunder Shock, Razor Leaf |
-| Beam | Instant long-range hit after the charge | Hyper Beam, Solar Beam (long charge), Psybeam |
-| Rush | The Pokémon dashes through the screen | Quick Attack, Take Down, Body Slam |
-| Area | Short-range burst around the user | Earthquake, Thunder, Surf (wave) |
-| Anti-air | Rising hit | Rock Throw (falling rocks?), Hi Jump Kick |
+| Shape | Behavior | Slot | Examples |
+|-------|----------|------|----------|
+| Projectile | Travels across the screen | Elemental or big (bigger, faster) | Ember, Water Gun, Thunder Shock, Razor Leaf |
+| Beam | Instant long-range hit after the charge | Elemental or big | Psybeam, Aurora Beam; big: Hyper Beam, Solar Beam |
+| **Rush** (decided: the "big dash") | The Pokémon charges across the screen, passing through and hitting hard: **physical damage** | **Big only** | Take Down, Body Slam, Double-Edge, Skull Bash |
+| Area | Burst around the user | Big only | Earthquake, Thunder, Surf (wave) |
+
+- In the **elemental slot every move becomes a range attack**: physical contact moves (Scratch, Karate Chop, Vine
+  Whip) turn into a short projectile or shockwave of their type.
+- In the **big slot**, physical moves become a **Rush** and special moves keep their own shape, bigger.
 
 More archetypes can come later (status effects: paralysis = slower, burn = damage over time, etc.).
 
@@ -352,7 +389,8 @@ and fast to test.
 
 - **Frame data tests**: "physical attack hits on frame 6 and recovers on frame 21", "a press buffered during recovery
   fires on the first free frame", "a hit on back-dash frame 6 misses, on frame 7 it lands", "a hit during the big
-  special's charge cancels it and the gauge stays empty", "the big special can't start without a full gauge".
+  special's charge cancels it and the PP is lost", "the big special can't start without a full PP bar",
+  "the elemental special can't start below ¼ PP", "a landed tackle adds PP, being hit doesn't".
 - **Input latency test**: press on frame N → state shows the action starting on frame N (target 0, at most 1 frame).
 - **Replay / golden tests**: recorded input logs + seed → final state hash. Any engine change that alters a result
   fails clearly (and is updated on purpose when the design changes).
@@ -387,7 +425,7 @@ Each milestone ends with something playable, tests, and green CI.
 |---|-----------|-----------|
 | 0 | ✅ **Scaffold** | Vite + TS + Vitest + Playwright + CI; a blank canvas page; first e2e test passes in CI; `CLAUDE.md` with conventions |
 | 1 | ✅ **Fight sandbox** | Two placeholder fighters (rectangles), fixed-step loop, input (keyboard + gamepad), walk, jump, dash + invincible back dash, physical attack (ground and air), hitboxes, hitstop, knockback, HP, KO; debug overlay (F1: hitboxes, frame data, frame advantage, input history); latency + frame data tests |
-| 2 | **Full move set** | Guard button, elemental special with charge + 3 archetypes (projectile, beam, rush), Power gauge + big special, hitstop, knockback, combo scaling, timer, next-Pokémon flow (6 vs 6) |
+| 2 | ✅ **Full move set** | Guard button, PP bar, elemental range special with charge (projectile, beam), big special (projectile, beam, rush), hitstop, knockback, combo scaling, timer, next-Pokémon flow (6 vs 6) |
 | 3 | **CPU** | AI with reaction delay and 3 profiles; can play a fair fight against it |
 | 4 | **Pokémon data** | `build-data.mjs` (Gen 1: species, stats, types, moves, learnsets, evolutions, encounters, growth, catch rates); sprites in the fight; stat-based damage; type chart |
 | 5 | **Progression + save** | Party, XP, level up, move choice, evolution, save/load with versions |
@@ -422,7 +460,10 @@ sprites won't save it.
 | Team battles | Up to 6 vs 6, one at a time, like the real games |
 | Type chart | Modern 18-type chart and modern typings for every region (scales best) |
 | Capture | No performance bonus; official Gen 8 formula (catch rate, ball, level modifiers), fixed worn-out HP term |
-| Specials | Two slots: elemental (K, short charge) and big (I, full Power gauge + long charge) |
+| Specials | Two slots: elemental (K, always a range attack, ¼ PP) and big (I, full PP bar + long charge) |
+| PP bar | Replaces the Power gauge. One per Pokémon, starts half full, fills only when your hits land |
+| Big dash | A shape of the big special: physical moves become a Rush that passes through the opponent |
+| Dash through | The dash passes through the opponent (no push box), to attack from behind |
 | Back dash | Invincible on its first 6 frames, punishable after |
 | Capture failure | One throw per win; if it breaks free, it flees |
 

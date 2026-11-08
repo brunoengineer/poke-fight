@@ -4,6 +4,8 @@
 //   - The seed is fixed (`&seed=N`, default 1), so randomness is the same on every run.
 //   - `window.__pf` gives read-only access to the game. Tests never change the state through it.
 
+import type { ContactKind } from '../fight/advantage';
+import type { BattleState } from '../fight/battle';
 import type { FightState } from '../fight/state';
 
 export interface TestOptions {
@@ -31,10 +33,12 @@ export interface TestApi {
   frame(): number;
   /** Advances the simulation by n frames (manual clock only) and draws the result. Returns the new frame. */
   step(frames: number): number;
-  /** A copy of the fight state. */
+  /** A copy of the current round's state. */
   snapshot(): FightState;
+  /** A copy of the whole battle (teams, phase, round). */
+  battle(): BattleState;
   /** Sandbox settings and the last measured frame advantage. */
-  debug(): { overlay: boolean; dummy: string; advantage: number | null };
+  debug(): { overlay: boolean; dummy: string; infinitePp: boolean; advantage: { kind: ContactKind; value: number } | null };
   /** Whether the clock only moves through step(). */
   manualClock: boolean;
   seed: number;

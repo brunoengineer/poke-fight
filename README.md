@@ -27,4 +27,7 @@ Test mode: open `http://localhost:5173/?test=1` for a fixed seed and a manual cl
 
 ## Status
 
-Milestone 1 (fight sandbox) done: move with WASD or the arrows, J to attack, Space to dash (+ back for a back dash), steer jumps in the air, F1 for the debug overlay, F2 to change the dummy, R to reset. Next: milestone 2, the full move set. See [plan.md §9](plan.md#9-roadmap-milestones).
+Milestone 2 (full move set) done: a 3 vs 3 battle against a training dummy, still with placeholder rectangles.
+WASD or arrows move (steer jumps in the air), J tackle, K elemental special (¼ PP), I big special (full PP), L guard,
+Space dash (+ back: back dash). F1 debug overlay, F2 dummy behavior, F3 infinite PP, R reset. Next: milestone 3,
+the CPU. See [plan.md §9](plan.md#9-roadmap-milestones).

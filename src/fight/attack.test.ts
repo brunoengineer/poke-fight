@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { createAdvantageTracker, trackAdvantage } from './advantage';
 import { BUFFER_FRAMES, HITSTOP, MAX_HP } from './constants';
-import { PHYSICAL, attackLength } from './frame-data';
+import { PHYSICAL, moveLength } from './frame-data';
 import { Button } from './input';
 import { createFight } from './state';
 import { step } from './step';
@@ -19,7 +19,7 @@ describe('physical attack', () => {
   });
 
   it('lasts 21 frames: startup 5, active 4, recovery 12', () => {
-    expect(attackLength(PHYSICAL)).toBe(21);
+    expect(moveLength(PHYSICAL)).toBe(21);
     const r = run(30, on(J, 1));
     for (let frame = 1; frame <= 21; frame++) {
       expect(at(r, frame).fighters[0]).toMatchObject({ action: 'attack', actionFrame: frame });
@@ -36,7 +36,7 @@ describe('physical attack', () => {
 
   it('hits on frame 6, its first active frame', () => {
     const r = run(10, on(J, 1), 0, fightAt(CLOSE));
-    expect(r.events[0]).toMatchObject({ type: 'hit', attacker: 0, defender: 1, damage: PHYSICAL.damage, frame: 6 });
+    expect(r.events[0]).toMatchObject({ type: 'hit', attacker: 0, defender: 1, damage: PHYSICAL.hit.damage, frame: 6 });
   });
 
   it('misses an opponent out of range', () => {
@@ -48,7 +48,7 @@ describe('physical attack', () => {
   it('hits only once, even with 4 active frames', () => {
     const r = run(60, on(J, 1), 0, fightAt(CLOSE));
     expect(r.events.filter(e => e.type === 'hit')).toHaveLength(1);
-    expect(r.final.fighters[1].hp).toBe(MAX_HP - PHYSICAL.damage);
+    expect(r.final.fighters[1].hp).toBe(MAX_HP - PHYSICAL.hit.damage);
   });
 
   it('holding the button does not repeat the attack', () => {
@@ -80,7 +80,7 @@ describe('physical attack', () => {
       state = result.state;
       tracker = trackAdvantage(tracker, state, result.events);
     }
-    expect(tracker.last).toBe(3);
+    expect(tracker.last).toEqual({ kind: 'hit', value: 3 });
   });
 });
 

@@ -39,3 +39,4 @@ export async function openGame(page: Page, params: Record<string, string> = {}) 
 export const frame = (page: Page) => page.evaluate(() => window.__pf!.frame());
 export const step = (page: Page, frames: number) => page.evaluate(n => window.__pf!.step(n), frames);
 export const snapshot = (page: Page) => page.evaluate(() => window.__pf!.snapshot());
+export const battle = (page: Page) => page.evaluate(() => window.__pf!.battle());

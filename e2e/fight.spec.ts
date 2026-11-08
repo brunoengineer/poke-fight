@@ -1,6 +1,6 @@
 // The fight sandbox, played with real key presses (and a fake controller), frame by frame.
 
-import { expect, openGame, snapshot, step, test } from './helpers';
+import { battle, expect, openGame, snapshot, step, test } from './helpers';
 
 test.describe('responsive controls', () => {
   test('an attack starts on the very next frame after the key press', async ({ page }) => {
@@ -85,27 +85,84 @@ test.describe('responsive controls', () => {
   });
 });
 
-test.describe('sandbox', () => {
-  test('knock out the dummy, then Enter starts a new fight', async ({ page }) => {
+test.describe('specials and guard', () => {
+  test('K fires the elemental special and spends a quarter of the PP bar', async ({ page }) => {
     await openGame(page);
-    // Walk into the dummy (pushing it to the wall) and attack on a rhythm until it falls.
+    await page.keyboard.press('k');
+    await step(page, 1);
+    expect((await snapshot(page)).fighters[0]).toMatchObject({ action: 'elemental', pp: 25 });
+    await step(page, 14);
+    expect((await snapshot(page)).projectiles).toHaveLength(1);
+  });
+
+  test('L guards while held', async ({ page }) => {
+    await openGame(page);
+    await page.keyboard.down('l');
+    await step(page, 5);
+    expect((await snapshot(page)).fighters[0].action).toBe('guard');
+    await page.keyboard.up('l');
+    await step(page, 1);
+    expect((await snapshot(page)).fighters[0].action).toBe('guardEnd');
+  });
+
+  test('I needs a full PP bar; F3 (infinite PP) makes it available', async ({ page }) => {
+    await openGame(page);
+    await page.keyboard.press('i');
+    await step(page, 1);
+    expect((await snapshot(page)).fighters[0].action).toBe('idle');
+    await page.keyboard.press('F3');
+    await step(page, 1);
+    await page.keyboard.press('i');
+    await step(page, 1);
+    expect((await snapshot(page)).fighters[0].action).toBe('big');
+  });
+});
+
+test.describe('battle', () => {
+  test('beat the whole dummy team: each KO brings in the next one; Enter starts a new battle', async ({ page }) => {
+    await openGame(page);
+    const names: string[] = [];
     await page.keyboard.down('d');
-    for (let i = 0; i < 40 && (await snapshot(page)).winner === null; i++) {
+    for (let i = 0; i < 200; i++) {
+      const b = await battle(page);
+      if (b.phase === 'over') break;
+      if (b.phase === 'fight' && !names.includes(b.round.fighters[1].name)) names.push(b.round.fighters[1].name);
       await page.keyboard.press('j');
       await step(page, 30);
     }
     await page.keyboard.up('d');
-    const ko = await snapshot(page);
-    expect(ko.winner).toBe(0);
-    expect(ko.fighters[1]).toMatchObject({ hp: 0, action: 'ko' });
+    const over = await battle(page);
+    expect(over).toMatchObject({ phase: 'over', winner: 0, rounds: 3 });
+    expect(names).toEqual(['Sprout', 'Spark', 'Boulder']);
 
     await page.keyboard.press('Enter');
-    const fresh = await snapshot(page);
-    expect(fresh.winner).toBeNull();
-    expect(fresh.fighters.map(f => f.hp)).toEqual([1000, 1000]);
+    expect(await battle(page)).toMatchObject({ phase: 'fight', rounds: 1, winner: null });
   });
 
-  test('R resets the fight at any time', async ({ page }) => {
+  test('when your Pokémon faints, you choose the next one', async ({ page }) => {
+    await openGame(page);
+    // The dummy fires specials on a rhythm, with infinite PP; player 1 just stands there.
+    await page.keyboard.press('F3');
+    for (let i = 0; i < 4; i++) await page.keyboard.press('F2');
+    expect((await page.evaluate(() => window.__pf!.debug())).dummy).toBe('special');
+    for (let i = 0; i < 40 && (await battle(page)).phase !== 'choose'; i++) await step(page, 60);
+
+    const choosing = await battle(page);
+    expect(choosing.phase).toBe('choose');
+    expect(choosing.cursor).toBe(1);
+    await page.keyboard.press('ArrowDown');
+    await step(page, 1);
+    expect((await battle(page)).cursor).toBe(2);
+    await page.keyboard.press('j');
+    await step(page, 1);
+    const next = await battle(page);
+    expect(next.phase).toBe('fight');
+    expect(next.round.fighters[0].name).toBe('Brawler');
+  });
+});
+
+test.describe('sandbox', () => {
+  test('R resets the battle at any time', async ({ page }) => {
     await openGame(page);
     await page.keyboard.down('d');
     await step(page, 20);
@@ -125,7 +182,7 @@ test.describe('sandbox', () => {
     expect((await snapshot(page)).fighters[1].y).toBeGreaterThan(0);
   });
 
-  test('the debug overlay measures frame advantage: the attack is +3 on hit', async ({ page }) => {
+  test('the debug overlay measures frame advantage: the tackle is +3 on hit', async ({ page }) => {
     await openGame(page);
     // Walk up close, stop, attack.
     await page.keyboard.down('d');
@@ -134,6 +191,6 @@ test.describe('sandbox', () => {
     await step(page, 1);
     await page.keyboard.press('j');
     await step(page, 60);
-    expect((await page.evaluate(() => window.__pf!.debug())).advantage).toBe(3);
+    expect((await page.evaluate(() => window.__pf!.debug())).advantage).toEqual({ kind: 'hit', value: 3 });
   });
 });

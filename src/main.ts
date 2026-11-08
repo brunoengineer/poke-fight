@@ -22,21 +22,22 @@ window.addEventListener('resize', fit);
 
 const sandbox = createSandbox();
 const keys = createKeyLatch();
-const restartAfterKo = () => {
-  if (sandbox.view().state.winner !== null) sandbox.reset();
+const restartAfterBattle = () => {
+  if (sandbox.view().battle.phase === 'over') sandbox.reset();
 };
 attachKeyboard(window, keys, {
   F1: () => sandbox.toggleDebug(),
   F2: () => sandbox.cycleDummy(),
+  F3: () => sandbox.toggleInfinitePp(),
   KeyR: () => sandbox.reset(),
-  Enter: restartAfterKo,
+  Enter: restartAfterBattle,
 });
 
 // Inputs are read right before each simulated frame, so a press is used on the very next frame.
 let startWasHeld = false;
 const simulate = () => {
   const pad = readFirstPad();
-  if (pad.start && !startWasHeld) restartAfterKo();
+  if (pad.start && !startWasHeld) restartAfterBattle();
   startWasHeld = pad.start;
   sandbox.tick(keys.sample() | pad.mask);
 };
@@ -54,17 +55,18 @@ requestAnimationFrame(onAnimationFrame);
 
 if (options.enabled) {
   installTestHooks({
-    frame: () => sandbox.view().state.frame,
+    frame: () => sandbox.view().battle.round.frame,
     step(frames) {
       if (!options.manualClock) throw new Error('step() needs the manual clock (remove &clock=real)');
       for (let i = 0; i < frames; i++) simulate();
       draw();
-      return sandbox.view().state.frame;
+      return sandbox.view().battle.round.frame;
     },
-    snapshot: () => structuredClone(sandbox.view().state),
+    snapshot: () => structuredClone(sandbox.view().battle.round),
+    battle: () => structuredClone(sandbox.view().battle),
     debug: () => {
       const view = sandbox.view();
-      return { overlay: view.debug, dummy: view.dummy, advantage: view.advantage };
+      return { overlay: view.debug, dummy: view.dummy, infinitePp: view.infinitePp, advantage: view.advantage };
     },
     manualClock: options.manualClock,
     seed: options.seed,

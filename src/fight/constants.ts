@@ -1,4 +1,4 @@
-// Units used by the fight simulation.
+// Units and fight-wide rules.
 //   - Positions and speeds are whole numbers in sub-pixels (1 px = 256 units): no floating-point drift, so the same
 //     inputs always give exactly the same fight.
 //   - x grows to the right, y grows upwards from the floor (y = 0 is standing on the floor).
@@ -24,5 +24,19 @@ export const MAX_HP = 1000;
 /** A button press is remembered this many frames, so it fires as soon as the current action ends. */
 export const BUFFER_FRAMES = 6;
 
-/** Both fighters freeze this many frames when a hit lands (the "impact"). */
+/** Both fighters freeze this many frames when a physical hit lands (the "impact"); moves can set their own. */
 export const HITSTOP = 6;
+
+/** PP bar: one per Pokémon. Starts half full; specials spend it; landing hits refill it. */
+export const PP_MAX = 100;
+export const PP_START = 50;
+export const ELEMENTAL_COST = 25;
+
+/** Specials do this fraction of their damage through a guard. */
+export const CHIP_DIVISOR = 4;
+
+/** Each hit in a combo does 10% less than the previous one, down to 40%. */
+export const COMBO_SCALING = { step: 10, min: 40 };
+
+/** Round timer. When it runs out, the Pokémon with the lower HP % faints. */
+export const ROUND_FRAMES = 99 * 60;

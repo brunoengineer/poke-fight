@@ -102,6 +102,36 @@ describe('dashing (Space / LB)', () => {
     expect(at(r, 22).fighters[0]).toMatchObject({ action: 'dash', actionFrame: 1 });
   });
 
+  it('a dash from close range goes through the opponent and ends behind it', () => {
+    const r = run(60, on(Dash, 1), 0, fightAt(40));
+    // During the dash the fighters overlap: no push boxes.
+    expect(r.frames.some(s => Math.abs(s.fighters[0].x - s.fighters[1].x) < BODY_HALF_WIDTH * 2)).toBe(true);
+    const [p1, p2] = r.final.fighters;
+    expect(p1.x - p2.x).toBeGreaterThanOrEqual(BODY_HALF_WIDTH * 2);
+    // Both turn around: player 1 can now attack from behind.
+    expect([p1.facing, p2.facing]).toEqual([-1, 1]);
+  });
+
+  it('after passing, an attack hits the opponent from its old back side', () => {
+    const r = run(60, f => (f === 1 ? Dash : f === 25 ? Physical : 0), 0, fightAt(40));
+    const hit = r.events.find(e => e.type === 'hit');
+    expect(hit).toMatchObject({ attacker: 0, defender: 1 });
+    // Knocked back to the left: the hit came from the right.
+    expect(at(r, hit!.frame + 10).fighters[1].x).toBeLessThan(at(r, hit!.frame).fighters[1].x);
+  });
+
+  it('a dash from far away stops short and does not cross', () => {
+    const r = run(30, on(Dash, 1), 0, fightAt(200));
+    expect(r.final.fighters[0].x).toBeLessThan(r.final.fighters[1].x);
+  });
+
+  it('cannot dash through an opponent that has its back to the wall', () => {
+    const start = createFight({ x: [px(420), px(464)] });
+    const r = run(40, on(Dash, 1), 0, start);
+    expect(r.final.fighters[0].x).toBeLessThan(r.final.fighters[1].x);
+    expect(r.final.fighters[1].x - r.final.fighters[0].x).toBe(BODY_HALF_WIDTH * 2);
+  });
+
   it('walking forward and back never dashes by itself', () => {
     const r = run(60, f => [Right, 0, Left, 0][f % 4], 0, fightAt(300));
     expect(r.frames.some(s => s.fighters[0].action === 'dash' || s.fighters[0].action === 'backdash')).toBe(false);

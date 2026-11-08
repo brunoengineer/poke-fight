@@ -81,7 +81,7 @@ Our own light narrative on top of the canonical Kanto structure (cities, gym ord
 | Action | Keyboard (default) | Controller | Notes |
 |--------|--------------------|------------|-------|
 | Move | ← → (or A/D) | D-pad / left stick | Walk (walking back does **not** guard) |
-| Dash | double-tap ← or → | double-tap | Forward dash, and back dash (its first frames can't be hit) |
+| Dash | Space | LB / L1 | **Dedicated button**: forward dash; + back = back dash (its first frames can't be hit) |
 | Jump | ↑ (or W) | D-pad up / A | Neutral, forward and back jump arcs |
 | Physical attack | J | X / □ | Lunge at the opponent ("tackle"); also in the air |
 | Elemental special | K | Y / △ | Short charge, then the move; also in the air |
@@ -103,7 +103,7 @@ with the debug overlay:
 | Physical (air) | 4 | 6 | lands | hits jumping-in | |
 | Elemental special | 14 (charge) | depends on archetype | 18 | depends on archetype | Vulnerable during charge; a hit cancels it |
 | Big special | 40 (charge) | depends on archetype | 30 | big knockback, long hitstop | Gauge is spent when the charge starts: get hit while charging and it's wasted |
-| Jump | 3 (pre-jump) | ~36 airborne | 2 (landing) | — | Can't be steered mid-air (classic fighter) |
+| Jump | 3 (pre-jump) | ~36 airborne | 2 (landing) | — | **Can be steered in the air** (left/right) |
 | Guard | 1 | while held | 3 (release) | blockstun, chip damage on specials | Blocks everything (no lows yet) |
 | Dash (fwd / back) | 2 | ~14 moving | 4 | — | **Back dash: invincible on frames 1–6**, then hittable until it ends (so it can be punished) |
 
@@ -121,8 +121,12 @@ with the debug overlay:
 - **Jump**: 3 frames on the ground, 36 in the air (apex 85.5 px), 2 to land. The direction is the one held on the
   **last grounded frame**, so up then up-forward still jumps forward. Holding up jumps again after landing. A jump
   can go over the opponent, and both turn around after landing.
+- **Air control** (changed after playtesting): holding left/right in the air steers towards that direction's jump
+  speed (2.5 px forward, 2 px back), reaching it in 5 frames; with no direction held the jump keeps its speed. Being
+  hit into the air can't be steered.
 - **Air attack**: one per jump. A hit in the air pops the defender up, then it stays down 20 frames after landing.
-- **Dash**: two taps of the same direction within 12 frames. Forward: 70 px. Back: 63 px, invincible on frames 1–6.
+- **Dash** (changed after playtesting: a button instead of a double tap): Space / LB, buffered like attacks. Forward:
+  70 px. Dash + back: back dash, 63 px, invincible on frames 1–6. Walking never dashes by itself.
 - **Opposite directions cancel out** (left + right = neutral), on keyboard and controller.
 - **Hitstop 6 frames**: presses during hitstop are kept.
 - **Trades**: two hits on the same frame both land (a double KO is a draw).
@@ -413,7 +417,8 @@ sprites won't save it.
 | Topic | Decision |
 |-------|----------|
 | Guard | Dedicated button (hold), ground only |
-| Crouch / dash | Dash (double-tap, forward and back) now; no crouch for now |
+| Crouch / dash | Dash on its own button (Space / LB; + back = back dash); no crouch for now |
+| Air control | Jumps can be steered left/right in the air |
 | Team battles | Up to 6 vs 6, one at a time, like the real games |
 | Type chart | Modern 18-type chart and modern typings for every region (scales best) |
 | Capture | No performance bonus; official Gen 8 formula (catch rate, ball, level modifiers), fixed worn-out HP term |

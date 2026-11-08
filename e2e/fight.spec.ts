@@ -28,6 +28,30 @@ test.describe('responsive controls', () => {
     expect((await snapshot(page)).fighters[0].x - x0).toBe(20 * 2 * 256);
   });
 
+  test('Space dashes forward, Space + back dashes back', async ({ page }) => {
+    await openGame(page);
+    await page.keyboard.press('Space');
+    await step(page, 1);
+    expect((await snapshot(page)).fighters[0]).toMatchObject({ action: 'dash', actionFrame: 1 });
+    await step(page, 30);
+    await page.keyboard.down('a');
+    await page.keyboard.press('Space');
+    await step(page, 1);
+    await page.keyboard.up('a');
+    expect((await snapshot(page)).fighters[0]).toMatchObject({ action: 'backdash', actionFrame: 1 });
+  });
+
+  test('a jump can be steered in the air', async ({ page }) => {
+    await openGame(page);
+    await page.keyboard.press('w');
+    await step(page, 5); // in the air from frame 4
+    const x = (await snapshot(page)).fighters[0].x;
+    await page.keyboard.down('d');
+    await step(page, 10);
+    await page.keyboard.up('d');
+    expect((await snapshot(page)).fighters[0].x).toBeGreaterThan(x);
+  });
+
   test('keys are released when the window loses focus', async ({ page }) => {
     await openGame(page);
     await page.keyboard.down('d');

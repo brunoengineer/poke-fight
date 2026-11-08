@@ -102,7 +102,7 @@ function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView) {
   ctx.font = '8px monospace';
   ctx.fillStyle = COLORS.dim;
   ctx.textAlign = 'center';
-  ctx.fillText('WASD/arrows move · J attack · double-tap dash · F1 debug · F2 dummy · R reset', VIEW_W / 2, VIEW_H - 12);
+  ctx.fillText('WASD/arrows move · J attack · Space dash · F1 debug · F2 dummy · R reset', VIEW_W / 2, VIEW_H - 12);
 }
 
 function drawKo(ctx: CanvasRenderingContext2D, view: SandboxView) {
@@ -185,6 +185,7 @@ export function describeInput(mask: InputMask): string {
     has(mask, Button.Special) && 'K',
     has(mask, Button.Big) && 'I',
     has(mask, Button.Guard) && 'L',
+    has(mask, Button.Dash) && 'Dash',
   ].filter(Boolean);
   const parts = [ARROWS[directions] ?? '·', ...buttons];
   return parts.join(' ');

@@ -21,6 +21,12 @@ describe('keyboard latch', () => {
     expect(keys.sample()).toBe(0);
   });
 
+  it('Space is the dash button', () => {
+    const keys = createKeyLatch();
+    keys.down('Space');
+    expect(keys.sample()).toBe(Button.Dash);
+  });
+
   it('WASD and the arrows do the same', () => {
     const keys = createKeyLatch();
     keys.down('ArrowUp');
@@ -56,6 +62,7 @@ describe('controller', () => {
     expect(padMask(pad([PAD.Y]))).toBe(Button.Special);
     expect(padMask(pad([PAD.B]))).toBe(Button.Big);
     expect(padMask(pad([PAD.RB]))).toBe(Button.Guard);
+    expect(padMask(pad([PAD.LB]))).toBe(Button.Dash);
   });
 
   it('reads the left stick past the dead zone only', () => {

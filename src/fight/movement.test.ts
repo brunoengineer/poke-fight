@@ -1,13 +1,13 @@
 // Walking, jumping, dashing, walls and push boxes.
 
 import { describe, expect, it } from 'vitest';
-import { BODY_HALF_WIDTH, STAGE_WIDTH, SUB } from './constants';
-import { BACKDASH, DASH, JUMP, WALK } from './frame-data';
+import { BODY_HALF_WIDTH, STAGE_WIDTH, SUB, px } from './constants';
+import { AIR_CONTROL, AIR_HIT, BACKDASH, DASH, JUMP, WALK } from './frame-data';
 import { Button } from './input';
 import { createFight } from './state';
 import { at, between, fightAt, on, run } from './testing';
 
-const { Left, Right, Up, Physical } = Button;
+const { Left, Right, Up, Physical, Dash } = Button;
 const startX = createFight().fighters[0].x;
 
 describe('walking', () => {
@@ -72,24 +72,39 @@ describe('jumping', () => {
   });
 });
 
-describe('dashing', () => {
-  it('double-tap forward dashes 70 px', () => {
-    const r = run(30, on(Right, 1, 3), 0, fightAt(300));
+describe('dashing (Space / LB)', () => {
+  it('the dash button dashes forward 70 px, starting on the frame it is pressed', () => {
+    const r = run(30, on(Dash, 3), 0, fightAt(300));
     expect(at(r, 3).fighters[0]).toMatchObject({ action: 'dash', actionFrame: 1 });
     const x0 = at(r, 2).fighters[0].x;
     expect(at(r, 22).fighters[0].x - x0).toBe(DASH.moving * DASH.speed);
   });
 
-  it('taps too far apart just walk', () => {
-    const r = run(30, on(Right, 1, 14), 0, fightAt(300));
-    expect(at(r, 14).fighters[0].action).toBe('walkForward');
+  it('dash + forward is also a forward dash', () => {
+    const r = run(5, on(Dash | Right, 3), 0, fightAt(300));
+    expect(at(r, 3).fighters[0].action).toBe('dash');
   });
 
-  it('double-tap back is a back dash', () => {
-    const r = run(30, on(Left, 1, 3), 0, fightAt(300));
+  it('dash + back is a back dash', () => {
+    const r = run(30, on(Dash | Left, 3), 0, fightAt(300));
     expect(at(r, 3).fighters[0]).toMatchObject({ action: 'backdash', actionFrame: 1 });
     const x0 = at(r, 2).fighters[0].x;
     expect(x0 - at(r, 22).fighters[0].x).toBe(BACKDASH.moving * BACKDASH.speed);
+  });
+
+  it('holding the dash button does not dash again', () => {
+    const r = run(40, Dash, 0, fightAt(300));
+    expect(at(r, 30).fighters[0].action).toBe('idle');
+  });
+
+  it('a dash pressed during an attack comes out as soon as the attack ends (buffer)', () => {
+    const r = run(30, f => (f === 1 ? Physical : f === 18 ? Dash : 0), 0, fightAt(300));
+    expect(at(r, 22).fighters[0]).toMatchObject({ action: 'dash', actionFrame: 1 });
+  });
+
+  it('walking forward and back never dashes by itself', () => {
+    const r = run(60, f => [Right, 0, Left, 0][f % 4], 0, fightAt(300));
+    expect(r.frames.some(s => s.fighters[0].action === 'dash' || s.fighters[0].action === 'backdash')).toBe(false);
   });
 
   describe('the back dash is invincible on its first 6 frames', () => {
@@ -102,10 +117,47 @@ describe('dashing', () => {
     });
 
     it('backdash frame 6 (game frame 8) is not hit; frame 7 (game frame 9) is', () => {
-      const r = run(20, on(Left, 1, 3), p2Attack, fightAt(40));
+      const r = run(20, on(Dash | Left, 3), p2Attack, fightAt(40));
       expect(at(r, 8).fighters[0]).toMatchObject({ action: 'backdash', actionFrame: 6 });
       expect(r.events.find(e => e.type === 'hit')?.frame).toBe(9);
     });
+  });
+});
+
+describe('air control', () => {
+  // A straight-up jump: up on frame 1 only. In the air from frame 4.
+  const upThen = (inAir: number) => (f: number) => (f === 1 ? Up : f >= 4 ? inAir : 0);
+
+  it('holding forward in the air steers forward, reaching full speed in 5 frames', () => {
+    const r = run(20, upThen(Right), 0, fightAt(300));
+    const speeds = r.frames.slice(3, 10).map(s => s.fighters[0].vx);
+    expect(speeds).toEqual([1, 2, 3, 4, 5, 5, 5].map(n => n * AIR_CONTROL.accel));
+    expect(JUMP.forwardSpeed).toBe(5 * AIR_CONTROL.accel);
+  });
+
+  it('holding back steers back, up to the back jump speed', () => {
+    const r = run(30, upThen(Left), 0, fightAt(300));
+    expect(at(r, 20).fighters[0].vx).toBe(-JUMP.backSpeed);
+  });
+
+  it('a forward jump can be turned around in the air', () => {
+    const r = run(40, f => (f <= 3 ? Up | Right : f >= 4 ? Left : 0), 0, fightAt(300));
+    expect(at(r, 4).fighters[0].vx).toBeGreaterThan(0);
+    expect(at(r, 20).fighters[0].vx).toBe(-JUMP.backSpeed);
+  });
+
+  it('with no direction held, the jump keeps its speed', () => {
+    const r = run(30, f => (f === 1 ? Up : f >= 4 && f <= 8 ? Right : 0), 0, fightAt(300));
+    expect(at(r, 8).fighters[0].vx).toBe(JUMP.forwardSpeed);
+    expect(at(r, 25).fighters[0].vx).toBe(JUMP.forwardSpeed);
+  });
+
+  it('cannot steer while knocked into the air', () => {
+    // Player 2 was just hit in the air: flying right, away from player 1.
+    const start = fightAt(300);
+    Object.assign(start.fighters[1], { action: 'airHitstun', actionFrame: 1, y: px(40), vy: 0, vx: AIR_HIT.push });
+    const r = run(5, 0, Left, start);
+    for (const s of r.frames) expect(s.fighters[1].vx).toBe(AIR_HIT.push);
   });
 });
 

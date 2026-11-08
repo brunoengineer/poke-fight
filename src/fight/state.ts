@@ -46,9 +46,7 @@ export interface Fighter {
   /** The input held on the last frame, to tell new presses from held buttons. */
   held: InputMask;
   /** Frames a press is still remembered for; 0 = nothing buffered. */
-  buffer: { physical: number };
-  /** Frame of the last press of each direction (for double-tap dashes). */
-  lastTap: { left: number; right: number };
+  buffer: { physical: number; dash: number };
 }
 
 export type Winner = FighterId | 'draw' | null;
@@ -71,8 +69,6 @@ export interface FightOptions {
   hp?: readonly [number, number];
 }
 
-const NEVER = -1000;
-
 function createFighter(id: FighterId, x: number, hp: number): Fighter {
   return {
     id,
@@ -91,8 +87,7 @@ function createFighter(id: FighterId, x: number, hp: number): Fighter {
     airAttackUsed: false,
     jumpDirection: 0,
     held: 0,
-    buffer: { physical: 0 },
-    lastTap: { left: NEVER, right: NEVER },
+    buffer: { physical: 0, dash: 0 },
   };
 }
 
@@ -106,5 +101,3 @@ export function createFight(options: FightOptions = {}): FightState {
     winner: null,
   };
 }
-
-export const NO_TAP = NEVER;

@@ -21,6 +21,7 @@ export const DEFAULT_BINDINGS: Bindings = {
   KeyK: Button.Special,
   KeyI: Button.Big,
   KeyL: Button.Guard,
+  Space: Button.Dash,
 };
 
 export interface KeyLatch {

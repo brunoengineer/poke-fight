@@ -24,8 +24,5 @@ export const MAX_HP = 1000;
 /** A button press is remembered this many frames, so it fires as soon as the current action ends. */
 export const BUFFER_FRAMES = 6;
 
-/** Most frames between the two taps of a double-tap dash. */
-export const DASH_WINDOW = 12;
-
 /** Both fighters freeze this many frames when a hit lands (the "impact"). */
 export const HITSTOP = 6;

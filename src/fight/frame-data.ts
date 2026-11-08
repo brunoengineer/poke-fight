@@ -60,7 +60,7 @@ export const WALK = { forward: px(2), back: px(1.75) };
 
 /**
  * Jump: 3 grounded frames, then 36 frames in the air (apex 85.5 px, on frames 18–19), then 2 landing frames.
- * The direction is the one held on the last grounded frame.
+ * It starts in the direction held on the last grounded frame.
  */
 export const JUMP = {
   prejump: 3,
@@ -71,10 +71,16 @@ export const JUMP = {
   landing: 2,
 };
 
-/** Double-tap forward. */
+/**
+ * Air control: holding left or right in the air steers towards that direction's jump speed, changing by `accel`
+ * per frame (0 → full speed in 5 frames). With no direction held, the jump keeps its speed.
+ */
+export const AIR_CONTROL = { accel: px(0.5) };
+
+/** Dash button (Space / LB), forward. */
 export const DASH = { startup: 2, moving: 14, recovery: 4, speed: px(5) };
 
-/** Double-tap back. Can't be hit on its first frames, but can be punished at the end. */
+/** Dash button + back. Can't be hit on its first frames, but can be punished at the end. */
 export const BACKDASH = { startup: 2, moving: 14, recovery: 4, speed: px(4.5), invincibleUntil: 6 };
 
 export const dashLength = (dash: typeof DASH) => dash.startup + dash.moving + dash.recovery;

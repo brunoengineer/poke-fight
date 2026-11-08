@@ -26,6 +26,7 @@ export function padMask(pad: PadLike): InputMask {
   if (on(PAD.Y)) mask |= Button.Special;
   if (on(PAD.B)) mask |= Button.Big;
   if (on(PAD.RB)) mask |= Button.Guard;
+  if (on(PAD.LB)) mask |= Button.Dash;
   return mask;
 }
 

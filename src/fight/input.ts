@@ -10,6 +10,7 @@ export const Button = {
   Special: 1 << 5,
   Big: 1 << 6,
   Guard: 1 << 7,
+  Dash: 1 << 8,
 } as const;
 
 export type InputMask = number;

@@ -1,17 +1,17 @@
 // One frame of the fight: step(state, inputs) → new state + events. Pure: same state + same inputs = same result.
 //
 // Order of a frame:
-//   1. Read inputs (new presses, buffer, double taps). During hitstop only this happens: presses are kept.
+//   1. Read inputs (new presses go into the buffer). During hitstop only this happens: presses are kept.
 //   2. Each fighter advances its action and, if it can act, picks a new one (both decide from the same positions).
 //   3. Movement and gravity.
 //   4. Push boxes keep the fighters apart, walls keep them in the arena.
 //   5. Hits: both attacks are checked before either is applied, so two hits on the same frame trade.
 
 import { activeHitbox, bodyBox, currentAttack, isInvincible, overlaps } from './boxes';
-import { BODY_HALF_WIDTH, BODY_HEIGHT, BUFFER_FRAMES, DASH_WINDOW, HITSTOP, STAGE_WIDTH } from './constants';
-import { AIR_HIT, BACKDASH, DASH, JUMP, KO_POP, PHYSICAL, WALK, attackLength, dashLength } from './frame-data';
+import { BODY_HALF_WIDTH, BODY_HEIGHT, BUFFER_FRAMES, HITSTOP, STAGE_WIDTH } from './constants';
+import { AIR_CONTROL, AIR_HIT, BACKDASH, DASH, JUMP, KO_POP, PHYSICAL, WALK, attackLength, dashLength } from './frame-data';
 import { Button, cleanDirections, has, type InputMask } from './input';
-import { NO_TAP, type ActionKind, type FightEvent, type FightState, type Fighter } from './state';
+import { type ActionKind, type FightEvent, type FightState, type Fighter } from './state';
 
 export interface StepResult {
   state: FightState;
@@ -25,7 +25,7 @@ export function step(previous: FightState, inputs: readonly [InputMask, InputMas
 
   // After a KO nobody controls anything; the bodies still fall and slide.
   const masks = state.winner === null ? inputs.map(cleanDirections) : [0, 0];
-  const taps = state.fighters.map((f, i) => readInput(f, masks[i], state.frame));
+  state.fighters.forEach((f, i) => readInput(f, masks[i]));
 
   if (state.hitstop > 0) {
     state.hitstop--;
@@ -35,8 +35,8 @@ export function step(previous: FightState, inputs: readonly [InputMask, InputMas
   const [a, b] = state.fighters;
   // Both decide from the positions at the start of the frame, so player 1 has no advantage over player 2.
   const startX = [a.x, b.x];
-  think(a, startX[1], taps[0]);
-  think(b, startX[0], taps[1]);
+  think(a, startX[1]);
+  think(b, startX[0]);
   move(a);
   move(b);
   separate(a, b);
@@ -46,25 +46,11 @@ export function step(previous: FightState, inputs: readonly [InputMask, InputMas
 
 // ── 1. Input ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-/** A direction double-tapped on this frame, if any. */
-type DoubleTap = typeof Button.Left | typeof Button.Right | null;
-
-function readInput(f: Fighter, mask: InputMask, frame: number): DoubleTap {
+function readInput(f: Fighter, mask: InputMask) {
   const pressed = mask & ~f.held;
   f.held = mask;
   if (has(pressed, Button.Physical)) f.buffer.physical = BUFFER_FRAMES;
-
-  let doubleTap: DoubleTap = null;
-  for (const [button, key] of [[Button.Left, 'left'], [Button.Right, 'right']] as const) {
-    if (!has(pressed, button)) continue;
-    if (frame - f.lastTap[key] <= DASH_WINDOW) {
-      doubleTap = button;
-      f.lastTap[key] = NO_TAP; // a third tap starts a new double tap
-    } else {
-      f.lastTap[key] = frame;
-    }
-  }
-  return doubleTap;
+  if (has(pressed, Button.Dash)) f.buffer.dash = BUFFER_FRAMES;
 }
 
 // ── 2. Actions ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -77,7 +63,7 @@ function setAction(f: Fighter, action: ActionKind, length = 0) {
 
 const FREE_ACTIONS: readonly ActionKind[] = ['idle', 'walkForward', 'walkBack'];
 
-function think(f: Fighter, opponentX: number, doubleTap: DoubleTap) {
+function think(f: Fighter, opponentX: number) {
   // Advance the current action; when it ends, the fighter is free again on this same frame.
   f.actionFrame++;
   if (f.actionLength > 0 && f.actionFrame > f.actionLength) {
@@ -95,12 +81,13 @@ function think(f: Fighter, opponentX: number, doubleTap: DoubleTap) {
       f.buffer.physical = 0;
       f.connected = false;
       setAction(f, 'attack', attackLength(PHYSICAL));
+    } else if (f.buffer.dash > 0) {
+      f.buffer.dash = 0;
+      // Dash + back is a back dash; dash alone (or + forward) dashes forward.
+      if (has(f.held, back)) setAction(f, 'backdash', dashLength(BACKDASH));
+      else setAction(f, 'dash', dashLength(DASH));
     } else if (has(f.held, Button.Up)) {
       setAction(f, 'prejump', JUMP.prejump);
-    } else if (doubleTap === forward) {
-      setAction(f, 'dash', dashLength(DASH));
-    } else if (doubleTap === back) {
-      setAction(f, 'backdash', dashLength(BACKDASH));
     } else if (has(f.held, forward)) {
       if (f.action !== 'walkForward') setAction(f, 'walkForward');
     } else if (has(f.held, back)) {
@@ -117,6 +104,7 @@ function think(f: Fighter, opponentX: number, doubleTap: DoubleTap) {
 
   if (f.action === 'prejump') f.jumpDirection = heldDirection(f);
   if (f.buffer.physical > 0) f.buffer.physical--;
+  if (f.buffer.dash > 0) f.buffer.dash--;
 }
 
 /** Leaves the floor, in the direction held on the last grounded frame. */
@@ -141,9 +129,22 @@ function dashSpeed(frame: number, dash: typeof DASH) {
   return frame > dash.startup && frame <= dash.startup + dash.moving ? dash.speed : 0;
 }
 
+/** Steers a jump towards the held direction's speed (no direction held: keeps the current speed). */
+function steer(f: Fighter) {
+  let target: number;
+  if (has(f.held, Button.Right)) target = f.facing === 1 ? JUMP.forwardSpeed : JUMP.backSpeed;
+  else if (has(f.held, Button.Left)) target = -(f.facing === -1 ? JUMP.forwardSpeed : JUMP.backSpeed);
+  else return;
+  if (f.vx < target) f.vx = Math.min(target, f.vx + AIR_CONTROL.accel);
+  else f.vx = Math.max(target, f.vx - AIR_CONTROL.accel);
+}
+
 function move(f: Fighter) {
   const airborne = f.y > 0 || f.vy > 0;
   let slide = false;
+
+  // Player-controlled jumps can be steered; being hit or knocked out can't.
+  if (airborne && (f.action === 'jump' || f.action === 'airAttack')) steer(f);
 
   if (!airborne) {
     switch (f.action) {

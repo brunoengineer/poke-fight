@@ -190,3 +190,37 @@ html, body {
 .card img {
   image-rendering: pixelated;
 }
+
+.panel button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.panel .info {
+  margin: 0 0 6px;
+  color: #c9d1e6;
+}
+
+.panel h3 {
+  margin: 12px 0 4px;
+  font-size: 15px;
+  color: #9aa4c0;
+}
+
+.panel .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid #2a3150;
+}
+
+.panel .row small {
+  display: block;
+  color: #9aa4c0;
+}
+
+.panel .row .buttons {
+  margin-top: 0;
+}

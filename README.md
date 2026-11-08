@@ -30,11 +30,12 @@ Test mode: open `http://localhost:5173/?test=1` for a fixed seed and a manual cl
 
 ## Status
 
-Milestone 6 (prologue) done: title screen, the Professor, naming yourself and your rival, choosing a starter,
-an interactive tutorial fight against the rival, and Viridian City. Winning gives XP, Pokémon level up, learn
-moves and evolve; P opens the party (specials, heal, language); progress is saved in the browser. English and
-Portuguese. Training (from the title or the city) is the practice fight mode.
+Milestone 7 (the world) done: after the prologue (title, the Professor, your starter, a tutorial fight against
+your rival), travel Kanto's cities on the world map, hunt in the grass, caves and water (with a fishing rod), catch
+wild Pokémon with Poké Balls, fight trainers on the battle field for money, buy items, heal at the Pokémon Center and
+organize your party in the PC box. Pokémon level up, learn moves and evolve; progress is saved in the browser.
+English and Portuguese. Training (from the title) is a practice mode with Lv. 30 teams.
 WASD or arrows move (steer jumps in the air), J tackle, K elemental special (¼ PP), I big special (full PP), L guard,
 Space dash (+ back: back dash). F1 debug overlay, F2 player 2 (dummy behaviors, CPU easy / normal / hard), F3 infinite
 PP, F4 CPU style, P party, R reset, Esc leave. `?opponent=cpu-hard` (or `stand`, `guard`…) in the URL picks player 2
-in Training. Next: milestone 7, the world (cities, hunting, catching, the Pokémon Center, the first shop). See [plan.md §9](plan.md#9-roadmap-milestones).
+in fights. Next: milestone 8, gyms (badges open the next cities), the Safari Zone and the mall's evolution stones. See [plan.md §9](plan.md#9-roadmap-milestones).

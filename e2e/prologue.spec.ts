@@ -128,13 +128,13 @@ test.describe('the prologue', () => {
     // The rival and the Professor, then the city.
     await expect(page.getByTestId('dialog')).toContainText('Bia');
     while (await page.getByTestId('dialog-next').isVisible()) await next(page);
-    await expect(page.getByTestId('city-name')).toHaveText('Viridian City');
+    await expect(page.getByTestId('city-heading')).toHaveText('Viridian City');
     expect(await save(page)).toMatchObject({ prologue: 'done', location: 'viridian' });
 
     // Continue from the title goes back to the city.
     await reload(page);
     await page.getByTestId('continue-game').click();
-    await expect(page.getByTestId('city-name')).toHaveText('Viridian City');
+    await expect(page.getByTestId('city-heading')).toHaveText('Viridian City');
   });
 
   test('empty names become the default ones', async ({ page }) => {
@@ -165,13 +165,13 @@ test.describe('the prologue', () => {
 test.describe('the city', () => {
   test('Training from the city fights with your party; Esc goes back to the city', async ({ page }) => {
     await openGame(page, { scene: 'city' }, { save: fixture('save-v2-viridian.json') });
-    await expect(page.getByTestId('city-name')).toHaveText('Viridian City');
+    await expect(page.getByTestId('city-heading')).toHaveText('Viridian City');
     await page.getByTestId('city-training').click();
-    expect(await scene(page)).toMatchObject({ scene: 'fight', mode: 'training' });
+    expect(await scene(page)).toMatchObject({ scene: 'fight', mode: 'trainer' });
     // Opponents at the party's level.
     const [mine, theirs] = (await snapshot(page)).fighters;
     expect(theirs.level).toBe(mine.level);
     await page.keyboard.press('Escape');
-    await expect(page.getByTestId('city-name')).toBeVisible();
+    await expect(page.getByTestId('city-heading')).toBeVisible();
   });
 });

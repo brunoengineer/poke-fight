@@ -101,7 +101,12 @@ export interface SandboxOptions {
   /** Seed for the CPU's decisions. */
   seed?: number;
   director?: Director;
+  /** A message over the first seconds of the battle ("A wild Pidgey appeared!"). */
+  intro?: Banner;
 }
+
+/** How long the intro message stays (frames). */
+export const INTRO_FRAMES = 120;
 
 const difficultyOf = (opponent: Opponent): Difficulty | null =>
   opponent.startsWith('cpu-') ? (opponent.slice(4) as Difficulty) : null;
@@ -202,7 +207,7 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
       advantage: advantage.last,
       flash,
       effect,
-      banner: director?.banner() ?? null,
+      banner: director?.banner() ?? (options.intro && battle.rounds === 1 && battle.round.frame < INTRO_FRAMES ? options.intro : null),
       tools,
     }),
   };

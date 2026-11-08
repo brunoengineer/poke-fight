@@ -1,0 +1,56 @@
+{
+ "version": 3,
+ "createdAt": 1794096000000,
+ "settings": {
+  "language": "en"
+ },
+ "player": {
+  "name": "Kai"
+ },
+ "rival": {
+  "name": "Ren",
+  "starterId": 7
+ },
+ "starterId": 4,
+ "prologue": "done",
+ "location": "pallet",
+ "party": [
+  {
+   "speciesId": 4,
+   "level": 5,
+   "xp": 135,
+   "ivs": {
+    "hp": 15,
+    "atk": 15,
+    "def": 15,
+    "spa": 15,
+    "spd": 15,
+    "spe": 15
+   },
+   "hp": 190,
+   "moves": [
+    "growl",
+    "scratch",
+    "ember"
+   ],
+   "specials": {
+    "elemental": "ember",
+    "big": "ember"
+   }
+  }
+ ],
+ "box": [],
+ "money": 3000,
+ "bag": {
+  "poke-ball": 5
+ },
+ "dex": {
+  "seen": [
+   4,
+   7
+  ],
+  "caught": [
+   4
+  ]
+ }
+}

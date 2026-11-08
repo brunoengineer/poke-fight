@@ -75,14 +75,16 @@ test.describe('party screen', () => {
     expect((await save(page)).party[0].specials.elemental).toBe('scratch');
   });
 
-  test('Heal brings fainted Pokémon back', async ({ page }) => {
+  test('the Pokémon Center brings fainted Pokémon back', async ({ page }) => {
     const hurt = fixture('save-v2-viridian.json') as { party: { hp: number }[] };
     hurt.party[1].hp = 0;
-    await openGame(page, {}, { save: hurt });
+    await openGame(page, { scene: 'city' }, { save: hurt });
     await page.keyboard.press('p');
     await expect(page.getByTestId('member-1')).toContainText('Fainted');
-    await page.getByTestId('heal').click();
-    await expect(page.getByTestId('member-1')).not.toContainText('Fainted');
+    await page.keyboard.press('p');
+    await page.getByTestId('city-center').click();
+    await page.getByTestId('center-heal').click();
+    await expect(page.getByTestId('center')).toContainText('fully healed');
     expect((await save(page)).party[1].hp).toBeGreaterThan(0);
   });
 
@@ -91,7 +93,7 @@ test.describe('party screen', () => {
     await page.keyboard.press('p');
     await page.getByTestId('language').selectOption('pt');
     await expect(page.getByTestId('party').getByRole('heading')).toHaveText('Equipe');
-    await expect(page.getByTestId('heal')).toHaveText('Curar equipe');
+    await expect(page.getByTestId('close-party')).toHaveText('Fechar (P)');
     expect(await page.evaluate(() => document.documentElement.lang)).toBe('pt-BR');
     await reload(page);
     expect((await save(page)).settings.language).toBe('pt');

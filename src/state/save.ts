@@ -3,14 +3,16 @@
 // Changing the format: bump SAVE_VERSION, add a migration from the old version to MIGRATIONS, and keep a fixture of the
 // old format in src/state/fixtures/ (the fixture test then proves old saves still load).
 
+import { isItemId } from '../data/items';
 import { hasSpecies, move } from '../data/pokedex';
+import { START_BAG, START_MONEY, type Bag } from '../game/economy';
 import { maxHpOf, type Pokemon } from '../game/pokemon';
 import { specialOptions } from '../game/progress';
 import { DEFAULT_NAMES, MAX_NAME_LENGTH } from '../game/story';
 import { MAX_LEVEL } from '../game/xp';
 import { isLanguage, type Language } from '../i18n';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export interface Settings {
   language: Language;
@@ -32,8 +34,12 @@ export interface Save {
   location: string;
   /** Up to 6 Pokémon that fight, in order. */
   party: Pokemon[];
-  /** Everything else caught (the PC box, milestone 7). */
+  /** Everything else caught (the PC box). */
   box: Pokemon[];
+  money: number;
+  bag: Bag;
+  /** Species ids seen in battle and caught (the Pokédex). */
+  dex: { seen: number[]; caught: number[] };
 }
 
 export const MAX_PARTY = 6;
@@ -59,6 +65,9 @@ export function newSave(journey: NewJourney, createdAt: number, language: Langua
     location: 'pallet',
     party: structuredClone(journey.party),
     box: [],
+    money: START_MONEY,
+    bag: { ...START_BAG },
+    dex: { seen: [...new Set([journey.starterId, journey.rivalStarterId])], caught: [journey.starterId] },
   };
 }
 
@@ -75,6 +84,18 @@ const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string
     prologue: 'done',
     location: 'viridian',
   }),
+  // Version 2 saves (before the world opened): the starting money and balls, and a Pokédex of what they own.
+  2: old => {
+    const owned = [...(old.party as Pokemon[]), ...(old.box as Pokemon[])].map(p => p.speciesId);
+    const rival = (old.rival as { starterId: number }).starterId;
+    return {
+      ...old,
+      version: 3,
+      money: START_MONEY,
+      bag: { ...START_BAG },
+      dex: { seen: [...new Set([...owned, rival])], caught: [...new Set(owned)] },
+    };
+  },
 };
 
 export type LoadResult =
@@ -119,6 +140,15 @@ export function findProblem(data: Record<string, unknown>): string | null {
   if (typeof data.starterId !== 'number' || !hasSpecies(data.starterId)) return 'bad starter';
   if (!PROLOGUE_STAGES.includes(data.prologue as PrologueStage)) return 'bad prologue stage';
   if (typeof data.location !== 'string' || data.location.length === 0) return 'bad location';
+  if (!Number.isInteger(data.money) || (data.money as number) < 0) return 'bad money';
+  const bag = data.bag as Record<string, unknown> | undefined;
+  if (typeof bag !== 'object' || bag === null) return 'bag missing';
+  for (const [id, count] of Object.entries(bag)) {
+    if (!isItemId(id) || !Number.isInteger(count) || (count as number) < 1) return `bad bag entry ${id}`;
+  }
+  const dex = data.dex as Save['dex'] | undefined;
+  const speciesList = (list: unknown) => Array.isArray(list) && list.every(id => Number.isInteger(id) && hasSpecies(id));
+  if (!dex || !speciesList(dex.seen) || !speciesList(dex.caught)) return 'bad Pokédex';
   for (const [i, p] of [...party, ...data.box].entries()) {
     const problem = pokemonProblem(p as Pokemon);
     if (problem) return `Pokémon ${i}: ${problem}`;

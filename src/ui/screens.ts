@@ -8,6 +8,7 @@ export interface Button {
   testid: string;
   /** The button Enter / Start press (one per screen). */
   primary?: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }
 
@@ -28,6 +29,8 @@ export interface PartyMemberView {
   xpProgress: number;
   xpText: string;
   specials: { label: string; testid: string; options: Choice[]; value: string; onChange: (value: string) => void }[];
+  /** Items to use on it (potions). */
+  actions: Button[];
 }
 
 export interface PartyView {
@@ -38,7 +41,13 @@ export interface PartyView {
 }
 
 const button = (b: Button) =>
-  h('button', { text: b.label, testid: b.testid, class: b.primary ? 'primary' : undefined, onClick: b.onClick, attrs: b.primary ? { 'data-primary': '' } : {} });
+  h('button', {
+    text: b.label,
+    testid: b.testid,
+    class: b.primary ? 'primary' : undefined,
+    onClick: b.onClick,
+    attrs: { ...(b.primary ? { 'data-primary': '' } : {}), ...(b.disabled ? { disabled: '' } : {}) },
+  });
 
 export function renderResults(root: HTMLElement, view: ResultsView) {
   root.replaceChildren(
@@ -69,6 +78,7 @@ export function renderParty(root: HTMLElement, view: PartyView) {
             h('div', { class: 'xp-bar', attrs: { 'aria-hidden': 'true' } }, [h('div', { attrs: { style: `width: ${Math.round(m.xpProgress * 100)}%` } })]),
             h('small', { text: m.xpText }),
             ...m.specials.map(s => h('label', { class: 'special' }, [h('span', { text: s.label }), select(s.options, s.value, s.testid, s.label, s.onChange)])),
+            m.actions.length ? h('div', { class: 'buttons' }, m.actions.map(button)) : null,
           ]),
         ),
       ),
@@ -191,6 +201,50 @@ export function renderCity(root: HTMLElement, view: CityView) {
     h('section', { class: 'panel city', testid: 'city', attrs: { role: 'dialog', 'aria-label': view.name } }, [
       h('h2', { text: view.name, testid: 'city-name' }),
       h('p', { text: view.info }),
+      h('div', { class: 'buttons column' }, view.buttons.map(button)),
+    ]),
+  );
+  focusPrimary(root);
+}
+
+// ── Menus: the city, the shop, the Pokémon Center, the box, the world map ─────────────────────────────────────────
+
+export interface MenuRow {
+  label: string;
+  detail?: string;
+  testid?: string;
+  buttons: Button[];
+}
+
+export interface MenuView {
+  title: string;
+  testid: string;
+  /** Lines under the title (money, Pokédex, the last thing that happened…). */
+  info: string[];
+  sections: { title?: string; rows: MenuRow[] }[];
+  buttons: Button[];
+}
+
+export function renderMenu(root: HTMLElement, view: MenuView) {
+  root.replaceChildren(
+    h('section', { class: 'panel menu', testid: view.testid, attrs: { role: 'dialog', 'aria-label': view.title } }, [
+      h('h2', { text: view.title, testid: `${view.testid}-heading` }),
+      ...view.info.map((line, i) => h('p', { class: 'info', text: line, testid: `${view.testid}-info-${i}` })),
+      ...view.sections.map(section =>
+        h('div', { class: 'section' }, [
+          section.title ? h('h3', { text: section.title }) : null,
+          h(
+            'ul',
+            { class: 'rows' },
+            section.rows.map(row =>
+              h('li', { class: 'row', testid: row.testid }, [
+                h('div', {}, [h('strong', { text: row.label }), row.detail ? h('small', { text: row.detail }) : null]),
+                h('div', { class: 'buttons' }, row.buttons.map(button)),
+              ]),
+            ),
+          ),
+        ]),
+      ),
       h('div', { class: 'buttons column' }, view.buttons.map(button)),
     ]),
   );

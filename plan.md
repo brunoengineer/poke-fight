@@ -404,6 +404,26 @@ World map (cities unlocked by badges)
 - **Mall (big city)**: Great/Ultra Balls, Super/Hyper Potion, Revive, evolution stones, X items ❓,
   vitamins ❓.
 
+**Built in milestone 7** (pinned by `world.test.ts`, `save.test.ts`, `e2e/world.spec.ts`):
+
+- **Kanto as data** (`src/data/regions/kanto.ts`): 11 places in story order, each with the badges it needs, its
+  shop and its hunting grounds: real Red/Blue location areas grouped as grass, cave and water (Red and Blue merged,
+  so both versions' exclusives appear). Without badges: Pallet, Viridian, Pewter.
+- **Hunting**: grass and caves (walking tables); water = fishing with the **best rod owned** (Old, Good, Super Rod:
+  each its own Red/Blue table). Rods are **bought** (decided): Old Rod in Viridian (₽1000), Good Rod in Pewter
+  (₽3000), Super Rod at the Saffron mall (₽10000). Surfing: later.
+- **Wild battles**: the party against one wild Pokémon (an easy CPU), "A wild X appeared!". Esc runs away.
+  Wild Pokémon roll their own **IVs** (0–31), kept when caught.
+- **Catching**: after a win, one ball (Poké / Great / Ultra / Master): the Gen 8 formula as planned (no performance
+  bonus), 4 shake checks; if it breaks free it flees; you can also let it go. A caught Pokémon arrives rested (full
+  HP) and joins the party, or the box when the party is full.
+- **Money**: start ₽3000 and 5 Poké Balls. Battle field (trainers) pays the sum of their levels × 20; wild Pokémon
+  pay nothing. **Losing** (wild or trainer): half the money is lost, the party is healed, back to the city.
+- **Shop** (per city), **Pokémon Center** (free healing), **PC box** in any city (decided: swap freely, the party
+  keeps 1–6), **potions** used from the party screen (they can't revive), **world map** (locked cities say how many
+  badges they need), **Pokédex** (seen / caught counts).
+- **Save version 3**: money, bag, Pokédex (version 2 saves migrate).
+
 ## 7. Architecture
 
 ### 7.1 Stack (same as poke-gacha)
@@ -528,7 +548,7 @@ Each milestone ends with something playable, tests, and green CI.
 | 4 | ✅ **Pokémon data** | `build-data.mjs` (Gen 1: species, stats, types, moves, learnsets, evolutions, encounters, growth, catch rates); sprites in the fight; stat-based damage; type chart |
 | 5 | ✅ **Progression + save** | Party, XP, level up, move choice, evolution, save/load with versions |
 | 6 | ✅ **Prologue** | Title → starter → interactive rival tutorial → arrive at Viridian |
-| 7 | **World loop** | World map, cities, hunt (grass/water/cave), capture with balls, Pokémon Center, first shop, box |
+| 7 | ✅ **World loop** | World map, cities, hunt (grass/water/cave), capture with balls, Pokémon Center, first shop, box |
 | 8 | **Gyms** | KOF-style team battles, trainers, 8 gyms with AI styles, badges unlock cities, mall, Safari Zone |
 | 9 | **League** | Elite Four + Champion, credits, "next region" hook (scalability check) |
 | 10 | **Juice & polish** | Sound effects, music, cries, screen shake, particles, rebinding UI, options, balance pass |
@@ -567,12 +587,12 @@ sprites won't save it.
 | Big special power | The move's own power (no ×2) |
 | Languages | English and Portuguese (Pokémon and move names in English) |
 | Tackle loop | Kept as it is: a fast tackle spammer beating the hard CPU is accepted |
+| Water hunting | Needs a fishing rod; rods are bought (Old: Viridian, Good: Pewter, Super: Saffron mall) |
+| PC box | Swap Pokémon freely in any city |
 | Back dash | Invincible on its first 6 frames, punishable after |
 | Capture failure | One throw per win; if it breaks free, it flees |
 
 ### Still open
 
-1. **Mall**: Saffron (your idea) or Celadon (canonical department store)?
-2. **Trade evolutions**: an item (Link Cable) or another rule?
-3. **Next region**: what carries over to the new journey?
-(none right now: new questions come up as we build)
+1. **Trade evolutions** (Kadabra, Machoke, Graveler, Haunter): an item (Link Cable) or another rule? (milestone 8)
+2. **Next region**: what carries over to the new journey? (milestone 9)

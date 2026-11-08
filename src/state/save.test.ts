@@ -68,6 +68,30 @@ describe('save format', () => {
   });
 });
 
+describe('save version 3', () => {
+  it('a new journey has the starting money, five Poké Balls and a Pokédex with both starters', () => {
+    expect(save()).toMatchObject({ money: 3000, bag: { 'poke-ball': 5 }, dex: { seen: [5, 7], caught: [5] } });
+  });
+
+  it('version 2 saves get the starting money and balls, and a Pokédex of what they own', () => {
+    const v2 = JSON.parse(readFileSync(new URL('./fixtures/save-v2-viridian.json', import.meta.url), 'utf8'));
+    const result = parseSave(JSON.stringify(v2));
+    expect(result.status).toBe('ok');
+    if (result.status !== 'ok') return;
+    const owned = v2.party.map((p: { speciesId: number }) => p.speciesId);
+    expect(result.save).toMatchObject({ version: 3, money: 3000, bag: { 'poke-ball': 5 } });
+    expect(result.save.dex.caught.sort()).toEqual([...new Set(owned)].sort());
+    expect(result.save.dex.seen).toContain(v2.rival.starterId);
+  });
+
+  it('refuses bad money, unknown items and bad Pokédex entries', () => {
+    expect(broken(save(), s => (s.money = -1))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => ((s.bag as Record<string, number>)['rare-candy'] = 1))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => (s.bag = { 'poke-ball': 0 }))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => s.dex.caught.push(999))).toMatchObject({ reason: 'invalid' });
+  });
+});
+
 describe('save store', () => {
   it('writes and loads the save', () => {
     const storage = memoryStorage();

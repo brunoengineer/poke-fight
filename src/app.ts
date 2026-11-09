@@ -73,6 +73,7 @@ import { renderStarter } from './ui/screens/starter';
 import { renderDialog } from './ui/screens/dialog';
 import { renderCapture } from './ui/screens/capture';
 import { renderBag, type BagTarget } from './ui/screens/bag';
+import { gearPicture } from './render/gear';
 import { bagContents, checkUse, usableFromBag, type Pocket } from './game/bag';
 import { renderDexEntry, renderDexList } from './ui/screens/pokedex';
 import { renderEvolution } from './ui/screens/evolution';
@@ -579,7 +580,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
           label: t('dex.title'),
           detail: t('city.dex', { seen: s.dex.seen.length, caught: s.dex.caught.length }),
           testid: 'city-dex',
-          icon: 'dex',
+          image: gearPicture('pokedex'),
           pad: 'x',
           key: 'KeyX',
           onClick: () => showPokedex(),
@@ -588,7 +589,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
           label: t('bag.title'),
           detail: t('bag.count', { count: Object.values(s.bag).reduce((sum, n) => sum + (n ?? 0), 0) }),
           testid: 'city-bag',
-          icon: 'bag',
+          image: gearPicture('bag'),
           pad: 'rb',
           key: 'KeyB',
           onClick: () => showBag(),

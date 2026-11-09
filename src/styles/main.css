@@ -3685,50 +3685,41 @@ kbd,
 }
 
 .tool-button {
-  display: flex;
-  align-items: center;
-  gap: 1.2cqh;
-  height: 7.2cqh;
-  padding: 0 2.2cqh 0 1.8cqh;
+  display: grid;
+  place-items: center;
+  width: 8.4cqh;
+  height: 8.4cqh;
+  padding: 0;
   border: 1px solid var(--line);
-  border-radius: 99px;
-  background: var(--glass);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.22), var(--glass) 70%);
   backdrop-filter: blur(1.4cqh);
-  color: inherit;
   cursor: pointer;
   transition:
     transform 140ms var(--ease-pop),
     box-shadow 140ms;
 }
 
-.tool-button .icon {
-  width: 3.4cqh;
-  height: 3.4cqh;
-}
-
-.tool-text {
-  display: grid;
-  gap: 0.4cqh;
-  text-align: left;
-}
-
-.tool-text strong {
-  font: 800 italic 2.3cqh/1 var(--display);
-  text-transform: uppercase;
-}
-
-.tool-text small {
-  font: 700 1.4cqh/1 var(--body);
-  color: var(--dim);
-  white-space: nowrap;
+/* The picture: 32×32 pixel art, scaled crisp. */
+.tool-image {
+  width: 6.4cqh;
+  height: 6.4cqh;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0.4cqh 0.4cqh rgba(0, 0, 0, 0.45));
+  transition: transform 140ms var(--ease-pop);
 }
 
 .tool-button:focus {
   outline: none;
-  transform: translateY(-0.3cqh);
+  transform: translateY(-0.4cqh);
   box-shadow:
     0 0 0 0.4cqh #fff,
     0 0 0 0.9cqh color-mix(in srgb, var(--theme) 50%, transparent);
+}
+
+.tool-button:focus .tool-image,
+.tool-button:hover .tool-image {
+  transform: scale(1.12) rotate(-4deg);
 }
 
 /* ── Bag ─────────────────────────────────────────────────────────────────────────────────────────────────────── */

@@ -3,7 +3,7 @@
 
 import { h } from '../dom';
 import { mount } from '../focus';
-import { icon, type IconName } from '../icons';
+import { icon } from '../icons';
 import { button, card, heading, hintBar, hpBar, picture, pokemonSprite, screen, stat, type ButtonSpec, type CardSpec, type Hint, type Pad } from '../kit';
 
 /** What a card shows at its top. */
@@ -28,8 +28,8 @@ export interface CityView {
   tagline: string;
   theme: string;
   money: string;
-  /** Buttons beside the party, at the bottom: the Pokédex (X) and the bag (RB / B). */
-  tools: { label: string; detail: string; testid: string; icon: IconName; pad: Pad; key: string; onClick: () => void }[];
+  /** Buttons beside the party, at the bottom: the Pokédex (X) and the bag (RB / B), as pictures (render/gear.ts). */
+  tools: { label: string; detail: string; testid: string; image: string; pad: Pad; key: string; onClick: () => void }[];
   badges: { url: string; earned: boolean; name: string }[];
   badgeCount: string;
   champion: string | null;
@@ -133,9 +133,15 @@ export function renderCity(root: HTMLElement, view: CityView) {
                   class: 'tool-button',
                   testid: tool.testid,
                   onClick: tool.onClick,
-                  attrs: { type: 'button', 'aria-label': `${tool.label}: ${tool.detail}`, 'data-pad': tool.pad, 'data-key': tool.key },
+                  attrs: {
+                    type: 'button',
+                    'aria-label': `${tool.label}: ${tool.detail}`,
+                    title: `${tool.label} · ${tool.detail}`,
+                    'data-pad': tool.pad,
+                    'data-key': tool.key,
+                  },
                 },
-                [icon(tool.icon), h('span', { class: 'tool-text' }, [h('strong', { text: tool.label }), h('small', { text: tool.detail })])],
+                [h('img', { class: 'tool-image', attrs: { src: tool.image, alt: '', draggable: 'false' } })],
               ),
             ),
           ]),

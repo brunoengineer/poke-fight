@@ -15,7 +15,7 @@ export interface CaptureView {
   caught: boolean;
   /** "You threw a Poké Ball!" */
   start: string;
-  /** "Gotcha! Pidgey was caught!" or "Aargh! Almost had it!" */
+  /** "Gotcha! Pidgey was caught!" or "Aargh! Almost had it! Pidgey broke free." */
   end: string;
   next: string;
   hints: Hint[];

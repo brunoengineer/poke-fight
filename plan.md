@@ -492,7 +492,7 @@ World map (cities unlocked by badges)
   bonus), 4 shake checks; if it breaks free it flees; you can also let it go. **The throw plays out** as in the
   games (`ui/screens/capture.ts`): the ball arcs in, the Pokémon turns to red light and is drawn inside, the ball
   drops and wobbles once per shake check passed, then clicks shut (a green light, stars, "Gotcha!") or bursts open
-  ("Aargh! Almost had it!": the games' lines by the number of wobbles). A skips to the end. A caught Pokémon arrives rested (full
+  ("Aargh! Almost had it! Pidgey broke free.": after the games' lines by the number of wobbles, each saying plainly that it got away; the games' "It appeared to be caught!" read like a catch). A skips to the end. A caught Pokémon arrives rested (full
   HP) and joins the party, or the box when the party is full.
 - **Money**: start ₽3000 and 5 Poké Balls. Battle field (trainers) pays the sum of their levels × 20; wild Pokémon
   pay nothing. **Losing** (wild or trainer): half the money is lost, the party is healed, back to the city.

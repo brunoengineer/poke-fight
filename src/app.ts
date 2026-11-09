@@ -133,7 +133,10 @@ export interface AppElements {
 
 /** What the player hears at each moment of a throw. */
 const CAPTURE_SOUND = { throw: 'ballThrow', open: 'ballOpen', shake: 'shake', caught: 'caught', escape: 'ballOpen' } as const satisfies Record<string, SoundId>;
-/** The games' lines for a Pokémon breaking free, by how many times the ball wobbled first. */
+/**
+ * What to say when a Pokémon breaks free, by how many times the ball wobbled first. After the games' lines, but
+ * each one says plainly that it got away (the games' "It appeared to be caught!" read like a catch).
+ */
 const ESCAPE_TEXT = ['capture.escape0', 'capture.escape1', 'capture.escape2', 'capture.escape3'] as const;
 
 export function startApp(elements: AppElements, options: TestOptions) {
@@ -1618,7 +1621,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
       shakes: thrown.shakes,
       caught: thrown.caught,
       start: t('capture.thrown', { ball: itemName(ball) }),
-      end: thrown.caught ? t('capture.caught', { name }) : t(ESCAPE_TEXT[Math.min(3, thrown.shakes)]),
+      end: thrown.caught ? t('capture.caught', { name }) : t(ESCAPE_TEXT[Math.min(3, thrown.shakes)], { name }),
       next: t('dialog.next'),
       hints: [{ pad: 'a', key: 'Enter', label: t('dialog.next') }],
       onMoment: moment => audio.play(CAPTURE_SOUND[moment]),

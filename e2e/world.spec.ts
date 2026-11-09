@@ -57,7 +57,8 @@ test.describe('hunting and catching', () => {
         caught = wild;
       } else {
         expect(state).toBe('escaped');
-        await expect(page.getByTestId('capture-text')).toHaveText(/broke free|appeared to be caught|Almost had it|so close/);
+        // However many times it wobbled, the message says plainly that it got away.
+        await expect(page.getByTestId('capture-text')).toContainText(`${wild} broke free`);
       }
       await page.getByTestId('capture-done').click();
       if (!caught) {

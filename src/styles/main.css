@@ -3677,6 +3677,358 @@ kbd,
   opacity: 0;
 }
 
+/* ── Pokédex ─────────────────────────────────────────────────────────────────────────────────────────────────── */
+
+.dex-screen {
+  grid-template-columns: minmax(0, 1fr) 70cqh;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'head head'
+    'grid page'
+    'foot foot';
+}
+
+.dex-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dex-foot {
+  grid-area: foot;
+}
+
+/* All 151, scrolling with the focus. */
+.dex-grid {
+  grid-area: grid;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-rows: 11cqh;
+  gap: 0.9cqh;
+  padding: 1.6cqh;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: none;
+}
+
+.dex-tile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 1.4cqh;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition:
+    transform 140ms var(--ease-pop),
+    background 140ms;
+}
+
+.dex-tile.caught {
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.dex-tile.unseen {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.dex-tile-number {
+  position: absolute;
+  top: 0.6cqh;
+  left: 0.9cqh;
+  font: 800 italic 1.5cqh/1 var(--display);
+  opacity: 0.7;
+}
+
+.dex-tile-sprite {
+  width: 10cqh;
+  height: 10cqh;
+}
+
+/* Caught: a little Poké Ball in the corner (grey once none is left with you). */
+.dex-tile-ball {
+  position: absolute;
+  top: 0.7cqh;
+  right: 0.8cqh;
+  width: 1.8cqh;
+  height: 1.8cqh;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #fff 0 0.28cqh, #1b1624 0.3cqh 0.48cqh, transparent 0.5cqh),
+    linear-gradient(#e8404a 0 45%, #1b1624 45% 55%, #f4f4f4 55%);
+  box-shadow: 0 0 0 0.2cqh #1b1624;
+}
+
+.dex-tile:not(.owned) .dex-tile-ball {
+  filter: grayscale(1);
+  opacity: 0.8;
+}
+
+.dex-tile:focus {
+  outline: none;
+  z-index: 1;
+  background: #fff;
+  color: var(--ink);
+  transform: scale(1.06);
+  box-shadow: 0 0 0 0.4cqh color-mix(in srgb, var(--theme) 65%, white), 0 1.4cqh 3cqh rgba(0, 0, 0, 0.45);
+}
+
+.dex-tile.unseen:focus .dex-tile-sprite {
+  filter: brightness(0) opacity(0.35);
+}
+
+/* The page of the focused species. */
+.dex-page {
+  --c: var(--theme);
+  grid-area: page;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6cqh;
+  padding: 2.2cqh 2.6cqh;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: none;
+  background:
+    radial-gradient(60% 40% at 20% 0%, color-mix(in srgb, var(--c) 35%, transparent), transparent),
+    var(--glass-strong);
+}
+
+.dex-head {
+  display: flex;
+  align-items: center;
+  gap: 2cqh;
+}
+
+.dex-stage-art {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 19cqh;
+  height: 19cqh;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--c) 45%, transparent), transparent);
+}
+
+.dex-sprite {
+  width: 19cqh;
+  height: 19cqh;
+}
+
+.dex-title {
+  display: grid;
+  gap: 0.7cqh;
+  min-width: 0;
+}
+
+.dex-number {
+  font: 800 italic 2.2cqh/1 var(--display);
+  color: var(--dim);
+}
+
+.dex-title strong {
+  font-size: 4.6cqh;
+  line-height: 1;
+}
+
+.dex-genus {
+  font: 600 1.9cqh/1.2 var(--body);
+  color: var(--dim);
+}
+
+.dex-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6cqh;
+  width: fit-content;
+  padding: 0.5cqh 1.2cqh;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+  font: 700 1.7cqh/1 var(--body);
+}
+
+.dex-status.caught {
+  background: color-mix(in srgb, #4fe36a 22%, transparent);
+  color: #a8ffbc;
+}
+
+.dex-status .icon {
+  width: 1.8cqh;
+  height: 1.8cqh;
+}
+
+.dex-entry {
+  display: grid;
+  gap: 0.8cqh;
+  margin: 0;
+  padding: 1.4cqh 1.8cqh;
+  border-left: 0.5cqh solid var(--c);
+  border-radius: 0 1.2cqh 1.2cqh 0;
+  background: rgba(0, 0, 0, 0.22);
+  font: 500 italic 1.95cqh/1.45 var(--body);
+}
+
+.dex-entry small {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--dim);
+}
+
+.dex-section {
+  display: grid;
+  gap: 0.9cqh;
+}
+
+/* The family: stage → stage, with how each one evolves above it. */
+.dex-chain {
+  display: flex;
+  align-items: center;
+  gap: 1cqh;
+}
+
+.dex-stage {
+  display: grid;
+  gap: 0.6cqh;
+}
+
+.dex-arrow .icon {
+  width: 2.2cqh;
+  height: 2.2cqh;
+  opacity: 0.6;
+}
+
+.dex-evo {
+  display: grid;
+  justify-items: center;
+  min-width: 11cqh;
+  padding: 0.6cqh 0.8cqh;
+  border-radius: 1.2cqh;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 1.6cqh;
+}
+
+.dex-evo.current {
+  background: color-mix(in srgb, var(--c) 30%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 70%, white);
+}
+
+.dex-how {
+  font: 700 1.4cqh/1 var(--body);
+  color: var(--gold);
+}
+
+.dex-evo-sprite {
+  width: 7.5cqh;
+  height: 7.5cqh;
+  margin: -0.6cqh 0;
+}
+
+/* Eevee's three: smaller, so the family fits. */
+.dex-stage:has(.dex-evo:nth-child(3)) {
+  grid-template-columns: repeat(3, auto);
+}
+
+.dex-where {
+  display: grid;
+  gap: 0.5cqh;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: 600 1.75cqh/1.3 var(--body);
+}
+
+.dex-where li::before {
+  content: '';
+  display: inline-block;
+  width: 0.8cqh;
+  height: 0.8cqh;
+  margin-right: 1cqh;
+  border-radius: 50%;
+  background: var(--c);
+  vertical-align: middle;
+}
+
+.dex-stats {
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6cqh 2.6cqh;
+}
+
+.dex-stats h3,
+.dex-stats .dex-catch {
+  grid-column: 1 / -1;
+}
+
+.dex-stats .mini-stat {
+  grid-template-columns: 7cqh 1fr 3.6cqh;
+}
+
+.dex-catch {
+  margin-top: 0.4cqh;
+  font: 700 1.6cqh/1 var(--body);
+  color: var(--dim);
+}
+
+/* The city's Pokédex chip is a button. */
+.dex-chip {
+  color: inherit;
+  cursor: pointer;
+  transition:
+    transform 140ms var(--ease-pop),
+    background 140ms;
+}
+
+.dex-chip .icon {
+  width: 2.2cqh;
+  height: 2.2cqh;
+}
+
+.dex-chip:focus {
+  outline: none;
+  background: #fff;
+  color: var(--ink);
+  transform: scale(1.05);
+  box-shadow: 0 0 0 0.4cqh color-mix(in srgb, var(--theme) 65%, white);
+}
+
+/* ── Releasing (the box) ──────────────────────────────────────────────────────────────────────────────────── */
+
+.btn.danger {
+  border-color: rgba(255, 120, 120, 0.55);
+  background: rgba(120, 20, 36, 0.55);
+  color: #ffd2d2;
+}
+
+.btn.danger:focus {
+  background: #ff6b6b;
+  color: #fff;
+}
+
+.box-detail .btn.danger {
+  margin-left: auto;
+}
+
+.release-sheet {
+  justify-items: center;
+  width: 64cqh;
+  text-align: center;
+}
+
+.release-sprite {
+  width: 16cqh;
+  height: 16cqh;
+  margin: -2cqh 0 -1cqh;
+}
+
+.release-text {
+  margin: 0;
+  font: 700 2.3cqh/1.4 var(--body);
+}
+
+.release-buttons {
+  display: flex;
+  gap: 1.6cqh;
+}
+
 /* ── Capture ─────────────────────────────────────────────────────────────────────────────────────────────────── */
 /* The states (data-state on the stage) come from ui/screens/capture.ts, which owns the timing. */
 

@@ -391,9 +391,22 @@ More archetypes can come later (status effects: paralysis = slower, burn = damag
   - Gen 8 "critical capture" is left out (simpler).
   - **One throw per win**: if the Pokémon breaks free, it **flees**. You still keep the battle's XP. The ball is used up either way.
   - So the choice of ball matters: a rare Pokémon is worth an Ultra Ball, because there is no second try.
-- **Party and PC**: 6 in the party, the rest in a box (simple list screen).
+- **Party and PC**: 6 in the party, the rest in a box (simple list screen). **Releasing** (after milestone 11):
+  from the box screen (X / Delete), after a "Keep it / Release" question with Keep it focused; any boxed Pokémon,
+  or a party one as long as one stays in the party. The Pokédex still counts a released Pokémon as caught.
 - **Money**: from trainer, gym and League wins. Wild battles give little or none.
-- **Pokédex**: seen / caught.
+- **Pokédex** (a screen since milestone 11's follow-ups; `game/pokedex.ts`, `ui/screens/pokedex.ts`): all 151 in a
+  grid (unseen ones as silhouettes, a Poké Ball on caught ones: in color while you have one, grey once none is left),
+  opened from the city's "seen · caught" chip or X. A page shows what you know:
+  - unseen: only the number;
+  - seen: name, types, kind ("Seed Pokémon"), its family (stage by stage, with how each one evolves *in this game*:
+    a level, a stone, or the Link Cable for trades; later generations' evolutions are left out) and where it lives
+    in Kanto (each city's grass, cave, water with the weakest rod that hooks it, the Safari Zone, with the levels);
+  - caught: also height and weight, Red's Pokédex entry, base stats and catch rate, and how many you have now.
+  The kind, size and entry come from PokeAPI through `npm run data` (in English, like the names).
+- **The wild fight's Poké Ball**: in wild and Safari fights, a small Poké Ball left of the opponent's name: in color
+  if you have that species now (party or box), grey if not, so you don't spend balls on one you have. Not shown
+  against trainers (their Pokémon can't be caught).
 
 **Built in milestone 5** (pinned by `progress.test.ts`, `save.test.ts`, `i18n.test.ts`, `e2e/progress.spec.ts`):
 
@@ -760,6 +773,7 @@ sprites won't save it.
 | Look | Console style (milestone 11): a 16:9 frame, the place's art behind glass menus and bright cards, Barlow Condensed + Inter |
 | Art | Trainers, characters and backgrounds from Pokémon Showdown; items and badges from PokeAPI; all by URL, painted stand-ins until they load |
 | Menus and controller | Spatial navigation (by direction), focus kept on redraw, hint glyphs for the device in use, Y opens the party |
+| Pokédex | A screen (grid + page) that reveals more as you see and catch; releasing is in the box, the dex keeps "caught"; wild fights show a Poké Ball (color: you have it) by the name |
 | Party order | Reorder in the party screen (pick up, then swap); the first Pokémon leads. The two slots glide into each other's places; a screen redrawn after a change doesn't play its entrance again |
 | Switching | Once mid-round (Tab / View), again only after a faint; after every faint the player picks the next fighter. A mid-round switch continues the same round from where everyone stood |
 | CPU per Pokémon | Skill from who controls it (wild clumsy, trainers at their difficulty) plus its evolution stage and level; style from its stats; a new seed every fight |

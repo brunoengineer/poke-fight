@@ -29,6 +29,8 @@ export interface CityView {
   theme: string;
   money: string;
   dex: string;
+  /** Opens the Pokédex (the chip is a button; X too). */
+  onDex: () => void;
   badges: { url: string; earned: boolean; name: string }[];
   badgeCount: string;
   champion: string | null;
@@ -105,7 +107,16 @@ export function renderCity(root: HTMLElement, view: CityView) {
           h('div', { class: 'standing' }, [
             h('div', { class: 'standing-row' }, [
               stat('coin', view.money, 'city-money', 'stat money'),
-              stat('dex', view.dex, 'city-dex'),
+              h(
+                'button',
+                {
+                  class: 'stat dex-chip',
+                  testid: 'city-dex',
+                  onClick: view.onDex,
+                  attrs: { type: 'button', 'data-pad': 'x', 'data-key': 'KeyX' },
+                },
+                [icon('dex'), h('span', { text: view.dex })],
+              ),
               view.champion ? stat('crown', view.champion, 'city-champion', 'stat champion') : null,
             ]),
             h('div', { class: 'badge-case', testid: 'city-badges', attrs: { 'aria-label': view.badgeCount } }, [

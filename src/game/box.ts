@@ -1,5 +1,5 @@
 // The PC box: Pokémon not in the party. Swapping is free in any city (decided after milestone 6), never during a fight.
-// The party always keeps 1 to 6 Pokémon.
+// The party always keeps 1 to 6 Pokémon. Pokémon can be released from the box screen.
 
 import type { Pokemon } from './pokemon';
 
@@ -41,4 +41,18 @@ export function swapInParty(party: readonly Pokemon[], from: number, to: number)
   const next = [...party];
   [next[from], next[to]] = [next[to], next[from]];
   return next;
+}
+
+export type Place = 'party' | 'box';
+
+/** Releasing (decided after milestone 11): any Pokémon in the box, or in the party as long as one stays there. */
+export const canRelease = (team: Team, where: Place) => where === 'box' || team.party.length > 1;
+
+/** The Pokémon goes back to the wild for good (the Pokédex still counts it as caught). */
+export function release(team: Team, where: Place, index: number): Team {
+  if (!canRelease(team, where)) throw new Error('The party needs at least one Pokémon');
+  if (!team[where][index]) throw new Error('No Pokémon there');
+  return where === 'party'
+    ? { party: team.party.filter((_, i) => i !== index), box: team.box }
+    : { party: team.party, box: team.box.filter((_, i) => i !== index) };
 }

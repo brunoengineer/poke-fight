@@ -87,7 +87,13 @@
      "maxLevel": 5,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Seed Pokémon",
+    "heightM": 0.7,
+    "weightKg": 6.9,
+    "entry": "A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON."
+   }
   },
   {
    "id": 2,
@@ -160,7 +166,13 @@
      "move": "solar-beam"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Seed Pokémon",
+    "heightM": 1,
+    "weightKg": 13,
+    "entry": "When the bulb on its back grows large, it appears to lose the ability to stand on its hind legs."
+   }
   },
   {
    "id": 3,
@@ -231,7 +243,13 @@
      "move": "solar-beam"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Seed Pokémon",
+    "heightM": 2,
+    "weightKg": 100,
+    "entry": "The plant blooms when it is absorbing solar energy. It stays on the move to seek sunlight."
+   }
   },
   {
    "id": 4,
@@ -312,7 +330,13 @@
      "maxLevel": 5,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Lizard Pokémon",
+    "heightM": 0.6,
+    "weightKg": 8.5,
+    "entry": "Obviously prefers hot places. When it rains, steam is said to spout from the tip of its tail."
+   }
   },
   {
    "id": 5,
@@ -380,7 +404,13 @@
      "move": "fire-spin"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Flame Pokémon",
+    "heightM": 1.1,
+    "weightKg": 19,
+    "entry": "When it swings its burning tail, it elevates the temperature to unbearably high levels."
+   }
   },
   {
    "id": 6,
@@ -447,7 +477,13 @@
      "move": "fire-spin"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Flame Pokémon",
+    "heightM": 1.7,
+    "weightKg": 90.5,
+    "entry": "Spits fire that is hot enough to melt boulders. Known to cause forest fires unintentionally."
+   }
   },
   {
    "id": 7,
@@ -528,7 +564,13 @@
      "maxLevel": 5,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Tiny Turtle Pokémon",
+    "heightM": 0.5,
+    "weightKg": 9,
+    "entry": "After birth, its back swells and hardens into a shell. Powerfully sprays foam from its mouth."
+   }
   },
   {
    "id": 8,
@@ -596,7 +638,13 @@
      "move": "hydro-pump"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Turtle Pokémon",
+    "heightM": 1,
+    "weightKg": 22.5,
+    "entry": "Often hides in water to stalk unwary prey. For swimming fast, it moves its ears to maintain balance."
+   }
   },
   {
    "id": 9,
@@ -662,7 +710,13 @@
      "move": "hydro-pump"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Shellfish Pokémon",
+    "heightM": 1.6,
+    "weightKg": 85.5,
+    "entry": "A brutal POKéMON with pressurized water jets on its shell. They are used for high speed tackles."
+   }
   },
   {
    "id": 10,
@@ -783,7 +837,13 @@
      "maxLevel": 5,
      "chance": 10
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Worm Pokémon",
+    "heightM": 0.3,
+    "weightKg": 2.9,
+    "entry": "Its short feet are tipped with suction pads that enable it to tirelessly climb slopes and walls."
+   }
   },
   {
    "id": 11,
@@ -876,7 +936,13 @@
      "maxLevel": 6,
      "chance": 10
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Cocoon Pokémon",
+    "heightM": 0.7,
+    "weightKg": 9.9,
+    "entry": "This POKéMON is vulnerable to attack while its shell is soft, exposing its weak and tender body."
+   }
   },
   {
    "id": 12,
@@ -935,7 +1001,13 @@
      "move": "psybeam"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Butterfly Pokémon",
+    "heightM": 1.1,
+    "weightKg": 32,
+    "entry": "In battle, it flaps its wings at high speed to release highly toxic dust into the air."
+   }
   },
   {
    "id": 13,
@@ -1057,7 +1129,13 @@
      "maxLevel": 3,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Hairy Bug Pokémon",
+    "heightM": 0.3,
+    "weightKg": 3.2,
+    "entry": "Often found in forests, eating leaves. It has a sharp venomous stinger on its head."
+   }
   },
   {
    "id": 14,
@@ -1151,7 +1229,13 @@
      "maxLevel": 4,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Cocoon Pokémon",
+    "heightM": 0.6,
+    "weightKg": 10,
+    "entry": "Almost incapable of moving, this POKéMON can only harden its shell to protect itself from predators."
+   }
   },
   {
    "id": 15,
@@ -1206,7 +1290,13 @@
      "move": "agility"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Poison Bee Pokémon",
+    "heightM": 1,
+    "weightKg": 29.5,
+    "entry": "Flies at high speed and attacks using its large venomous stingers on its forelegs and tail."
+   }
   },
   {
    "id": 16,
@@ -1812,7 +1902,13 @@
      "maxLevel": 13,
      "chance": 15
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Tiny Bird Pokémon",
+    "heightM": 0.3,
+    "weightKg": 1.8,
+    "entry": "A common sight in forests and woods. It flaps its wings at ground level to kick up blinding sand."
+   }
   },
   {
    "id": 17,
@@ -1974,7 +2070,13 @@
      "maxLevel": 32,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Bird Pokémon",
+    "heightM": 1.1,
+    "weightKg": 30,
+    "entry": "Very protective of its sprawling territorial area, this POKéMON will fiercely peck at any intruder."
+   }
   },
   {
    "id": 18,
@@ -2037,7 +2139,13 @@
      "move": "mirror-move"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Bird Pokémon",
+    "heightM": 1.5,
+    "weightKg": 39.5,
+    "entry": "When hunting, it skims the surface of water at high speed to pick off unwary prey such as MAGIKARP."
+   }
   },
   {
    "id": 19,
@@ -2446,7 +2554,13 @@
      "maxLevel": 2,
      "chance": 10
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Mouse Pokémon",
+    "heightM": 0.3,
+    "weightKg": 3.5,
+    "entry": "Bites anything when it attacks. Small and very quick, it is a common sight in many places."
+   }
   },
   {
    "id": 20,
@@ -2629,7 +2743,13 @@
      "maxLevel": 30,
      "chance": 15
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Mouse Pokémon",
+    "heightM": 0.7,
+    "weightKg": 18.5,
+    "entry": "It uses its whis kers to maintain its balance. It apparently slows down if they are cut off."
+   }
   },
   {
    "id": 21,
@@ -3091,7 +3211,13 @@
      "maxLevel": 26,
      "chance": 15
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Tiny Bird Pokémon",
+    "heightM": 0.3,
+    "weightKg": 2,
+    "entry": "Eats bugs in grassy areas. It has to flap its short wings at high speed to stay airborne."
+   }
   },
   {
    "id": 22,
@@ -3295,7 +3421,13 @@
      "maxLevel": 43,
      "chance": 1
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Beak Pokémon",
+    "heightM": 1.2,
+    "weightKg": 38,
+    "entry": "With its huge and magnificent wings, it can keep aloft without ever having to land for rest."
+   }
   },
   {
    "id": 23,
@@ -3500,7 +3632,13 @@
      "maxLevel": 26,
      "chance": 20
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Snake Pokémon",
+    "heightM": 2,
+    "weightKg": 6.9,
+    "entry": "Moves silently and stealthily. Eats the eggs of birds, such as PIDGEY and SPEAROW, whole."
+   }
   },
   {
    "id": 24,
@@ -3583,7 +3721,13 @@
      "maxLevel": 41,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Cobra Pokémon",
+    "heightM": 3.5,
+    "weightKg": 65,
+    "entry": "It is rumored that the ferocious warning markings on its belly differ from area to area."
+   }
   },
   {
    "id": 25,
@@ -3708,7 +3852,13 @@
      "maxLevel": 24,
      "chance": 10
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Mouse Pokémon",
+    "heightM": 0.4,
+    "weightKg": 6,
+    "entry": "When several of these POKéMON gather, their electricity could build and cause lightning storms."
+   }
   },
   {
    "id": 26,
@@ -3795,7 +3945,13 @@
      "maxLevel": 36,
      "chance": 1
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Mouse Pokémon",
+    "heightM": 0.8,
+    "weightKg": 30,
+    "entry": "Its long tail serves as a ground to protect itself from its own high voltage power."
+   }
   },
   {
    "id": 27,
@@ -3996,7 +4152,13 @@
      "maxLevel": 26,
      "chance": 20
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Mouse Pokémon",
+    "heightM": 0.6,
+    "weightKg": 12,
+    "entry": "Burrows deep underground in arid locations far from water. It only emerges to hunt for food."
+   }
   },
   {
    "id": 28,
@@ -4075,7 +4237,13 @@
      "maxLevel": 41,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Mouse Pokémon",
+    "heightM": 1,
+    "weightKg": 29.5,
+    "entry": "Curls up into a spiny ball when threatened. It can roll while curled up to attack or escape."
+   }
   },
   {
    "id": 29,
@@ -4244,7 +4412,13 @@
      "maxLevel": 100,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Poison Pin Pokémon",
+    "heightM": 0.4,
+    "weightKg": 7,
+    "entry": "Although small, its venomous barbs render this POKéMON dangerous. The female has smaller horns."
+   }
   },
   {
    "id": 30,
@@ -4385,7 +4559,13 @@
      "maxLevel": 17,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Poison Pin Pokémon",
+    "heightM": 0.8,
+    "weightKg": 20,
+    "entry": "The female's horn develops slowly. Prefers physical attacks such as clawing and biting."
+   }
   },
   {
    "id": 31,
@@ -4440,7 +4620,13 @@
      "move": "body-slam"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Drill Pokémon",
+    "heightM": 1.3,
+    "weightKg": 60,
+    "entry": "Its hard scales provide strong protection. It uses its hefty bulk to execute powerful moves."
+   }
   },
   {
    "id": 32,
@@ -4593,7 +4779,13 @@
      "maxLevel": 25,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Poison Pin Pokémon",
+    "heightM": 0.5,
+    "weightKg": 9,
+    "entry": "Stiffens its ears to sense danger. The larger its horns, the more powerful its secreted venom."
+   }
   },
   {
    "id": 33,
@@ -4718,7 +4910,13 @@
      "maxLevel": 17,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Poison Pin Pokémon",
+    "heightM": 0.9,
+    "weightKg": 19.5,
+    "entry": "An aggressive POKéMON that is quick to attack. The horn on its head secretes a powerful venom."
+   }
   },
   {
    "id": 34,
@@ -4773,7 +4971,13 @@
      "move": "thrash"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Drill Pokémon",
+    "heightM": 1.4,
+    "weightKg": 62,
+    "entry": "It uses its powerful tail in battle to smash, constrict, then break the prey's bones."
+   }
   },
   {
    "id": 35,
@@ -4918,7 +5122,13 @@
      "maxLevel": 12,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Fairy Pokémon",
+    "heightM": 0.6,
+    "weightKg": 7.5,
+    "entry": "Its magical and cute appeal has many admirers. It is rare and found only in certain areas."
+   }
   },
   {
    "id": 36,
@@ -4960,7 +5170,13 @@
      "move": "sing"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Fairy Pokémon",
+    "heightM": 1.3,
+    "weightKg": 40,
+    "entry": "A timid fairy POKéMON that is rarely seen. It will run and hide the moment it senses people."
+   }
   },
   {
    "id": 37,
@@ -5101,7 +5317,13 @@
      "maxLevel": 35,
      "chance": 15
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Fox Pokémon",
+    "heightM": 0.6,
+    "weightKg": 9.9,
+    "entry": "At the time of birth, it has just one tail. The tail splits from its tip as it grows older."
+   }
   },
   {
    "id": 38,
@@ -5143,7 +5365,13 @@
      "move": "tail-whip"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Fox Pokémon",
+    "heightM": 1.1,
+    "weightKg": 19.9,
+    "entry": "Very smart and very vengeful. Grabbing one of its many tails could result in a 1000-year curse."
+   }
   },
   {
    "id": 39,
@@ -5257,7 +5485,13 @@
      "maxLevel": 7,
      "chance": 1
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Balloon Pokémon",
+    "heightM": 0.5,
+    "weightKg": 5.5,
+    "entry": "When its huge eyes light up, it sings a mysteriously soothing melody that lulls its enemies to sleep."
+   }
   },
   {
    "id": 40,
@@ -5317,7 +5551,13 @@
      "maxLevel": 54,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Balloon Pokémon",
+    "heightM": 1,
+    "weightKg": 12,
+    "entry": "The body is soft and rubbery. When angered, it will suck in air and inflate itself to an enormous size."
+   }
   },
   {
    "id": 41,
@@ -5791,7 +6031,13 @@
      "maxLevel": 22,
      "chance": 15
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Bat Pokémon",
+    "heightM": 0.8,
+    "weightKg": 7.5,
+    "entry": "Forms colonies in perpetually dark places. Uses ultrasonic waves to identify and approach targets."
+   }
   },
   {
    "id": 42,
@@ -5968,7 +6214,13 @@
      "maxLevel": 41,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Bat Pokémon",
+    "heightM": 1.6,
+    "weightKg": 55,
+    "entry": "Once it strikes, it will not stop draining energy from the victim even if it gets too heavy to fly."
+   }
   },
   {
    "id": 43,
@@ -6238,7 +6490,13 @@
      "maxLevel": 14,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Weed Pokémon",
+    "heightM": 0.5,
+    "weightKg": 5.4,
+    "entry": "During the day, it keeps its face buried in the ground. At night, it wanders around sowing its seeds."
+   }
   },
   {
    "id": 44,
@@ -6361,7 +6619,13 @@
      "maxLevel": 30,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Weed Pokémon",
+    "heightM": 0.8,
+    "weightKg": 8.6,
+    "entry": "The fluid that oozes from its mouth isn't drool. It is a nectar that is used to attract prey."
+   }
   },
   {
    "id": 45,
@@ -6416,7 +6680,13 @@
      "move": "sleep-powder"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Flower Pokémon",
+    "heightM": 1.2,
+    "weightKg": 18.6,
+    "entry": "The larger its petals, the more toxic pollen it contains. Its big head is heavy and hard to hold up."
+   }
   },
   {
    "id": 46,
@@ -6570,7 +6840,13 @@
      "maxLevel": 23,
      "chance": 15
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Mushroom Pokémon",
+    "heightM": 0.3,
+    "weightKg": 5.4,
+    "entry": "Burrows to suck tree roots. The mushrooms on its back grow by draw ing nutrients from the bug host."
+   }
   },
   {
    "id": 47,
@@ -6694,7 +6970,13 @@
      "maxLevel": 25,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Mushroom Pokémon",
+    "heightM": 1,
+    "weightKg": 29.5,
+    "entry": "A host-parasite pair in which the parasite mushroom has taken over the host bug. Prefers damp places."
+   }
   },
   {
    "id": 48,
@@ -6920,7 +7202,13 @@
      "maxLevel": 23,
      "chance": 15
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Insect Pokémon",
+    "heightM": 1,
+    "weightKg": 30,
+    "entry": "Lives in the shadows of tall trees where it eats insects. It is attracted by light at night."
+   }
   },
   {
    "id": 49,
@@ -7068,7 +7356,13 @@
      "maxLevel": 31,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Poison Moth Pokémon",
+    "heightM": 1.5,
+    "weightKg": 12.5,
+    "entry": "The dust-like scales covering its wings are color coded to indicate the kinds of poison it has."
+   }
   },
   {
    "id": 50,
@@ -7253,7 +7547,13 @@
      "maxLevel": 22,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Mole Pokémon",
+    "heightM": 0.2,
+    "weightKg": 0.8,
+    "entry": "Lives about one yard underground where it feeds on plant roots. It sometimes appears above ground."
+   }
   },
   {
    "id": 51,
@@ -7344,7 +7644,13 @@
      "maxLevel": 31,
      "chance": 1
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Mole Pokémon",
+    "heightM": 0.7,
+    "weightKg": 33.3,
+    "entry": "A team of DIGLETT triplets. It triggers huge earthquakes by burrowing 60 miles underground."
+   }
   },
   {
    "id": 52,
@@ -7522,7 +7828,13 @@
      "maxLevel": 20,
      "chance": 10
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Scratch Cat Pokémon",
+    "heightM": 0.4,
+    "weightKg": 4.2,
+    "entry": "Adores circular objects. Wanders the streets on a nightly basis to look for dropped loose change."
+   }
   },
   {
    "id": 53,
@@ -7584,7 +7896,13 @@
      "move": "slash"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Classy Cat Pokémon",
+    "heightM": 1,
+    "weightKg": 32,
+    "entry": "Although its fur has many admirers, it is tough to raise as a pet because of its fickle meanness."
+   }
   },
   {
    "id": 54,
@@ -7945,7 +8263,13 @@
      "maxLevel": 15,
      "chance": 8
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Duck Pokémon",
+    "heightM": 0.8,
+    "weightKg": 19.6,
+    "entry": "While lulling its enemies with its vacant look, this wily POKéMON will use psychokinetic powers."
+   }
   },
   {
    "id": 55,
@@ -8028,7 +8352,13 @@
      "maxLevel": 39,
      "chance": 4
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Duck Pokémon",
+    "heightM": 1.7,
+    "weightKg": 76.6,
+    "entry": "Often seen swim ming elegantly by lake shores. It is often mistaken for the Japanese monster, Kappa."
+   }
   },
   {
    "id": 56,
@@ -8201,7 +8531,13 @@
      "maxLevel": 20,
      "chance": 10
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Pig Monkey Pokémon",
+    "heightM": 0.5,
+    "weightKg": 28,
+    "entry": "Extremely quick to anger. It could be docile one moment then thrashing away the next instant."
+   }
   },
   {
    "id": 57,
@@ -8268,7 +8604,13 @@
      "move": "thrash"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Pig Monkey Pokémon",
+    "heightM": 1,
+    "weightKg": 32,
+    "entry": "Always furious and tenacious to boot. It will not abandon chasing its quarry until it is caught."
+   }
   },
   {
    "id": 58,
@@ -8409,7 +8751,13 @@
      "maxLevel": 35,
      "chance": 15
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Puppy Pokémon",
+    "heightM": 0.7,
+    "weightKg": 19,
+    "entry": "Very protective of its territory. It will bark and bite to repel intruders from its space."
+   }
   },
   {
    "id": 59,
@@ -8451,7 +8799,13 @@
      "move": "take-down"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Legendary Pokémon",
+    "heightM": 1.9,
+    "weightKg": 155,
+    "entry": "A POKéMON that has been admired since the past for its beauty. It runs agilely as if on wings."
+   }
   },
   {
    "id": 60,
@@ -9136,7 +9490,13 @@
      "maxLevel": 10,
      "chance": 50
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Tadpole Pokémon",
+    "heightM": 0.6,
+    "weightKg": 12.4,
+    "entry": "Its newly grown legs prevent it from running. It appears to prefer swimming than trying to stand."
+   }
   },
   {
    "id": 61,
@@ -9306,7 +9666,13 @@
      "maxLevel": 23,
      "chance": 17
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Tadpole Pokémon",
+    "heightM": 1,
+    "weightKg": 20,
+    "entry": "Capable of living in or out of water. When out of water, it sweats to keep its body slimy."
+   }
   },
   {
    "id": 62,
@@ -9357,7 +9723,13 @@
      "move": "water-gun"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Tadpole Pokémon",
+    "heightM": 1.3,
+    "weightKg": 54,
+    "entry": "An adept swimmer at both the front crawl and breast stroke. Easily overtakes the best human swimmers."
+   }
   },
   {
    "id": 63,
@@ -9490,7 +9862,13 @@
      "maxLevel": 6,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Psi Pokémon",
+    "heightM": 0.9,
+    "weightKg": 19.5,
+    "entry": "Using its ability to read minds, it will identify impending danger and TELEPORT to safety."
+   }
   },
   {
    "id": 64,
@@ -9590,7 +9968,13 @@
      "maxLevel": 51,
      "chance": 15
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Psi Pokémon",
+    "heightM": 1.3,
+    "weightKg": 56.5,
+    "entry": "It emits special alpha waves from its body that induce headaches just by being close by."
+   }
   },
   {
    "id": 65,
@@ -9652,7 +10036,13 @@
      "move": "reflect"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Psi Pokémon",
+    "heightM": 1.5,
+    "weightKg": 48,
+    "entry": "Its brain can out perform a super computer. Its intelligence quotient is said to be 5,000."
+   }
   },
   {
    "id": 66,
@@ -9821,7 +10211,13 @@
      "maxLevel": 24,
      "chance": 20
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Superpower Pokémon",
+    "heightM": 0.8,
+    "weightKg": 19.5,
+    "entry": "Loves to build its muscles. It trains in all styles of martial arts to become even stronger."
+   }
   },
   {
    "id": 67,
@@ -9949,7 +10345,13 @@
      "maxLevel": 45,
      "chance": 1
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Superpower Pokémon",
+    "heightM": 1.5,
+    "weightKg": 70.5,
+    "entry": "Its muscular body is so powerful, it must wear a power save belt to be able to regulate its motions."
+   }
   },
   {
    "id": 68,
@@ -10007,7 +10409,13 @@
      "move": "submission"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Superpower Pokémon",
+    "heightM": 1.6,
+    "weightKg": 130,
+    "entry": "Using its heavy muscles, it throws powerful punches that can send the victim clear over the horizon."
+   }
   },
   {
    "id": 69,
@@ -10285,7 +10693,13 @@
      "maxLevel": 14,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Flower Pokémon",
+    "heightM": 0.7,
+    "weightKg": 4,
+    "entry": "A carnivorous POKéMON that traps and eats bugs. It uses its root feet to soak up needed moisture."
+   }
   },
   {
    "id": 70,
@@ -10407,7 +10821,13 @@
      "maxLevel": 30,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Flycatcher Pokémon",
+    "heightM": 1,
+    "weightKg": 6.4,
+    "entry": "It spits out POISONPOWDER to immobilize the enemy and then finishes it with a spray of ACID."
+   }
   },
   {
    "id": 71,
@@ -10462,7 +10882,13 @@
      "move": "sleep-powder"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Flycatcher Pokémon",
+    "heightM": 1.7,
+    "weightKg": 15.5,
+    "entry": "Said to live in huge colonies deep in jungles, although no one has ever returned from there."
+   }
   },
   {
    "id": 72,
@@ -11172,7 +11598,13 @@
      "maxLevel": 40,
      "chance": 1
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Jellyfish Pokémon",
+    "heightM": 0.9,
+    "weightKg": 45.5,
+    "entry": "Drifts in shallow seas. Anglers who hook them by accident are often punished by its stinging acid."
+   }
   },
   {
    "id": 73,
@@ -11243,7 +11675,13 @@
      "move": "hydro-pump"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Jellyfish Pokémon",
+    "heightM": 1.6,
+    "weightKg": 55,
+    "entry": "The tentacles are normally kept short. On hunts, they are extended to ensnare and immobilize prey."
+   }
   },
   {
    "id": 74,
@@ -11545,7 +11983,13 @@
      "maxLevel": 26,
      "chance": 20
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Rock Pokémon",
+    "heightM": 0.4,
+    "weightKg": 20,
+    "entry": "Found in fields and mountains. Mistaking them for boulders, people often step or trip on them."
+   }
   },
   {
    "id": 75,
@@ -11658,7 +12102,13 @@
      "maxLevel": 43,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Rock Pokémon",
+    "heightM": 1,
+    "weightKg": 105,
+    "entry": "Rolls down slopes to move. It rolls over any obstacle without slowing or changing its direction."
+   }
   },
   {
    "id": 76,
@@ -11717,7 +12167,13 @@
      "move": "explosion"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Megaton Pokémon",
+    "heightM": 1.4,
+    "weightKg": 300,
+    "entry": "Its boulder-like body is extremely hard. It can easily withstand dynamite blasts without damage."
+   }
   },
   {
    "id": 77,
@@ -11962,7 +12418,13 @@
      "maxLevel": 34,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Fire Horse Pokémon",
+    "heightM": 1,
+    "weightKg": 30,
+    "entry": "Its hooves are 10 times harder than diamonds. It can trample anything completely flat in little time."
+   }
   },
   {
    "id": 78,
@@ -12028,7 +12490,13 @@
      "move": "agility"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Fire Horse Pokémon",
+    "heightM": 1.7,
+    "weightKg": 95,
+    "entry": "Very competitive, this POKéMON will chase anything that moves fast in the hopes of racing it."
+   }
   },
   {
    "id": 79,
@@ -12335,7 +12803,13 @@
      "maxLevel": 15,
      "chance": 25
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Dopey Pokémon",
+    "heightM": 1.2,
+    "weightKg": 36,
+    "entry": "Incredibly slow and dopey. It takes 5 seconds for it to feel pain when under attack."
+   }
   },
   {
    "id": 80,
@@ -12475,7 +12949,13 @@
      "maxLevel": 23,
      "chance": 25
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Hermit Crab Pokémon",
+    "heightM": 1.6,
+    "weightKg": 78.5,
+    "entry": "The SHELLDER that is latched onto SLOWPOKE's tail is said to feed on the host's left over scraps."
+   }
   },
   {
    "id": 81,
@@ -12569,7 +13049,13 @@
      "maxLevel": 23,
      "chance": 10
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Magnet Pokémon",
+    "heightM": 0.3,
+    "weightKg": 6,
+    "entry": "Uses anti-gravity to stay suspended. Appears without warning and uses THUNDER WAVE and similar moves."
+   }
   },
   {
    "id": 82,
@@ -12686,7 +13172,13 @@
      "maxLevel": 35,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Magnet Pokémon",
+    "heightM": 1,
+    "weightKg": 60,
+    "entry": "Formed by several MAGNEMITEs linked together. They frequently appear when sunspots flare up."
+   }
   },
   {
    "id": 83,
@@ -12763,7 +13255,13 @@
      "maxLevel": 100,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Wild Duck Pokémon",
+    "heightM": 0.8,
+    "weightKg": 15,
+    "entry": "The sprig of green onions it holds is its weapon. It is used much like a metal sword."
+   }
   },
   {
    "id": 84,
@@ -13001,7 +13499,13 @@
      "maxLevel": 26,
      "chance": 20
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Twin Bird Pokémon",
+    "heightM": 1.4,
+    "weightKg": 39.2,
+    "entry": "A bird that makes up for its poor flying with its fast foot speed. Leaves giant footprints."
+   }
   },
   {
    "id": 85,
@@ -13097,7 +13601,13 @@
      "maxLevel": 51,
      "chance": 20
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Triple Bird Pokémon",
+    "heightM": 1.8,
+    "weightKg": 85.2,
+    "entry": "Uses its three brains to execute complex plans. While two heads sleep, one head stays awake."
+   }
   },
   {
    "id": 86,
@@ -13314,7 +13824,13 @@
      "maxLevel": 100,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Sea Lion Pokémon",
+    "heightM": 1.1,
+    "weightKg": 90,
+    "entry": "The protruding horn on its head is very hard. It is used for bashing through thick ice."
+   }
   },
   {
    "id": 87,
@@ -13406,7 +13922,13 @@
      "maxLevel": 37,
      "chance": 1
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Sea Lion Pokémon",
+    "heightM": 1.7,
+    "weightKg": 120,
+    "entry": "Stores thermal energy in its body. Swims at a steady 8 knots even in intensely cold waters."
+   }
   },
   {
    "id": 88,
@@ -13583,7 +14105,13 @@
      "maxLevel": 31,
      "chance": 10
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Sludge Pokémon",
+    "heightM": 0.9,
+    "weightKg": 30,
+    "entry": "Appears in filthy areas. Thrives by sucking up polluted sludge that is pumped out of factories."
+   }
   },
   {
    "id": 89,
@@ -13718,7 +14246,13 @@
      "maxLevel": 40,
      "chance": 10
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Sludge Pokémon",
+    "heightM": 1.2,
+    "weightKg": 30,
+    "entry": "Thickly covered with a filthy, vile sludge. It is so toxic, even its footprints contain poison."
+   }
   },
   {
    "id": 90,
@@ -14243,7 +14777,13 @@
      "maxLevel": 15,
      "chance": 25
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Bivalve Pokémon",
+    "heightM": 0.3,
+    "weightKg": 4,
+    "entry": "Its hard shell repels any kind of attack. It is vulnerable only when its shell is open."
+   }
   },
   {
    "id": 91,
@@ -14290,7 +14830,13 @@
      "move": "spike-cannon"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Bivalve Pokémon",
+    "heightM": 1.5,
+    "weightKg": 132.5,
+    "entry": "When attacked, it launches its horns in quick volleys. Its innards have never been seen."
+   }
   },
   {
    "id": 92,
@@ -14856,7 +15402,13 @@
      "maxLevel": 20,
      "chance": 10
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Gas Pokémon",
+    "heightM": 1.3,
+    "weightKg": 0.1,
+    "entry": "Almost invisible, this gaseous POKéMON cloaks the target and puts it to sleep without notice."
+   }
   },
   {
    "id": 93,
@@ -15037,7 +15589,13 @@
      "maxLevel": 30,
      "chance": 1
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Gas Pokémon",
+    "heightM": 1.6,
+    "weightKg": 0.1,
+    "entry": "Because of its ability to slip through block walls, it is said to be from an other dimension."
+   }
   },
   {
    "id": 94,
@@ -15084,7 +15642,13 @@
      "move": "dream-eater"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Shadow Pokémon",
+    "heightM": 1.5,
+    "weightKg": 40.5,
+    "entry": "Under a full moon, this POKéMON likes to mimic the shadows of people and laugh at their fright."
+   }
   },
   {
    "id": 95,
@@ -15338,7 +15902,13 @@
      "maxLevel": 45,
      "chance": 10
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Rock Snake Pokémon",
+    "heightM": 8.8,
+    "weightKg": 210,
+    "entry": "As it grows, the stone portions of its body harden to become similar to a diamond, but colored black."
+   }
   },
   {
    "id": 96,
@@ -15467,7 +16037,13 @@
      "maxLevel": 15,
      "chance": 1
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Hypnosis Pokémon",
+    "heightM": 1,
+    "weightKg": 32.4,
+    "entry": "Puts enemies to sleep then eats their dreams. Occasionally gets sick from eating bad dreams."
+   }
   },
   {
    "id": 97,
@@ -15550,7 +16126,13 @@
      "maxLevel": 46,
      "chance": 20
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Hypnosis Pokémon",
+    "heightM": 1.6,
+    "weightKg": 75.6,
+    "entry": "When it locks eyes with an enemy, it will use a mix of PSI moves such as HYPNOSIS and CONFUSION."
+   }
   },
   {
    "id": 98,
@@ -16267,7 +16849,13 @@
      "maxLevel": 15,
      "chance": 17
     }
-   ]
+   ],
+   "dex": {
+    "genus": "River Crab Pokémon",
+    "heightM": 0.4,
+    "weightKg": 6.5,
+    "entry": "Its pincers are not only powerful weapons, they are used for balance when walking sideways."
+   }
   },
   {
    "id": 99,
@@ -16438,7 +17026,13 @@
      "maxLevel": 23,
      "chance": 8
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Pincer Pokémon",
+    "heightM": 1.3,
+    "weightKg": 60,
+    "entry": "The large pincer has 10000 hp of crushing power. However, its huge size makes it unwieldy to use."
+   }
   },
   {
    "id": 100,
@@ -16675,7 +17269,13 @@
      "maxLevel": 40,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Ball Pokémon",
+    "heightM": 0.5,
+    "weightKg": 10.4,
+    "entry": "Usually found in power plants. Easily mistaken for a POKé BALL, they have zapped many people."
+   }
   },
   {
    "id": 101,
@@ -16814,7 +17414,13 @@
      "maxLevel": 100,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Ball Pokémon",
+    "heightM": 1.2,
+    "weightKg": 66.6,
+    "entry": "It stores electric energy under very high pressure. It often explodes with little or no provocation."
+   }
   },
   {
    "id": 102,
@@ -17008,7 +17614,13 @@
      "maxLevel": 26,
      "chance": 10
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Egg Pokémon",
+    "heightM": 0.4,
+    "weightKg": 2.5,
+    "entry": "Often mistaken for eggs. When disturbed, they quickly gather and attack in swarms."
+   }
   },
   {
    "id": 103,
@@ -17047,7 +17659,13 @@
      "move": "stomp"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Coconut Pokémon",
+    "heightM": 2,
+    "weightKg": 120,
+    "entry": "Legend has it that on rare occasions, one of its heads will drop off and continue on as an EXEGGCUTE."
+   }
   },
   {
    "id": 104,
@@ -17268,7 +17886,13 @@
      "maxLevel": 24,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Lonely Pokémon",
+    "heightM": 0.4,
+    "weightKg": 6.5,
+    "entry": "Because it never removes its skull helmet, no one has ever seen this POKéMON's real face."
+   }
   },
   {
    "id": 105,
@@ -17395,7 +18019,13 @@
      "maxLevel": 40,
      "chance": 4
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Bone Keeper Pokémon",
+    "heightM": 1,
+    "weightKg": 45,
+    "entry": "The bone it holds is its key weapon. It throws the bone skillfully like a boomerang to KO targets."
+   }
   },
   {
    "id": 106,
@@ -17466,7 +18096,13 @@
      "maxLevel": 30,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Kicking Pokémon",
+    "heightM": 1.5,
+    "weightKg": 49.8,
+    "entry": "When in a hurry, its legs lengthen progressively. It runs smoothly with extra long, loping strides."
+   }
   },
   {
    "id": 107,
@@ -17537,7 +18173,13 @@
      "maxLevel": 30,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Punching Pokémon",
+    "heightM": 1.4,
+    "weightKg": 50.2,
+    "entry": "While apparently doing nothing, it fires punches in lightning fast volleys that are impossible to see."
+   }
   },
   {
    "id": 108,
@@ -17613,7 +18255,13 @@
      "maxLevel": 100,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Licking Pokémon",
+    "heightM": 1.2,
+    "weightKg": 65.5,
+    "entry": "Its tongue can be extended like a chameleon's. It leaves a tingling sensation when it licks enemies."
+   }
   },
   {
    "id": 109,
@@ -17786,7 +18434,13 @@
      "maxLevel": 35,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Poison Gas Pokémon",
+    "heightM": 0.6,
+    "weightKg": 1,
+    "entry": "Because it stores several kinds of toxic gases in its body, it is prone to exploding without warning."
+   }
   },
   {
    "id": 110,
@@ -17925,7 +18579,13 @@
      "maxLevel": 42,
      "chance": 1
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Poison Gas Pokémon",
+    "heightM": 1.2,
+    "weightKg": 9.5,
+    "entry": "Where two kinds of poison gases meet, 2 KOFFINGs can fuse into a WEEZING over many years."
+   }
   },
   {
    "id": 111,
@@ -18019,7 +18679,13 @@
      "maxLevel": 26,
      "chance": 20
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Spikes Pokémon",
+    "heightM": 1,
+    "weightKg": 115,
+    "entry": "Its massive bones are 1000 times harder than human bones. It can easily knock a trailer flying."
+   }
   },
   {
    "id": 112,
@@ -18125,7 +18791,13 @@
      "maxLevel": 55,
      "chance": 20
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Drill Pokémon",
+    "heightM": 1.9,
+    "weightKg": 120,
+    "entry": "Protected by an armor-like hide, it is capable of living in molten lava of 3,600 degrees."
+   }
   },
   {
    "id": 113,
@@ -18253,7 +18925,13 @@
      "maxLevel": 26,
      "chance": 4
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Egg Pokémon",
+    "heightM": 1.1,
+    "weightKg": 34.6,
+    "entry": "A rare and elusive POKéMON that is said to bring happiness to those who manage to get it."
+   }
   },
   {
    "id": 114,
@@ -18381,7 +19059,13 @@
      "maxLevel": 100,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Vine Pokémon",
+    "heightM": 1,
+    "weightKg": 35,
+    "entry": "The whole body is swathed with wide vines that are similar to sea weed. Its vines shake as it walks."
+   }
   },
   {
    "id": 115,
@@ -18468,7 +19152,13 @@
      "maxLevel": 28,
      "chance": 1
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Parent Pokémon",
+    "heightM": 2.2,
+    "weightKg": 80,
+    "entry": "The infant rarely ventures out of its mother's protective pouch until it is 3 years old."
+   }
   },
   {
    "id": 116,
@@ -18797,7 +19487,13 @@
      "maxLevel": 15,
      "chance": 17
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Dragon Pokémon",
+    "heightM": 0.4,
+    "weightKg": 8,
+    "entry": "Known to shoot down flying bugs with precision blasts of ink from the surface of the water."
+   }
   },
   {
    "id": 117,
@@ -18922,7 +19618,13 @@
      "maxLevel": 23,
      "chance": 25
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Dragon Pokémon",
+    "heightM": 1.2,
+    "weightKg": 25,
+    "entry": "Capable of swim ming backwards by rapidly flapping its wing-like pectoral fins and stout tail."
+   }
   },
   {
    "id": 118,
@@ -19867,7 +20569,13 @@
      "maxLevel": 10,
      "chance": 50
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Goldfish Pokémon",
+    "heightM": 0.6,
+    "weightKg": 15,
+    "entry": "Its tail fin billows like an elegant ballroom dress, giving it the nickname of the Water Queen."
+   }
   },
   {
    "id": 119,
@@ -20042,7 +20750,13 @@
      "maxLevel": 23,
      "chance": 17
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Goldfish Pokémon",
+    "heightM": 1.3,
+    "weightKg": 39,
+    "entry": "In the autumn spawning season, they can be seen swimming power fully up rivers and creeks."
+   }
   },
   {
    "id": 120,
@@ -20283,7 +20997,13 @@
      "maxLevel": 15,
      "chance": 25
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Star Shape Pokémon",
+    "heightM": 0.8,
+    "weightKg": 34.5,
+    "entry": "An enigmatic POKéMON that can effortlessly regenerate any appendage it loses in battle."
+   }
   },
   {
    "id": 121,
@@ -20322,7 +21042,13 @@
      "move": "water-gun"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Mysterious Pokémon",
+    "heightM": 1.1,
+    "weightKg": 80,
+    "entry": "Its central core glows with the seven colors of the rainbow. Some people value the core as a gem."
+   }
   },
   {
    "id": 122,
@@ -20400,7 +21126,13 @@
      "maxLevel": 100,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Barrier Pokémon",
+    "heightM": 1.3,
+    "weightKg": 54.5,
+    "entry": "If interrupted while it is miming, it will slap around the offender with its broad hands."
+   }
   },
   {
    "id": 123,
@@ -20491,7 +21223,13 @@
      "maxLevel": 25,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Mantis Pokémon",
+    "heightM": 1.5,
+    "weightKg": 56,
+    "entry": "With ninja-like agility and speed, it can create the illusion that there is more than one."
+   }
   },
   {
    "id": 124,
@@ -20567,7 +21305,13 @@
      "maxLevel": 100,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Human Shape Pokémon",
+    "heightM": 1.4,
+    "weightKg": 40.6,
+    "entry": "It seductively wiggles its hips as it walks. It can cause people to dance in unison with it."
+   }
   },
   {
    "id": 125,
@@ -20644,7 +21388,13 @@
      "maxLevel": 36,
      "chance": 1
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Electric Pokémon",
+    "heightM": 1.1,
+    "weightKg": 30,
+    "entry": "Normally found near power plants, they can wander away and cause major blackouts in cities."
+   }
   },
   {
    "id": 126,
@@ -20721,7 +21471,13 @@
      "maxLevel": 38,
      "chance": 4
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Spitfire Pokémon",
+    "heightM": 1.3,
+    "weightKg": 44.5,
+    "entry": "Its body always burns with an orange glow that enables it to hide perfectly among flames."
+   }
   },
   {
    "id": 127,
@@ -20800,7 +21556,13 @@
      "maxLevel": 20,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Stag Beetle Pokémon",
+    "heightM": 1.5,
+    "weightKg": 55,
+    "entry": "If it fails to crush the victim in its pincers, it will swing it around and toss it hard."
+   }
   },
   {
    "id": 128,
@@ -20883,7 +21645,13 @@
      "maxLevel": 26,
      "chance": 4
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Wild Bull Pokémon",
+    "heightM": 1.4,
+    "weightKg": 88.4,
+    "entry": "When it targets an enemy, it charges furiously while whipping its body with its long tails."
+   }
   },
   {
    "id": 129,
@@ -21516,7 +22284,13 @@
      "maxLevel": 5,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Fish Pokémon",
+    "heightM": 0.9,
+    "weightKg": 10,
+    "entry": "In the distant past, it was somewhat stronger than the horribly weak descendants that exist today."
+   }
   },
   {
    "id": 130,
@@ -21579,7 +22353,13 @@
      "move": "hyper-beam"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Atrocious Pokémon",
+    "heightM": 6.5,
+    "weightKg": 235,
+    "entry": "Rarely seen in the wild. Huge and vicious, it is capable of destroying entire cities in a rage."
+   }
   },
   {
    "id": 131,
@@ -21655,7 +22435,13 @@
      "maxLevel": 15,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Transport Pokémon",
+    "heightM": 2.5,
+    "weightKg": 220,
+    "entry": "A POKéMON that has been over hunted almost to extinction. It can ferry people across the water."
+   }
   },
   {
    "id": 132,
@@ -21878,7 +22664,13 @@
      "maxLevel": 43,
      "chance": 5
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Transform Pokémon",
+    "heightM": 0.3,
+    "weightKg": 4,
+    "entry": "Capable of copying an enemy's genetic code to instantly transform itself into a duplicate of the enemy."
+   }
   },
   {
    "id": 133,
@@ -21981,7 +22773,13 @@
      "maxLevel": 25,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Evolution Pokémon",
+    "heightM": 0.3,
+    "weightKg": 6.5,
+    "entry": "Its genetic code is irregular. It may mutate if it is exposed to radiation from element STONEs."
+   }
   },
   {
    "id": 134,
@@ -22055,7 +22853,13 @@
      "move": "hydro-pump"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Bubble Jet Pokémon",
+    "heightM": 1,
+    "weightKg": 29,
+    "entry": "Lives close to water. Its long tail is ridged with a fin which is often mistaken for a mermaid's."
+   }
   },
   {
    "id": 135,
@@ -22129,7 +22933,13 @@
      "move": "thunder"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Lightning Pokémon",
+    "heightM": 0.8,
+    "weightKg": 24.5,
+    "entry": "It accumulates negative ions in the atmosphere to blast out 10000- volt lightning bolts."
+   }
   },
   {
    "id": 136,
@@ -22203,7 +23013,13 @@
      "move": "flamethrower"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Flame Pokémon",
+    "heightM": 0.9,
+    "weightKg": 25,
+    "entry": "When storing thermal energy in its body, its temperature could soar to over 1600 degrees."
+   }
   },
   {
    "id": 137,
@@ -22280,7 +23096,13 @@
      "maxLevel": 18,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Virtual Pokémon",
+    "heightM": 0.8,
+    "weightKg": 36.5,
+    "entry": "A POKéMON that consists entirely of programming code. Capable of moving freely in cyberspace."
+   }
   },
   {
    "id": 138,
@@ -22354,7 +23176,13 @@
      "maxLevel": 30,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Spiral Pokémon",
+    "heightM": 0.4,
+    "weightKg": 7.5,
+    "entry": "Although long extinct, in rare cases, it can be genetically resurrected from fossils."
+   }
   },
   {
    "id": 139,
@@ -22409,7 +23237,13 @@
      "move": "hydro-pump"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Spiral Pokémon",
+    "heightM": 1,
+    "weightKg": 35,
+    "entry": "A prehistoric POKéMON that died out when its heavy shell made it impossible to catch prey."
+   }
   },
   {
    "id": 140,
@@ -22483,7 +23317,13 @@
      "maxLevel": 30,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Shellfish Pokémon",
+    "heightM": 0.5,
+    "weightKg": 11.5,
+    "entry": "A POKéMON that was resurrected from a fossil found in what was once the ocean floor eons ago."
+   }
   },
   {
    "id": 141,
@@ -22538,7 +23378,13 @@
      "move": "hydro-pump"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Shellfish Pokémon",
+    "heightM": 1.3,
+    "weightKg": 40.5,
+    "entry": "Its sleek shape is perfect for swim ming. It slashes prey with its claws and drains the body fluids."
+   }
   },
   {
    "id": 142,
@@ -22606,7 +23452,13 @@
      "maxLevel": 30,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Fossil Pokémon",
+    "heightM": 1.8,
+    "weightKg": 59,
+    "entry": "A ferocious, pre historic POKéMON that goes for the enemy's throat with its serrated saw-like fangs."
+   }
   },
   {
    "id": 143,
@@ -22693,7 +23545,13 @@
      "maxLevel": 30,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Sleeping Pokémon",
+    "heightM": 2.1,
+    "weightKg": 460,
+    "entry": "Very lazy. Just eats and sleeps. As its rotund bulk builds, it becomes steadily more slothful."
+   }
   },
   {
    "id": 144,
@@ -22757,7 +23615,13 @@
      "maxLevel": 50,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Freeze Pokémon",
+    "heightM": 1.7,
+    "weightKg": 55.4,
+    "entry": "A legendary bird POKéMON that is said to appear to doomed people who are lost in icy mountains."
+   }
   },
   {
    "id": 145,
@@ -22821,7 +23685,13 @@
      "maxLevel": 50,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Electric Pokémon",
+    "heightM": 1.6,
+    "weightKg": 52.6,
+    "entry": "A legendary bird POKéMON that is said to appear from clouds while dropping enormous lightning bolts."
+   }
   },
   {
    "id": 146,
@@ -22885,7 +23755,13 @@
      "maxLevel": 50,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Flame Pokémon",
+    "heightM": 2,
+    "weightKg": 60,
+    "entry": "Known as the legendary bird of fire. Every flap of its wings creates a dazzling flash of flames."
+   }
   },
   {
    "id": 147,
@@ -23026,7 +23902,13 @@
      "maxLevel": 24,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Dragon Pokémon",
+    "heightM": 1.8,
+    "weightKg": 3.3,
+    "entry": "Long considered a mythical POKéMON until recently when a small colony was found living underwater."
+   }
   },
   {
    "id": 148,
@@ -23090,7 +23972,13 @@
      "move": "hyper-beam"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Dragon Pokémon",
+    "heightM": 4,
+    "weightKg": 16.5,
+    "entry": "A mystical POKéMON that exudes a gentle aura. Has the ability to change climate conditions."
+   }
   },
   {
    "id": 149,
@@ -23153,7 +24041,13 @@
      "move": "hyper-beam"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "Dragon Pokémon",
+    "heightM": 2.2,
+    "weightKg": 210,
+    "entry": "An extremely rarely seen marine POKéMON. Its intelligence is said to match that of humans."
+   }
   },
   {
    "id": 150,
@@ -23232,7 +24126,13 @@
      "maxLevel": 70,
      "chance": 100
     }
-   ]
+   ],
+   "dex": {
+    "genus": "Genetic Pokémon",
+    "heightM": 2,
+    "weightKg": 122,
+    "entry": "It was created by a scientist after years of horrific gene splicing and DNA engineering experiments."
+   }
   },
   {
    "id": 151,
@@ -23278,14 +24178,50 @@
      "move": "psychic"
     }
    ],
-   "encounters": []
+   "encounters": [],
+   "dex": {
+    "genus": "New Species Pokémon",
+    "heightM": 0.4,
+    "weightKg": 4,
+    "entry": "So rare that it is still said to be a mirage by many experts. Only a few people have seen it worldwide."
+   }
   }
  ],
  "moves": {
+  "absorb": {
+   "name": "Absorb",
+   "type": "grass",
+   "power": 20,
+   "category": "special"
+  },
   "acid": {
    "name": "Acid",
    "type": "poison",
    "power": 40,
+   "category": "special"
+  },
+  "acid-armor": {
+   "name": "Acid Armor",
+   "type": "poison",
+   "power": null,
+   "category": "status"
+  },
+  "agility": {
+   "name": "Agility",
+   "type": "psychic",
+   "power": null,
+   "category": "status"
+  },
+  "amnesia": {
+   "name": "Amnesia",
+   "type": "psychic",
+   "power": null,
+   "category": "status"
+  },
+  "aurora-beam": {
+   "name": "Aurora Beam",
+   "type": "ice",
+   "power": 65,
    "category": "special"
   },
   "barrage": {
@@ -23294,8 +24230,8 @@
    "power": 15,
    "category": "physical"
   },
-  "amnesia": {
-   "name": "Amnesia",
+  "barrier": {
+   "name": "Barrier",
    "type": "psychic",
    "power": null,
    "category": "status"
@@ -23306,23 +24242,23 @@
    "power": 15,
    "category": "physical"
   },
-  "aurora-beam": {
-   "name": "Aurora Beam",
+  "bite": {
+   "name": "Bite",
+   "type": "dark",
+   "power": 60,
+   "category": "physical"
+  },
+  "blizzard": {
+   "name": "Blizzard",
    "type": "ice",
-   "power": 65,
+   "power": 110,
    "category": "special"
   },
-  "acid-armor": {
-   "name": "Acid Armor",
-   "type": "poison",
-   "power": null,
-   "category": "status"
-  },
-  "barrier": {
-   "name": "Barrier",
-   "type": "psychic",
-   "power": null,
-   "category": "status"
+  "body-slam": {
+   "name": "Body Slam",
+   "type": "normal",
+   "power": 85,
+   "category": "physical"
   },
   "bone-club": {
    "name": "Bone Club",
@@ -23336,36 +24272,6 @@
    "power": 50,
    "category": "physical"
   },
-  "bite": {
-   "name": "Bite",
-   "type": "dark",
-   "power": 60,
-   "category": "physical"
-  },
-  "absorb": {
-   "name": "Absorb",
-   "type": "grass",
-   "power": 20,
-   "category": "special"
-  },
-  "agility": {
-   "name": "Agility",
-   "type": "psychic",
-   "power": null,
-   "category": "status"
-  },
-  "body-slam": {
-   "name": "Body Slam",
-   "type": "normal",
-   "power": 85,
-   "category": "physical"
-  },
-  "blizzard": {
-   "name": "Blizzard",
-   "type": "ice",
-   "power": 110,
-   "category": "special"
-  },
   "bubble": {
    "name": "Bubble",
    "type": "water",
@@ -23378,16 +24284,10 @@
    "power": 35,
    "category": "physical"
   },
-  "counter": {
-   "name": "Counter",
-   "type": "fighting",
-   "power": null,
-   "category": "physical"
-  },
-  "crabhammer": {
-   "name": "Crabhammer",
-   "type": "water",
-   "power": 100,
+  "comet-punch": {
+   "name": "Comet Punch",
+   "type": "normal",
+   "power": 18,
    "category": "physical"
   },
   "confuse-ray": {
@@ -23402,16 +24302,52 @@
    "power": 50,
    "category": "special"
   },
-  "comet-punch": {
-   "name": "Comet Punch",
-   "type": "normal",
-   "power": 18,
-   "category": "physical"
-  },
   "constrict": {
    "name": "Constrict",
    "type": "normal",
    "power": 10,
+   "category": "physical"
+  },
+  "conversion": {
+   "name": "Conversion",
+   "type": "normal",
+   "power": null,
+   "category": "status"
+  },
+  "counter": {
+   "name": "Counter",
+   "type": "fighting",
+   "power": null,
+   "category": "physical"
+  },
+  "crabhammer": {
+   "name": "Crabhammer",
+   "type": "water",
+   "power": 100,
+   "category": "physical"
+  },
+  "defense-curl": {
+   "name": "Defense Curl",
+   "type": "normal",
+   "power": null,
+   "category": "status"
+  },
+  "dig": {
+   "name": "Dig",
+   "type": "ground",
+   "power": 80,
+   "category": "physical"
+  },
+  "disable": {
+   "name": "Disable",
+   "type": "normal",
+   "power": null,
+   "category": "status"
+  },
+  "dizzy-punch": {
+   "name": "Dizzy Punch",
+   "type": "normal",
+   "power": 70,
    "category": "physical"
   },
   "double-edge": {
@@ -23426,17 +24362,23 @@
    "power": 30,
    "category": "physical"
   },
+  "double-slap": {
+   "name": "Double Slap",
+   "type": "normal",
+   "power": 15,
+   "category": "physical"
+  },
   "double-team": {
    "name": "Double Team",
    "type": "normal",
    "power": null,
    "category": "status"
   },
-  "conversion": {
-   "name": "Conversion",
-   "type": "normal",
+  "dragon-rage": {
+   "name": "Dragon Rage",
+   "type": "dragon",
    "power": null,
-   "category": "status"
+   "category": "special"
   },
   "dream-eater": {
    "name": "Dream Eater",
@@ -23448,6 +24390,24 @@
    "name": "Drill Peck",
    "type": "flying",
    "power": 80,
+   "category": "physical"
+  },
+  "earthquake": {
+   "name": "Earthquake",
+   "type": "ground",
+   "power": 100,
+   "category": "physical"
+  },
+  "ember": {
+   "name": "Ember",
+   "type": "fire",
+   "power": 40,
+   "category": "special"
+  },
+  "explosion": {
+   "name": "Explosion",
+   "type": "normal",
+   "power": 250,
    "category": "physical"
   },
   "fire-punch": {
@@ -23468,20 +24428,8 @@
    "power": 90,
    "category": "special"
   },
-  "dig": {
-   "name": "Dig",
-   "type": "ground",
-   "power": 80,
-   "category": "physical"
-  },
-  "defense-curl": {
-   "name": "Defense Curl",
-   "type": "normal",
-   "power": null,
-   "category": "status"
-  },
-  "disable": {
-   "name": "Disable",
+  "focus-energy": {
+   "name": "Focus Energy",
    "type": "normal",
    "power": null,
    "category": "status"
@@ -23492,23 +24440,17 @@
    "power": 15,
    "category": "physical"
   },
-  "dizzy-punch": {
-   "name": "Dizzy Punch",
+  "fury-swipes": {
+   "name": "Fury Swipes",
    "type": "normal",
-   "power": 70,
+   "power": 18,
    "category": "physical"
   },
-  "double-slap": {
-   "name": "Double Slap",
+  "glare": {
+   "name": "Glare",
    "type": "normal",
-   "power": 15,
-   "category": "physical"
-  },
-  "dragon-rage": {
-   "name": "Dragon Rage",
-   "type": "dragon",
    "power": null,
-   "category": "special"
+   "category": "status"
   },
   "growl": {
    "name": "Growl",
@@ -23516,28 +24458,46 @@
    "power": null,
    "category": "status"
   },
-  "earthquake": {
-   "name": "Earthquake",
-   "type": "ground",
-   "power": 100,
+  "growth": {
+   "name": "Growth",
+   "type": "normal",
+   "power": null,
+   "category": "status"
+  },
+  "guillotine": {
+   "name": "Guillotine",
+   "type": "normal",
+   "power": null,
    "category": "physical"
   },
-  "ember": {
-   "name": "Ember",
-   "type": "fire",
+  "gust": {
+   "name": "Gust",
+   "type": "flying",
    "power": 40,
    "category": "special"
   },
-  "explosion": {
-   "name": "Explosion",
+  "harden": {
+   "name": "Harden",
    "type": "normal",
-   "power": 250,
-   "category": "physical"
+   "power": null,
+   "category": "status"
+  },
+  "haze": {
+   "name": "Haze",
+   "type": "ice",
+   "power": null,
+   "category": "status"
   },
   "headbutt": {
    "name": "Headbutt",
    "type": "normal",
    "power": 70,
+   "category": "physical"
+  },
+  "high-jump-kick": {
+   "name": "High Jump Kick",
+   "type": "fighting",
+   "power": 130,
    "category": "physical"
   },
   "horn-attack": {
@@ -23552,119 +24512,11 @@
    "power": null,
    "category": "physical"
   },
-  "focus-energy": {
-   "name": "Focus Energy",
-   "type": "normal",
-   "power": null,
-   "category": "status"
-  },
   "hydro-pump": {
    "name": "Hydro Pump",
    "type": "water",
    "power": 110,
    "category": "special"
-  },
-  "fury-swipes": {
-   "name": "Fury Swipes",
-   "type": "normal",
-   "power": 18,
-   "category": "physical"
-  },
-  "glare": {
-   "name": "Glare",
-   "type": "normal",
-   "power": null,
-   "category": "status"
-  },
-  "hypnosis": {
-   "name": "Hypnosis",
-   "type": "psychic",
-   "power": null,
-   "category": "status"
-  },
-  "growth": {
-   "name": "Growth",
-   "type": "normal",
-   "power": null,
-   "category": "status"
-  },
-  "ice-beam": {
-   "name": "Ice Beam",
-   "type": "ice",
-   "power": 90,
-   "category": "special"
-  },
-  "gust": {
-   "name": "Gust",
-   "type": "flying",
-   "power": 40,
-   "category": "special"
-  },
-  "guillotine": {
-   "name": "Guillotine",
-   "type": "normal",
-   "power": null,
-   "category": "physical"
-  },
-  "ice-punch": {
-   "name": "Ice Punch",
-   "type": "ice",
-   "power": 75,
-   "category": "physical"
-  },
-  "harden": {
-   "name": "Harden",
-   "type": "normal",
-   "power": null,
-   "category": "status"
-  },
-  "haze": {
-   "name": "Haze",
-   "type": "ice",
-   "power": null,
-   "category": "status"
-  },
-  "leech-seed": {
-   "name": "Leech Seed",
-   "type": "grass",
-   "power": null,
-   "category": "status"
-  },
-  "leer": {
-   "name": "Leer",
-   "type": "normal",
-   "power": null,
-   "category": "status"
-  },
-  "high-jump-kick": {
-   "name": "High Jump Kick",
-   "type": "fighting",
-   "power": 130,
-   "category": "physical"
-  },
-  "light-screen": {
-   "name": "Light Screen",
-   "type": "psychic",
-   "power": null,
-   "category": "status"
-  },
-  "mega-kick": {
-   "name": "Mega Kick",
-   "type": "normal",
-   "power": 120,
-   "category": "physical"
-  },
-  "metronome": {
-   "name": "Metronome",
-   "type": "normal",
-   "power": null,
-   "category": "status"
-  },
-  "mega-punch": {
-   "name": "Mega Punch",
-   "type": "normal",
-   "power": 80,
-   "category": "physical"
   },
   "hyper-beam": {
    "name": "Hyper Beam",
@@ -23678,29 +24530,29 @@
    "power": 80,
    "category": "physical"
   },
-  "minimize": {
-   "name": "Minimize",
-   "type": "normal",
+  "hypnosis": {
+   "name": "Hypnosis",
+   "type": "psychic",
    "power": null,
    "category": "status"
+  },
+  "ice-beam": {
+   "name": "Ice Beam",
+   "type": "ice",
+   "power": 90,
+   "category": "special"
+  },
+  "ice-punch": {
+   "name": "Ice Punch",
+   "type": "ice",
+   "power": 75,
+   "category": "physical"
   },
   "jump-kick": {
    "name": "Jump Kick",
    "type": "fighting",
    "power": 100,
    "category": "physical"
-  },
-  "night-shade": {
-   "name": "Night Shade",
-   "type": "ghost",
-   "power": null,
-   "category": "special"
-  },
-  "mist": {
-   "name": "Mist",
-   "type": "ice",
-   "power": null,
-   "category": "status"
   },
   "karate-chop": {
    "name": "Karate Chop",
@@ -23714,21 +24566,15 @@
    "power": 80,
    "category": "physical"
   },
-  "peck": {
-   "name": "Peck",
-   "type": "flying",
-   "power": 35,
-   "category": "physical"
-  },
-  "lovely-kiss": {
-   "name": "Lovely Kiss",
-   "type": "normal",
+  "leech-seed": {
+   "name": "Leech Seed",
+   "type": "grass",
    "power": null,
    "category": "status"
   },
-  "poison-gas": {
-   "name": "Poison Gas",
-   "type": "poison",
+  "leer": {
+   "name": "Leer",
+   "type": "normal",
    "power": null,
    "category": "status"
   },
@@ -23738,9 +24584,15 @@
    "power": 30,
    "category": "physical"
   },
-  "poison-powder": {
-   "name": "Poison Powder",
-   "type": "poison",
+  "light-screen": {
+   "name": "Light Screen",
+   "type": "psychic",
+   "power": null,
+   "category": "status"
+  },
+  "lovely-kiss": {
+   "name": "Lovely Kiss",
+   "type": "normal",
    "power": null,
    "category": "status"
   },
@@ -23756,6 +24608,114 @@
    "power": null,
    "category": "status"
   },
+  "mega-kick": {
+   "name": "Mega Kick",
+   "type": "normal",
+   "power": 120,
+   "category": "physical"
+  },
+  "mega-punch": {
+   "name": "Mega Punch",
+   "type": "normal",
+   "power": 80,
+   "category": "physical"
+  },
+  "metronome": {
+   "name": "Metronome",
+   "type": "normal",
+   "power": null,
+   "category": "status"
+  },
+  "minimize": {
+   "name": "Minimize",
+   "type": "normal",
+   "power": null,
+   "category": "status"
+  },
+  "mirror-move": {
+   "name": "Mirror Move",
+   "type": "flying",
+   "power": null,
+   "category": "status"
+  },
+  "mist": {
+   "name": "Mist",
+   "type": "ice",
+   "power": null,
+   "category": "status"
+  },
+  "night-shade": {
+   "name": "Night Shade",
+   "type": "ghost",
+   "power": null,
+   "category": "special"
+  },
+  "pay-day": {
+   "name": "Pay Day",
+   "type": "normal",
+   "power": 40,
+   "category": "physical"
+  },
+  "peck": {
+   "name": "Peck",
+   "type": "flying",
+   "power": 35,
+   "category": "physical"
+  },
+  "petal-dance": {
+   "name": "Petal Dance",
+   "type": "grass",
+   "power": 120,
+   "category": "special"
+  },
+  "pin-missile": {
+   "name": "Pin Missile",
+   "type": "bug",
+   "power": 25,
+   "category": "physical"
+  },
+  "poison-gas": {
+   "name": "Poison Gas",
+   "type": "poison",
+   "power": null,
+   "category": "status"
+  },
+  "poison-powder": {
+   "name": "Poison Powder",
+   "type": "poison",
+   "power": null,
+   "category": "status"
+  },
+  "poison-sting": {
+   "name": "Poison Sting",
+   "type": "poison",
+   "power": 15,
+   "category": "physical"
+  },
+  "pound": {
+   "name": "Pound",
+   "type": "normal",
+   "power": 40,
+   "category": "physical"
+  },
+  "psybeam": {
+   "name": "Psybeam",
+   "type": "psychic",
+   "power": 65,
+   "category": "special"
+  },
+  "psychic": {
+   "name": "Psychic",
+   "type": "psychic",
+   "power": 90,
+   "category": "special"
+  },
+  "quick-attack": {
+   "name": "Quick Attack",
+   "type": "normal",
+   "power": 40,
+   "category": "physical"
+  },
   "rage": {
    "name": "Rage",
    "type": "normal",
@@ -23768,23 +24728,17 @@
    "power": 55,
    "category": "physical"
   },
+  "recover": {
+   "name": "Recover",
+   "type": "normal",
+   "power": null,
+   "category": "status"
+  },
   "reflect": {
    "name": "Reflect",
    "type": "psychic",
    "power": null,
    "category": "status"
-  },
-  "mirror-move": {
-   "name": "Mirror Move",
-   "type": "flying",
-   "power": null,
-   "category": "status"
-  },
-  "pay-day": {
-   "name": "Pay Day",
-   "type": "normal",
-   "power": 40,
-   "category": "physical"
   },
   "rest": {
    "name": "Rest",
@@ -23792,34 +24746,22 @@
    "power": null,
    "category": "status"
   },
-  "pin-missile": {
-   "name": "Pin Missile",
-   "type": "bug",
-   "power": 25,
-   "category": "physical"
-  },
-  "petal-dance": {
-   "name": "Petal Dance",
-   "type": "grass",
-   "power": 120,
-   "category": "special"
-  },
   "roar": {
    "name": "Roar",
    "type": "normal",
    "power": null,
    "category": "status"
   },
+  "rock-throw": {
+   "name": "Rock Throw",
+   "type": "rock",
+   "power": 50,
+   "category": "physical"
+  },
   "rolling-kick": {
    "name": "Rolling Kick",
    "type": "fighting",
    "power": 60,
-   "category": "physical"
-  },
-  "poison-sting": {
-   "name": "Poison Sting",
-   "type": "poison",
-   "power": 15,
    "category": "physical"
   },
   "sand-attack": {
@@ -23828,17 +24770,11 @@
    "power": null,
    "category": "status"
   },
-  "pound": {
-   "name": "Pound",
+  "scratch": {
+   "name": "Scratch",
    "type": "normal",
    "power": 40,
    "category": "physical"
-  },
-  "psychic": {
-   "name": "Psychic",
-   "type": "psychic",
-   "power": 90,
-   "category": "special"
   },
   "screech": {
    "name": "Screech",
@@ -23852,17 +24788,11 @@
    "power": null,
    "category": "physical"
   },
-  "quick-attack": {
-   "name": "Quick Attack",
+  "self-destruct": {
+   "name": "Self-Destruct",
    "type": "normal",
-   "power": 40,
+   "power": 200,
    "category": "physical"
-  },
-  "sing": {
-   "name": "Sing",
-   "type": "normal",
-   "power": null,
-   "category": "status"
   },
   "sharpen": {
    "name": "Sharpen",
@@ -23870,8 +24800,8 @@
    "power": null,
    "category": "status"
   },
-  "recover": {
-   "name": "Recover",
+  "sing": {
+   "name": "Sing",
    "type": "normal",
    "power": null,
    "category": "status"
@@ -23882,10 +24812,22 @@
    "power": 130,
    "category": "physical"
   },
+  "sky-attack": {
+   "name": "Sky Attack",
+   "type": "flying",
+   "power": 140,
+   "category": "physical"
+  },
   "slam": {
    "name": "Slam",
    "type": "normal",
    "power": 80,
+   "category": "physical"
+  },
+  "slash": {
+   "name": "Slash",
+   "type": "normal",
+   "power": 70,
    "category": "physical"
   },
   "sleep-powder": {
@@ -23894,16 +24836,34 @@
    "power": null,
    "category": "status"
   },
-  "slash": {
-   "name": "Slash",
+  "sludge": {
+   "name": "Sludge",
+   "type": "poison",
+   "power": 65,
+   "category": "special"
+  },
+  "smog": {
+   "name": "Smog",
+   "type": "poison",
+   "power": 30,
+   "category": "special"
+  },
+  "smokescreen": {
+   "name": "Smokescreen",
    "type": "normal",
-   "power": 70,
-   "category": "physical"
+   "power": null,
+   "category": "status"
   },
   "solar-beam": {
    "name": "Solar Beam",
    "type": "grass",
    "power": 120,
+   "category": "special"
+  },
+  "sonic-boom": {
+   "name": "Sonic Boom",
+   "type": "normal",
+   "power": null,
    "category": "special"
   },
   "spike-cannon": {
@@ -23912,28 +24872,22 @@
    "power": 20,
    "category": "physical"
   },
-  "rock-throw": {
-   "name": "Rock Throw",
-   "type": "rock",
-   "power": 50,
-   "category": "physical"
-  },
-  "scratch": {
-   "name": "Scratch",
+  "splash": {
+   "name": "Splash",
    "type": "normal",
-   "power": 40,
-   "category": "physical"
+   "power": null,
+   "category": "status"
+  },
+  "spore": {
+   "name": "Spore",
+   "type": "grass",
+   "power": null,
+   "category": "status"
   },
   "stomp": {
    "name": "Stomp",
    "type": "normal",
    "power": 65,
-   "category": "physical"
-  },
-  "self-destruct": {
-   "name": "Self-Destruct",
-   "type": "normal",
-   "power": 200,
    "category": "physical"
   },
   "string-shot": {
@@ -23942,16 +24896,10 @@
    "power": null,
    "category": "status"
   },
-  "psybeam": {
-   "name": "Psybeam",
-   "type": "psychic",
-   "power": 65,
-   "category": "special"
-  },
-  "sky-attack": {
-   "name": "Sky Attack",
-   "type": "flying",
-   "power": 140,
+  "struggle": {
+   "name": "Struggle",
+   "type": "normal",
+   "power": 50,
    "category": "physical"
   },
   "stun-spore": {
@@ -23960,29 +24908,23 @@
    "power": null,
    "category": "status"
   },
+  "submission": {
+   "name": "Submission",
+   "type": "fighting",
+   "power": 80,
+   "category": "physical"
+  },
   "substitute": {
    "name": "Substitute",
    "type": "normal",
    "power": null,
    "category": "status"
   },
-  "smokescreen": {
-   "name": "Smokescreen",
+  "super-fang": {
+   "name": "Super Fang",
    "type": "normal",
    "power": null,
-   "category": "status"
-  },
-  "smog": {
-   "name": "Smog",
-   "type": "poison",
-   "power": 30,
-   "category": "special"
-  },
-  "sludge": {
-   "name": "Sludge",
-   "type": "poison",
-   "power": 65,
-   "category": "special"
+   "category": "physical"
   },
   "supersonic": {
    "name": "Supersonic",
@@ -23990,20 +24932,14 @@
    "power": null,
    "category": "status"
   },
-  "sonic-boom": {
-   "name": "Sonic Boom",
+  "swift": {
+   "name": "Swift",
    "type": "normal",
-   "power": null,
+   "power": 60,
    "category": "special"
   },
   "swords-dance": {
    "name": "Swords Dance",
-   "type": "normal",
-   "power": null,
-   "category": "status"
-  },
-  "splash": {
-   "name": "Splash",
    "type": "normal",
    "power": null,
    "category": "status"
@@ -24014,17 +24950,17 @@
    "power": 40,
    "category": "physical"
   },
+  "tail-whip": {
+   "name": "Tail Whip",
+   "type": "normal",
+   "power": null,
+   "category": "status"
+  },
   "take-down": {
    "name": "Take Down",
    "type": "normal",
    "power": 90,
    "category": "physical"
-  },
-  "spore": {
-   "name": "Spore",
-   "type": "grass",
-   "power": null,
-   "category": "status"
   },
   "teleport": {
    "name": "Teleport",
@@ -24038,28 +24974,52 @@
    "power": 120,
    "category": "physical"
   },
+  "thunder": {
+   "name": "Thunder",
+   "type": "electric",
+   "power": 110,
+   "category": "special"
+  },
+  "thunder-punch": {
+   "name": "Thunder Punch",
+   "type": "electric",
+   "power": 75,
+   "category": "physical"
+  },
+  "thunder-shock": {
+   "name": "Thunder Shock",
+   "type": "electric",
+   "power": 40,
+   "category": "special"
+  },
   "thunder-wave": {
    "name": "Thunder Wave",
    "type": "electric",
    "power": null,
    "category": "status"
   },
-  "struggle": {
-   "name": "Struggle",
-   "type": "normal",
-   "power": 50,
-   "category": "physical"
-  },
-  "submission": {
-   "name": "Submission",
-   "type": "fighting",
-   "power": 80,
-   "category": "physical"
-  },
-  "super-fang": {
-   "name": "Super Fang",
+  "transform": {
+   "name": "Transform",
    "type": "normal",
    "power": null,
+   "category": "status"
+  },
+  "tri-attack": {
+   "name": "Tri Attack",
+   "type": "normal",
+   "power": 80,
+   "category": "special"
+  },
+  "twineedle": {
+   "name": "Twineedle",
+   "type": "bug",
+   "power": 25,
+   "category": "physical"
+  },
+  "vice-grip": {
+   "name": "Vise Grip",
+   "type": "normal",
+   "power": 55,
    "category": "physical"
   },
   "vine-whip": {
@@ -24080,70 +25040,16 @@
    "power": 80,
    "category": "physical"
   },
-  "swift": {
-   "name": "Swift",
-   "type": "normal",
-   "power": 60,
-   "category": "special"
-  },
-  "tail-whip": {
-   "name": "Tail Whip",
-   "type": "normal",
-   "power": null,
-   "category": "status"
-  },
   "whirlwind": {
    "name": "Whirlwind",
    "type": "normal",
    "power": null,
    "category": "status"
   },
-  "thunder": {
-   "name": "Thunder",
-   "type": "electric",
-   "power": 110,
-   "category": "special"
-  },
-  "thunder-shock": {
-   "name": "Thunder Shock",
-   "type": "electric",
-   "power": 40,
-   "category": "special"
-  },
   "wing-attack": {
    "name": "Wing Attack",
    "type": "flying",
    "power": 60,
-   "category": "physical"
-  },
-  "thunder-punch": {
-   "name": "Thunder Punch",
-   "type": "electric",
-   "power": 75,
-   "category": "physical"
-  },
-  "wrap": {
-   "name": "Wrap",
-   "type": "normal",
-   "power": 15,
-   "category": "physical"
-  },
-  "twineedle": {
-   "name": "Twineedle",
-   "type": "bug",
-   "power": 25,
-   "category": "physical"
-  },
-  "transform": {
-   "name": "Transform",
-   "type": "normal",
-   "power": null,
-   "category": "status"
-  },
-  "vice-grip": {
-   "name": "Vise Grip",
-   "type": "normal",
-   "power": 55,
    "category": "physical"
   },
   "withdraw": {
@@ -24152,11 +25058,11 @@
    "power": null,
    "category": "status"
   },
-  "tri-attack": {
-   "name": "Tri Attack",
+  "wrap": {
+   "name": "Wrap",
    "type": "normal",
-   "power": 80,
-   "category": "special"
+   "power": 15,
+   "category": "physical"
   }
  }
 }

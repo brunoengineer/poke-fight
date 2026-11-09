@@ -2,7 +2,8 @@
 //
 // Writes, and these files are committed (the game never calls PokeAPI; sprites are loaded by URL):
 //   src/data/generated/gen<N>.json  species (stats, types, catch rate, growth, evolutions, level-up learnset,
-//                                   wild encounters) and every move those learnsets use
+//                                   wild encounters, and the Pokédex: genus, height, weight, entry) and every move
+//                                   those learnsets use
 //   src/data/generated/types.json   the type chart (modern, 18 types: decided in plan.md §4.5)
 //
 // Learnsets and encounters come from the region's own games (Gen 1: Red/Blue); types, stats and move data are the
@@ -57,6 +58,8 @@ async function mapLimit(items, limit, fn) {
 
 const idFromUrl = url => Number(url.match(/\/(\d+)\/?$/)[1]);
 const english = list => list.find(x => x.language.name === 'en');
+/** Moves arrive in download order: sorted, the file is the same on every run. */
+const sortedKeys = object => Object.fromEntries(Object.entries(object).sort(([a], [b]) => a.localeCompare(b)));
 const STAT_KEYS = { hp: 'hp', attack: 'atk', defense: 'def', 'special-attack': 'spa', 'special-defense': 'spd', speed: 'spe' };
 
 /** The evolution requirement, preferring the source games' details. */
@@ -142,6 +145,10 @@ async function build() {
         ),
     );
 
+    // The Pokédex entry from the region's own games (Red's), as one line of plain text.
+    const entry = info.flavor_text_entries.find(f => f.language.name === 'en' && f.version.name === source.versions[0])
+      ?? info.flavor_text_entries.find(f => f.language.name === 'en');
+
     process.stdout.write('.');
     return {
       id,
@@ -158,6 +165,13 @@ async function build() {
       evolutions: evolution.evolutions,
       learnset,
       encounters: wild,
+      dex: {
+        genus: english(info.genera)?.genus ?? '',
+        // PokeAPI: decimetres and hectograms.
+        heightM: pokemon.height / 10,
+        weightKg: pokemon.weight / 10,
+        entry: (entry?.flavor_text ?? '').replace(/[\n\f\u00ad]+/g, ' ').replace(/\s+/g, ' ').trim(),
+      },
     };
   });
 
@@ -183,7 +197,7 @@ async function build() {
   const file = join(dir, `gen${gen}.json`);
   await writeFile(
     file,
-    JSON.stringify({ generation: gen, region: generation.main_region?.name ?? '', versionGroup: source.versionGroup, species, moves }, null, 1) + '\n',
+    JSON.stringify({ generation: gen, region: generation.main_region?.name ?? '', versionGroup: source.versionGroup, species, moves: sortedKeys(moves) }, null, 1) + '\n',
   );
   await writeFile(join(dir, 'types.json'), JSON.stringify(types, null, 1) + '\n');
   console.log(`Wrote ${file} and types.json`);

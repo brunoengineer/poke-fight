@@ -17,10 +17,11 @@ import { createRng } from './engine/rng';
 import type { Style } from './fight/ai/profiles';
 import type { TeamMember } from './fight/battle';
 import { afterBattle, type ReportLine, type XpGain } from './game/after-battle';
-import { addCaught, canSendToBox, canTakeFromBox, sendToBox, swapInParty, takeFromBox } from './game/box';
+import { addCaught, canRelease, canSendToBox, canTakeFromBox, release, sendToBox, swapInParty, takeFromBox, type Place } from './game/box';
 import { catchValue, throwBall } from './game/capture';
 import { buy, canUsePotion, countOf, MAX_MONEY, moneyAfterLoss, prizeMoney, removeItem, usePotion } from './game/economy';
 import { cpuProfile, type Controller } from './game/ai';
+import { dexNumbers, dexStatus, evolutionChain, ownedCount, whereToFind, type EvolveBy, type FoundAt } from './game/pokedex';
 import { bestRod, encounterTable, rollEncounter, tableForAreas, wildPokemon } from './game/encounters';
 import { canChallenge, gymTeam, leaderPrize } from './game/gym';
 import { canEnterLeague, LEAGUE_SIZE, leagueOpponent, leaguePrize, type LeagueOpponent } from './game/league';
@@ -56,6 +57,7 @@ import { renderMart } from './ui/screens/mart';
 import { renderStarter } from './ui/screens/starter';
 import { renderDialog } from './ui/screens/dialog';
 import { renderCapture } from './ui/screens/capture';
+import { renderPokedex } from './ui/screens/pokedex';
 import { renderEvolution } from './ui/screens/evolution';
 import { renderOptions } from './ui/screens/options';
 import { renderTitle, type TitleOption } from './ui/screens/title';
@@ -556,6 +558,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
       theme: art.color,
       money: t('city.money', { money: s.money }),
       dex: t('city.dex', { seen: s.dex.seen.length, caught: s.dex.caught.length }),
+      onDex: () => showPokedex(),
       badges: BADGE_ORDER.map(badge => ({ url: badgeArt(badge), earned: s.badges.includes(badge), name: t(`badge.${badge}` as MessageKey) })),
       badgeCount: t('city.badges', { count: s.badges.length }),
       champion: s.champion ? t('city.champion') : null,
@@ -568,7 +571,80 @@ export function startApp(elements: AppElements, options: TestOptions) {
         { label: t('city.options'), testid: 'city-options', icon: 'gear', onClick: () => showOptions(goCity) },
         { label: t('city.title'), testid: 'to-title', icon: 'exit', onClick: goTitle },
       ],
-      hints: [hints.select, hints.party],
+      hints: [hints.select, hints.party, { pad: 'x', key: 'X', label: t('dex.title') }],
+    });
+  }
+
+  // ── The Pokédex ───────────────────────────────────────────────────────────────────────────────────────────────
+  function showPokedex(focusId?: number) {
+    if (!save) return;
+    const s = save;
+    scene = 'menu';
+    show();
+    indoors('#e04a40');
+    const number = (id: number) => `#${String(id).padStart(3, '0')}`;
+    const evolveText = (by: EvolveBy) => (by.kind === 'level' ? t('dex.level', { level: by.level }) : itemName(by.item));
+    const placeName = (f: FoundAt) => t(f.where === 'safari' ? 'place.safari' : (`place.${f.where}` as MessageKey));
+    const ids = dexNumbers();
+    const status = (id: number) => dexStatus(s.dex, id);
+    // Start on the last species seen (or the first).
+    const start = focusId ?? [...s.dex.seen].sort((a, b) => b - a)[0] ?? ids[0];
+    renderPokedex(overlayRoot, {
+      title: t('dex.title'),
+      counts: t('dex.counts', { seen: s.dex.seen.length, caught: s.dex.caught.length, total: ids.length }),
+      tiles: ids.map(id => ({ id, number: number(id), sprite: spriteUrl(id), status: status(id), owned: ownedCount(s, id) > 0 })),
+      start,
+      page: id => {
+        const sp = species(id);
+        const st = status(id);
+        const known = st !== 'unseen';
+        const caught = st === 'caught';
+        const owned = ownedCount(s, id);
+        const stats = sp.stats;
+        return {
+          number: number(id),
+          name: known ? sp.name : t('dex.unknown'),
+          sprite: spriteUrl(id),
+          status: st,
+          statusText: caught ? (owned > 0 ? t('dex.caughtOwned', { count: owned }) : t('dex.caughtNone')) : t(known ? 'dex.seen' : 'dex.unseen'),
+          color: known ? typeColor(sp.types[0]) : '#5d6385',
+          genus: known ? sp.dex.genus : null,
+          types: known ? sp.types.map(type => ({ type, label: t(`type.${type}` as MessageKey) })) : [],
+          size: caught ? t('dex.size', { height: sp.dex.heightM.toFixed(1), weight: sp.dex.weightKg.toFixed(1) }) : null,
+          entry: caught ? sp.dex.entry : null,
+          chain: known
+            ? evolutionChain(id).map(stage =>
+                stage.map(mon => ({
+                  sprite: spriteUrl(mon.speciesId),
+                  name: status(mon.speciesId) === 'unseen' ? t('dex.unknown') : species(mon.speciesId).name,
+                  known: status(mon.speciesId) !== 'unseen',
+                  how: mon.by ? evolveText(mon.by) : null,
+                  current: mon.speciesId === id,
+                })),
+              )
+            : [],
+          where: known
+            ? whereToFind(id).map(f => {
+                const params = { city: t(cityKey(f.cityId)), place: placeName(f), min: f.minLevel, max: f.maxLevel };
+                return f.rod ? t('dex.whereRod', { ...params, rod: itemName(f.rod) }) : t('dex.where', params);
+              })
+            : [],
+          stats: caught
+            ? [
+                { label: t('stat.hp'), value: stats.hp },
+                { label: t('stat.atk'), value: stats.atk },
+                { label: t('stat.def'), value: stats.def },
+                { label: t('stat.spa'), value: stats.spa },
+                { label: t('stat.spd'), value: stats.spd },
+                { label: t('stat.spe'), value: stats.spe },
+              ]
+            : null,
+          catchRate: caught ? t('dex.catchRate', { rate: sp.captureRate }) : null,
+        };
+      },
+      labels: { family: t('dex.family'), where: t('dex.whereTitle'), stats: t('dex.stats'), nowhere: t('dex.nowhere') },
+      back: { label: t('menu.back'), testid: 'back', onClick: goCity },
+      hints: [hints.back],
     });
   }
 
@@ -752,7 +828,17 @@ export function startApp(elements: AppElements, options: TestOptions) {
     scene = 'menu';
     show();
     indoors('#2fc4b2');
-    const mon = (p: Pokemon, action: string, blocked: boolean, onMove: () => void): BoxMon => ({
+    const releaser = (where: Place, index: number) =>
+      canRelease(s, where)
+        ? () => {
+            const name = nameOf(s[where][index]);
+            update(current => ({ ...current, ...release(current, where, index) }));
+            audio.play('ballOpen');
+            showBox();
+            toast(t('box.released', { name }));
+          }
+        : null;
+    const mon = (p: Pokemon, action: string, blocked: boolean, onMove: () => void, onRelease: (() => void) | null): BoxMon => ({
       name: nameOf(p),
       level: t('party.level', { level: p.level }),
       sprite: spriteUrl(p.speciesId),
@@ -762,6 +848,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
       action,
       blocked,
       onMove,
+      onRelease,
     });
     renderBox(overlayRoot, {
       title: t('place.box'),
@@ -769,19 +856,38 @@ export function startApp(elements: AppElements, options: TestOptions) {
       boxLabel: t('box.box', { count: s.box.length }),
       empty: t('box.empty'),
       party: s.party.map((p, i) =>
-        mon(p, canSendToBox(s) ? t('box.toBox') : t('box.keepOne'), !canSendToBox(s), () => {
-          update(current => ({ ...current, ...sendToBox(current, i) }));
-          showBox();
-        }),
+        mon(
+          p,
+          canSendToBox(s) ? t('box.toBox') : t('box.keepOne'),
+          !canSendToBox(s),
+          () => {
+            update(current => ({ ...current, ...sendToBox(current, i) }));
+            showBox();
+          },
+          releaser('party', i),
+        ),
       ),
       box: s.box.map((p, i) =>
-        mon(p, canTakeFromBox(s) ? t('box.toParty') : t('box.partyFull'), !canTakeFromBox(s), () => {
-          update(current => ({ ...current, ...takeFromBox(current, i) }));
-          showBox();
-        }),
+        mon(
+          p,
+          canTakeFromBox(s) ? t('box.toParty') : t('box.partyFull'),
+          !canTakeFromBox(s),
+          () => {
+            update(current => ({ ...current, ...takeFromBox(current, i) }));
+            showBox();
+          },
+          releaser('box', i),
+        ),
       ),
+      release: {
+        label: t('box.release'),
+        ask: m => t('box.releaseAsk', { name: m.name, level: m.level }),
+        yes: t('box.releaseYes'),
+        no: t('box.releaseNo'),
+        blocked: t('box.releaseLast'),
+      },
       back: { label: t('menu.back'), testid: 'back', onClick: goCity },
-      hints: [{ pad: 'a', key: 'Enter', label: t('hint.move') }, hints.back],
+      hints: [{ pad: 'a', key: 'Enter', label: t('hint.move') }, { pad: 'x', key: 'Del', label: t('box.release') }, hints.back],
     });
   }
 
@@ -842,6 +948,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
     style?: Style;
     /** Who plays the opponent's Pokémon: each gets its own CPU profile (game/ai.ts). */
     cpu?: Controller;
+    /** Wild fights: show by the opponent's name whether the player has that species already. */
+    showOwned?: boolean;
     roundFrames?: number;
     stage?: StageSpec;
     /** Who stands on the opponent's side (none for a wild Pokémon, which leaps in by itself). */
@@ -872,6 +980,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
       seed: fightRng.int(2 ** 31),
       // (`?opponent=` in the tests replaces the CPU entirely.)
       profiles: setup.cpu && !opponentParam ? opponents.map(o => cpuProfile(o, setup.cpu!, fightRng)) : undefined,
+      owned: setup.showOwned && save ? opponents.map(o => o.speciesId !== null && ownedCount(save!, o.speciesId) > 0) : undefined,
       director: setup.director,
       intro: setup.intro,
       style: setup.style,
@@ -946,6 +1055,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     enterFight('wild', party.map(toFighter), [toFighter(found)], {
       opponent: 'cpu-easy',
       cpu: { kind: 'wild' },
+      showOwned: true,
       stage: huntStage(s.location, kind),
       rivalLook: null,
       intro: { step: null, key: 'wild.appeared', params: { name: nameOf(found) } },
@@ -1011,6 +1121,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     enterFight('safari', save.party.map(toFighter), [toFighter(found)], {
       opponent: 'cpu-easy',
       cpu: { kind: 'wild' },
+      showOwned: true,
       roundFrames: SAFARI_SECONDS * 60,
       stage: { id: 'safari', backdrop: HUNT_BACKDROPS.safari },
       rivalLook: null,
@@ -1845,7 +1956,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
       battle: () => structuredClone(fight().battle),
       debug: () => {
         const view = fight();
-        return { overlay: view.debug, opponent: view.opponent, style: view.style, infinitePp: view.infinitePp, advantage: view.advantage };
+        return { overlay: view.debug, opponent: view.opponent, style: view.style, infinitePp: view.infinitePp, advantage: view.advantage, owned: view.owned };
       },
       save: () => structuredClone(save) as Save,
       scene: () => ({ scene, mode: scene === 'fight' ? mode : null, tutorialStep: tutorial?.step() ?? null }),

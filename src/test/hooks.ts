@@ -45,6 +45,8 @@ export interface TestApi {
     style: string;
     infinitePp: boolean;
     advantage: { kind: ContactKind; value: number } | null;
+    /** Wild fights: the Poké Ball by the opponent's name (true: you have one, false: grey; null: not shown). */
+    owned: boolean | null;
   };
   /** A copy of the current save (null before a journey starts). */
   save(): Save;

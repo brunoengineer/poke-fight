@@ -92,6 +92,11 @@ export interface SandboxView {
   entrance: Entrance | null;
   /** Switching mid-round is part of this fight (not in the tutorial). */
   switching: boolean;
+  /**
+   * Wild fights: whether the player already has the opponent's species (a Poké Ball by its name: in color if so, grey
+   * if not). Null in trainers' fights, where it can't be caught anyway.
+   */
+  owned: boolean | null;
 }
 
 export interface Sandbox {
@@ -132,6 +137,8 @@ export interface SandboxOptions {
   entrance?: boolean;
   stage?: StageSpec;
   trainers?: [TrainerLook | null, TrainerLook | null];
+  /** Wild fights: per opponent team member, whether the player has one of that species (see SandboxView.owned). */
+  owned?: boolean[];
 }
 
 /** How long the intro message stays (frames). */
@@ -270,6 +277,7 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
         : (director?.banner() ?? (options.intro && battle.rounds === 1 && battle.round.frame < INTRO_FRAMES ? options.intro : null)),
       tools,
       switching: !director,
+      owned: options.owned?.[battle.active[1]] ?? null,
       stage: options.stage ?? { id: 'stadium' },
       trainers: options.trainers ?? [null, null],
       entrance,

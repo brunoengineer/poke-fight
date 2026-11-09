@@ -524,6 +524,37 @@ function drawBanner(ctx: CanvasRenderingContext2D, view: SandboxView) {
 
 // ── HUD ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 
+/** A small Poké Ball with a dark outline: red and white, or all greys (not caught yet). */
+function drawOwnedBall(ctx: CanvasRenderingContext2D, x: number, y: number, owned: boolean) {
+  const r = 4.5;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, r + 1, 0, Math.PI * 2);
+  ctx.fillStyle = '#16121e';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x, y, r, Math.PI, 0);
+  ctx.fillStyle = owned ? '#e8404a' : '#8a8a96';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI);
+  ctx.fillStyle = owned ? '#f4f4f4' : '#c4c4cc';
+  ctx.fill();
+  ctx.fillStyle = '#16121e';
+  ctx.fillRect(x - r, y - 0.6, r * 2, 1.2);
+  ctx.beginPath();
+  ctx.arc(x, y, 1.9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x, y, 1.1, 0, Math.PI * 2);
+  ctx.fillStyle = owned ? '#ffffff' : '#d8d8de';
+  ctx.fill();
+  // A glint on the top half.
+  ctx.fillStyle = owned ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.4)';
+  ctx.fillRect(x - 2.5, y - 3, 1.2, 1.2);
+  ctx.restore();
+}
+
 function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView, trail: (id: 0 | 1, hp: number) => number) {
   const { battle } = view;
   const width = 200;
@@ -561,6 +592,11 @@ function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView, trail: (id: 0
       return w;
     })();
     let badgeX = mirror ? nameX - nameWidth - 6 : nameX + nameWidth + 6;
+    // Wild fights: a Poké Ball left of the opponent's name, in color if the player has this species, grey if not.
+    if (mirror && view.owned !== null) {
+      drawOwnedBall(ctx, snap(nameX - nameWidth - 8), 14, view.owned);
+      badgeX -= 14;
+    }
     for (const type of f.types) {
       const label = t(`type.${type}` as MessageKey).toUpperCase();
       const w = ctx.measureText(label).width + 6;

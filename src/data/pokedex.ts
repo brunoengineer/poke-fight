@@ -45,6 +45,8 @@ export interface Species {
   evolutions: Evolution[];
   learnset: { level: number; move: string }[];
   encounters: Encounter[];
+  /** The Pokédex page: "Seed Pokémon", size, and the entry from Red's Pokédex (English, like the names). */
+  dex: { genus: string; heightM: number; weightKg: number; entry: string };
 }
 
 export type MoveCategory = 'physical' | 'special' | 'status';

@@ -2228,6 +2228,106 @@ kbd,
   background: #e8e9f2;
 }
 
+/* Moving a Pokémon: the held one is lifted with a gold ring (and a small arrow), the other slots show they take it. */
+.slot.held {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 22%, rgba(255, 255, 255, 0.06));
+  box-shadow: 0 0 0 0.3cqh var(--gold), 0 1.2cqh 2.4cqh rgba(0, 0, 0, 0.4);
+  transform: translateY(-0.6cqh);
+}
+
+.slot.held .slot-sprite {
+  animation: held-bob 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes held-bob {
+  to {
+    translate: 0 -0.7cqh;
+  }
+}
+
+.slot-held-mark {
+  position: absolute;
+  top: -1cqh;
+  right: -1cqh;
+  display: grid;
+  place-items: center;
+  width: 2.8cqh;
+  height: 2.8cqh;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--ink);
+  rotate: -90deg;
+  box-shadow: 0 0.4cqh 0.8cqh rgba(0, 0, 0, 0.4);
+}
+
+.slot-held-mark .icon {
+  width: 1.7cqh;
+  height: 1.7cqh;
+}
+
+.slot.target {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+}
+
+.slot.held:focus {
+  background: #fff8df;
+  box-shadow: 0 0 0 0.45cqh var(--gold), 0 1.4cqh 3cqh rgba(0, 0, 0, 0.45);
+}
+
+.slot.target:focus {
+  box-shadow: 0 0 0 0.4cqh var(--gold), 0 1.4cqh 3cqh rgba(0, 0, 0, 0.45);
+}
+
+/* An empty place the held Pokémon can move to. */
+.slot.drop {
+  justify-content: center;
+  gap: 1cqh;
+  border: 0.25cqh dashed color-mix(in srgb, var(--gold) 70%, transparent);
+  background: color-mix(in srgb, var(--gold) 10%, transparent);
+  color: var(--gold);
+  font: 800 1.8cqh/1 var(--body);
+  animation: drop-pulse 1s ease-in-out infinite alternate;
+}
+
+.slot-drop-plus {
+  font: 900 3.4cqh/1 var(--display);
+}
+
+@keyframes drop-pulse {
+  to {
+    background: color-mix(in srgb, var(--gold) 22%, transparent);
+  }
+}
+
+.slot.drop:focus {
+  background: var(--gold);
+  color: var(--ink);
+  animation: none;
+}
+
+.box-holding-text {
+  margin: 0;
+  font: 600 1.9cqh/1.35 var(--body);
+  color: var(--gold);
+}
+
+.box-detail-sprite.lifted {
+  animation: held-bob 0.7s ease-in-out infinite alternate;
+  filter: drop-shadow(0 1.4cqh 0.8cqh rgba(0, 0, 0, 0.45));
+}
+
+.box-detail-buttons {
+  display: grid;
+  gap: 1cqh;
+  justify-items: end;
+}
+
+.box-detail-buttons .btn[aria-disabled='true'] {
+  opacity: 0.5;
+}
+
 .box-detail {
   grid-area: detail;
   display: flex;
@@ -4973,8 +5073,8 @@ kbd,
   color: #fff;
 }
 
-.box-detail .btn.danger {
-  margin-left: auto;
+.box-detail-buttons .btn.danger {
+  min-width: 100%;
 }
 
 .release-sheet {
@@ -5314,4 +5414,22 @@ html[data-test] *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* The endgame build (npm run endgame) says so in a corner, so it is never mistaken for the real game. */
+.build-tag {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  z-index: 1000;
+  translate: -50% 0;
+  padding: 4px 12px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #ffcf4a, #ff8a3d);
+  color: #1b1d33;
+  font: 800 12px/1.3 system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
 }

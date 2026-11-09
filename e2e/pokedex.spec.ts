@@ -74,6 +74,8 @@ test.describe('the Pokédex', () => {
 
   test('filters: owned, type, legendary, mythical, number; they add up and can be cleared', async ({ page }) => {
     await opened(page);
+    // Opened from the city, the focus starts on the first filter (not somewhere in the list).
+    await expect(page.getByTestId('filter-owned')).toBeFocused();
     // Owned: caught at some point (Abra counts, though it was released).
     await page.getByTestId('filter-owned').click();
     await expect(page.getByTestId('dex-shown')).toHaveText('5 shown');
@@ -137,7 +139,7 @@ test.describe('releasing', () => {
     await openGame(page, { scene: 'city' }, { save: team() });
     const dexBefore = (await save(page)).dex;
     await page.getByTestId('city-box').click();
-    await page.getByTestId('to-box-1').focus();
+    await page.getByTestId('party-slot-1').focus();
     await page.getByTestId('release').click();
     await expect(page.getByTestId('release-sheet')).toContainText('Release Kadabra (Lv. 30)?');
     await expect(page.getByTestId('release-no')).toBeFocused();
@@ -147,7 +149,7 @@ test.describe('releasing', () => {
     await expect(page.getByTestId('box')).toBeVisible();
     expect((await save(page)).party).toHaveLength(3);
 
-    await page.getByTestId('to-box-1').focus();
+    await page.getByTestId('party-slot-1').focus();
     await page.keyboard.press('Delete');
     await page.getByTestId('release-yes').click();
     await expect(page.getByTestId('toast')).toHaveText('Bye-bye, Kadabra!');
@@ -159,7 +161,7 @@ test.describe('releasing', () => {
   test("the party's last Pokémon can't be released", async ({ page }) => {
     await openGame(page, { scene: 'city' }, { save: fixture('save-v3-pallet-starter.json') });
     await page.getByTestId('city-box').click();
-    await page.getByTestId('to-box-0').focus();
+    await page.getByTestId('party-slot-0').focus();
     await expect(page.getByTestId('release')).toHaveCount(0);
     await expect(page.locator('.box-detail')).toContainText('Your party needs at least one Pokémon');
   });

@@ -16,7 +16,7 @@ import { createRng } from './engine/rng';
 import type { Style } from './fight/ai/profiles';
 import type { TeamMember } from './fight/battle';
 import { afterBattle, type ReportLine, type XpGain } from './game/after-battle';
-import { addCaught, canRelease, canSendToBox, canTakeFromBox, release, sendToBox, swapInParty, takeFromBox, type Place } from './game/box';
+import { addCaught, canPlace, canRelease, canSendToBox, canTakeFromBox, place, release, sendToBox, swapInParty, takeFromBox, type Place, type Spot } from './game/box';
 import { catchValue, throwBall } from './game/capture';
 import { buy, canUsePotion, countOf, MAX_MONEY, moneyAfterLoss, prizeMoney, removeItem, usePotion } from './game/economy';
 import { cpuProfile, type Controller } from './game/ai';
@@ -58,7 +58,8 @@ import { OPPONENT_TEAM, PLAYER_TEAM } from './screens/sandbox-teams';
 import { createTutorialDirector, type TutorialDirector } from './screens/tutorial-director';
 import { newSave, startRegion, switchRegion, type Save } from './state/save';
 import { ACTIONS, bindingsOf, createSettingsStore, DEFAULT_KEYS, keyLabel, keyNames, MAX_VOLUME, rebind, stepVolume, VOLUME_KINDS, type Action, type Settings } from './state/settings';
-import { createSaveStore } from './state/store';
+import { endgameSave, ENDGAME_SAVE_KEY } from './state/endgame';
+import { createSaveStore, SAVE_KEY } from './state/store';
 import { installTestHooks, type TestOptions } from './test/hooks';
 import { createBackdrop } from './ui/backdrop';
 import type { IconName } from './ui/icons';
@@ -156,7 +157,17 @@ export function startApp(elements: AppElements, options: TestOptions) {
   const fightRng = createRng(seed ^ 0x5bd1e995);
 
   // ── Save and language ─────────────────────────────────────────────────────────────────────────────────────────
-  const store = createSaveStore(safeStorage());
+  // `npm run endgame`: a build that plays from the endgame save (every League won, state/endgame.ts), kept under its
+  // own key so the real save is never touched. The script opens it with ?fresh, which starts that save over.
+  const endgame = import.meta.env.MODE === 'endgame' && !options.enabled;
+  const store = createSaveStore(safeStorage(), endgame ? ENDGAME_SAVE_KEY : SAVE_KEY);
+  if (endgame) {
+    if (params.has('fresh') || store.load().status !== 'ok') store.write(endgameSave(Date.now(), detectLanguage(navigator.language)));
+    params.delete('fresh');
+    history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
+    document.title = `${document.title} · Endgame`;
+    document.body.append(Object.assign(document.createElement('div'), { className: 'build-tag', textContent: 'Endgame build' }));
+  }
   const loaded = store.load();
   let save: Save | null = loaded.status === 'ok' ? loaded.save : null;
   let notice: MessageKey | null = null;
@@ -601,8 +612,9 @@ export function startApp(elements: AppElements, options: TestOptions) {
             } satisfies PlaceCard,
           ]
         : []),
-      { testid: 'city-box', title: t('place.box'), subtitle: t('place.boxText', { count: s.box.length }), color: '#2fa9a0', icon: 'pc', onClick: showBox },
-      { testid: 'city-map', title: t('place.map'), subtitle: t('place.mapText'), color: '#c99b4a', icon: 'map', onClick: showMap },
+      { testid: 'city-box', title: t('place.box'), subtitle: t('place.boxText', { count: s.box.length }), color: '#2fa9a0', icon: 'pc', onClick: openBox },
+      // Select (View) on a controller, Tab on the keyboard: the map from anywhere in the city, to change cities quickly.
+      { testid: 'city-map', title: t('place.map'), subtitle: t('place.mapText'), color: '#c99b4a', icon: 'map', pad: 'view', key: 'Tab', onClick: showMap },
     ];
 
     renderCity(overlayRoot, {
@@ -652,7 +664,14 @@ export function startApp(elements: AppElements, options: TestOptions) {
         { label: t('city.options'), testid: 'city-options', icon: 'gear', onClick: () => showOptions(goCity) },
         { label: t('city.title'), testid: 'to-title', icon: 'exit', onClick: goTitle },
       ],
-      hints: [hints.select, hints.party, { pad: 'x', key: 'X', label: t('dex.title') }, { pad: 'rb', key: 'B', label: t('bag.title') }, { pad: 'lb', key: 'T', label: t('travel.title') }],
+      hints: [
+        hints.select,
+        hints.party,
+        { pad: 'view', key: 'Tab', label: t('place.map') },
+        { pad: 'x', key: 'X', label: t('dex.title') },
+        { pad: 'rb', key: 'B', label: t('bag.title') },
+        { pad: 'lb', key: 'T', label: t('travel.title') },
+      ],
     });
   }
 
@@ -760,8 +779,9 @@ export function startApp(elements: AppElements, options: TestOptions) {
     };
     const rangeLabel = ([a, b]: readonly [number, number]) => `${dexNumber(a)}–${dexNumber(b)}`;
     const typeName = (type: string) => t(`type.${type}` as MessageKey);
-    // Start on the species just viewed, else the last one seen, else the first in the list.
-    const start = focusId ?? [...s.dex.seen].filter(id => ids.includes(id)).sort((a, b) => b - a)[0] ?? ids[0] ?? null;
+    // Back from a species' page: on that species. Opened from the city: on the first filter (Owned), at the top, so
+    // the filters are right there instead of a few rows above some species.
+    const start = focusId ?? null;
     renderDexList(overlayRoot, {
       title: t('dex.title'),
       counts: t('dex.counts', { seen: s.dex.seen.length, caught: s.dex.caught.length, total: dexNumbers(regionNow().lastSpecies).length }),
@@ -911,6 +931,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     renderOptions(overlayRoot, {
       title: t('options.title'),
       info: t(waiting ? 'controls.waiting' : (notice ?? 'controls.info')),
+      motion: t('motion.info'),
       sound: { label: t('options.sound'), value: t(settings.muted ? 'options.off' : 'options.on'), on: !settings.muted, onClick: () => {
         applySettings({ ...settings, muted: !settings.muted });
         showOptions(from);
@@ -1069,63 +1090,85 @@ export function startApp(elements: AppElements, options: TestOptions) {
     });
   }
 
+  /** The Pokémon picked up in the box (A), until it is put down. */
+  let boxHeld: Spot | null = null;
+
+  function openBox() {
+    boxHeld = null;
+    showBox();
+  }
+
   function showBox() {
     if (!save) return;
     const s = save;
     scene = 'menu';
     show();
     indoors('#2fc4b2');
+    if (boxHeld && !s[boxHeld.where][boxHeld.index]) boxHeld = null;
+    const held = boxHeld;
+    const redraw = (change: (current: Save) => Partial<Save>) => {
+      update(current => ({ ...current, ...change(current) }));
+      showBox();
+    };
     const releaser = (where: Place, index: number) =>
       canRelease(s, where)
         ? () => {
             const name = nameOf(s[where][index]);
+            boxHeld = null;
             update(current => ({ ...current, ...release(current, where, index) }));
             audio.play('ballOpen');
             showBox();
             toast(t('box.released', { name }));
           }
         : null;
-    const mon = (p: Pokemon, action: string, blocked: boolean, onMove: () => void, onRelease: (() => void) | null): BoxMon => ({
+    /** A on a Pokémon: pick it up; holding one, put it here (they swap) or back (itself). */
+    const pick = (spot: Spot) => () => {
+      if (!held) {
+        boxHeld = spot;
+        audio.play('select');
+        showBox();
+        return;
+      }
+      boxHeld = null;
+      if (held.where !== spot.where || held.index !== spot.index) {
+        audio.play('ballOpen');
+        redraw(current => place(current, held, spot));
+      } else showBox();
+    };
+    const send = (spot: Spot): BoxMon['send'] =>
+      spot.where === 'party'
+        ? { label: t('box.toBox'), blocked: canSendToBox(s) ? null : t('box.keepOne'), onSend: () => ((boxHeld = null), redraw(current => sendToBox(current, spot.index))) }
+        : { label: t('box.toParty'), blocked: canTakeFromBox(s) ? null : t('box.partyFull'), onSend: () => ((boxHeld = null), redraw(current => takeFromBox(current, spot.index))) };
+    const mon = (p: Pokemon, spot: Spot): BoxMon => ({
       name: nameOf(p),
       level: t('party.level', { level: p.level }),
       sprite: spriteUrl(p.speciesId),
       hp: p.hp,
       maxHp: maxHpOf(p),
       types: species(p.speciesId).types.map(type => ({ type, label: t(`type.${type}` as MessageKey) })),
-      action,
-      blocked,
-      onMove,
-      onRelease,
+      held: held?.where === spot.where && held.index === spot.index,
+      onPick: pick(spot),
+      send: send(spot),
+      onRelease: releaser(spot.where, spot.index),
     });
+    /** The empty place after a list, if the held Pokémon can move there (not where it already is at the end). */
+    const dropAt = (where: Place) => {
+      const end = { where, index: s[where].length };
+      if (!held || (held.where === where && held.index === end.index - 1) || !canPlace(s, held, end)) return null;
+      return () => {
+        boxHeld = null;
+        audio.play('ballOpen');
+        redraw(current => place(current, held, end));
+      };
+    };
     renderBox(overlayRoot, {
       title: t('place.box'),
       partyLabel: t('box.party', { count: s.party.length }),
       boxLabel: t('box.box', { count: s.box.length }),
       empty: t('box.empty'),
-      party: s.party.map((p, i) =>
-        mon(
-          p,
-          canSendToBox(s) ? t('box.toBox') : t('box.keepOne'),
-          !canSendToBox(s),
-          () => {
-            update(current => ({ ...current, ...sendToBox(current, i) }));
-            showBox();
-          },
-          releaser('party', i),
-        ),
-      ),
-      box: s.box.map((p, i) =>
-        mon(
-          p,
-          canTakeFromBox(s) ? t('box.toParty') : t('box.partyFull'),
-          !canTakeFromBox(s),
-          () => {
-            update(current => ({ ...current, ...takeFromBox(current, i) }));
-            showBox();
-          },
-          releaser('box', i),
-        ),
-      ),
+      party: s.party.map((p, i) => mon(p, { where: 'party', index: i })),
+      box: s.box.map((p, i) => mon(p, { where: 'box', index: i })),
+      holding: held ? { text: t('box.holding', { name: nameOf(s[held.where][held.index]) }), toParty: dropAt('party'), toBox: dropAt('box'), drop: t('box.moveHere') } : null,
       release: {
         label: t('box.release'),
         ask: m => t('box.releaseAsk', { name: m.name, level: m.level }),
@@ -1133,8 +1176,13 @@ export function startApp(elements: AppElements, options: TestOptions) {
         no: t('box.releaseNo'),
         blocked: t('box.releaseLast'),
       },
-      back: { label: t('menu.back'), testid: 'back', onClick: goCity },
-      hints: [{ pad: 'a', key: 'Enter', label: t('hint.move') }, { pad: 'x', key: 'Del', label: t('box.release') }, hints.back],
+      // Holding a Pokémon, B puts it back instead of leaving.
+      back: held
+        ? { label: t('party.cancel'), testid: 'back', onClick: () => ((boxHeld = null), showBox()) }
+        : { label: t('menu.back'), testid: 'back', onClick: goCity },
+      hints: held
+        ? [{ pad: 'a', key: 'Enter', label: t('box.putHint') }, { pad: 'y', key: 'S', label: t('box.sendHint') }, { pad: 'b', key: 'Esc', label: t('party.cancel') }]
+        : [{ pad: 'a', key: 'Enter', label: t('box.pickHint') }, { pad: 'y', key: 'S', label: t('box.sendHint') }, { pad: 'x', key: 'Del', label: t('box.release') }, hints.back],
     });
   }
 
@@ -1179,7 +1227,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
           },
         };
       }),
-      back: { label: t('menu.back'), testid: 'back', onClick: goCity },
+      // Select (View) / Tab opened the map from the city, and closes it again.
+      back: { label: t('menu.back'), testid: 'back', pad: 'view', key: 'Tab', onClick: goCity },
       hints: [{ pad: 'a', key: 'Enter', label: t('map.go') }, hints.back],
     });
   }
@@ -2332,10 +2381,11 @@ export function startApp(elements: AppElements, options: TestOptions) {
       for (const shortcut of ['x', 'lb', 'rb'] as const) if (pressed(shortcut)) pressShortcut(overlayRoot, `[data-pad="${shortcut}"]`);
       if (pressed('y') && !pressShortcut(overlayRoot, '[data-pad="y"]')) toggleParty();
     }
-    // In a fight: the View button switches Pokémon.
-    if (overlayRoot.hidden && pad.view && !viewWasHeld) {
+    // In a fight: the View button switches Pokémon. In menus it is the screen's View shortcut (the city: the map).
+    if (pad.view && !viewWasHeld) {
       input.usePad();
-      trySwitch();
+      if (overlayRoot.hidden) trySwitch();
+      else pressShortcut(overlayRoot, '[data-pad="view"]');
     }
     viewWasHeld = pad.view;
     padBefore = pad.menu;

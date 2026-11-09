@@ -165,9 +165,14 @@ const base = {
 
   'box.party': 'Party ({count}/6)',
   'box.box': 'Box ({count})',
-  'box.toBox': 'A: send to the box',
-  'box.toParty': 'A: add to the party',
+  'box.toBox': 'Send to the box',
+  'box.toParty': 'Add to the party',
   'box.empty': 'The box is empty. Pokémon caught with a full party go here.',
+  'box.sendHint': 'Send across',
+  'box.putHint': 'Put here',
+  'box.pickHint': 'Pick up',
+  'box.moveHere': 'Move here',
+  'box.holding': 'Where should {name} go? Pick a Pokémon to swap places, or an empty place.',
 
   'map.here': 'You are here',
   'map.locked': 'Needs {badges} badge(s)',

@@ -165,9 +165,14 @@ const base: Record<BaseKey, string> = {
 
   'box.party': 'Equipe ({count}/6)',
   'box.box': 'Caixa ({count})',
-  'box.toBox': 'A: mandar para a caixa',
-  'box.toParty': 'A: pôr na equipe',
+  'box.toBox': 'Mandar para a caixa',
+  'box.toParty': 'Pôr na equipe',
   'box.empty': 'A caixa está vazia. Pokémon capturados com a equipe cheia vêm para cá.',
+  'box.sendHint': 'Mandar',
+  'box.putHint': 'Pôr aqui',
+  'box.pickHint': 'Pegar',
+  'box.moveHere': 'Mover para cá',
+  'box.holding': 'Para onde vai {name}? Escolha um Pokémon para trocar de lugar, ou um lugar vazio.',
 
   'map.here': 'Você está aqui',
   'map.locked': 'Precisa de {badges} insígnia(s)',

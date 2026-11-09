@@ -47,7 +47,7 @@ export interface DexListView {
   /** "No Pokémon match these filters" */
   empty: string;
   tiles: DexTile[];
-  /** The species focused first (the one just viewed). */
+  /** The species focused first (the one just viewed); null: the first filter. */
   start: number | null;
   onOpen: (id: number) => void;
   cancel: string;
@@ -91,7 +91,7 @@ export function renderDexList(root: HTMLElement, view: DexListView) {
             class: `dex-filter${filter.on ? ' on' : ''}`,
             testid: filter.testid,
             onClick: filter.onToggle,
-            attrs: { type: 'button', 'aria-pressed': String(filter.on) },
+            attrs: { type: 'button', 'aria-pressed': String(filter.on), ...(view.start === null && filter === view.filters[0] ? { 'data-autofocus': '' } : {}) },
           }, [h('span', { class: 'dex-check', attrs: { 'aria-hidden': 'true' } }), h('span', { text: filter.label })])
         : h('button', {
             class: `dex-filter choice${filter.active ? ' on' : ''}`,

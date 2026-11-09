@@ -45,6 +45,38 @@ export function swapInParty(party: readonly Pokemon[], from: number, to: number)
 
 export type Place = 'party' | 'box';
 
+/** A place in the party or the box. An index at the end of the list (its length) is the empty place after it. */
+export interface Spot {
+  where: Place;
+  index: number;
+}
+
+/**
+ * Moving a held Pokémon (decided after milestone 12: the box picks a Pokémon up and puts it down). Onto another
+ * Pokémon, the two swap places (in the party, the box, or between them: the party's size doesn't change). Onto the
+ * empty place after a list, it moves there, if the party keeps 1 to 6.
+ */
+export function canPlace(team: Team, from: Spot, to: Spot): boolean {
+  const target = team[to.where];
+  if (!team[from.where][from.index] || to.index < 0 || to.index > target.length) return false;
+  if (to.index < target.length || from.where === to.where) return true;
+  return to.where === 'box' ? canSendToBox(team) : canTakeFromBox(team);
+}
+
+export function place(team: Team, from: Spot, to: Spot): Team {
+  if (!canPlace(team, from, to)) throw new Error('It can’t go there');
+  const lists = { party: [...team.party], box: [...team.box] };
+  const moving = lists[from.where][from.index];
+  if (to.index < lists[to.where].length) {
+    lists[from.where][from.index] = lists[to.where][to.index];
+    lists[to.where][to.index] = moving;
+  } else {
+    lists[from.where].splice(from.index, 1);
+    lists[to.where].push(moving);
+  }
+  return lists;
+}
+
 /** Releasing (decided after milestone 11): any Pokémon in the box, or in the party as long as one stays there. */
 export const canRelease = (team: Team, where: Place) => where === 'box' || team.party.length > 1;
 

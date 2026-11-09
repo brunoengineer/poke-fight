@@ -157,18 +157,76 @@ test.describe('the shop and fishing', () => {
 });
 
 test.describe('the Pokémon Center, the box and potions', () => {
-  test('the box: any city, Pokémon go back and forth; the party keeps at least one', async ({ page }) => {
+  test('the box: Y / S sends a Pokémon straight across; the party keeps at least one', async ({ page }) => {
     const data = fixture('save-v2-viridian.json');
     await openGame(page, { scene: 'city' }, { save: data });
     await page.getByTestId('city-box').click();
-    await page.getByTestId('to-box-2').click();
-    await page.getByTestId('to-box-1').click();
-    await expect(page.getByTestId('to-box-0')).toBeDisabled();
+    await page.getByTestId('party-slot-2').focus();
+    await page.keyboard.press('s');
+    await page.getByTestId('party-slot-1').focus();
+    await page.getByTestId('box-send').click();
     expect((await save(page)).party).toHaveLength(1);
-    await page.getByTestId('to-party-0').click();
+    // The last one: Send says why not, and S does nothing.
+    await page.getByTestId('party-slot-0').focus();
+    await expect(page.getByTestId('box-send')).toHaveAttribute('aria-disabled', 'true');
+    await expect(page.getByTestId('box-blocked')).toHaveText('Your party needs at least one Pokémon');
+    await page.keyboard.press('s');
+    expect((await save(page)).party).toHaveLength(1);
+    await page.getByTestId('box-slot-0').focus();
+    await page.keyboard.press('s');
     const after = await save(page);
     expect(after.party).toHaveLength(2);
     expect(after.box).toHaveLength(1);
+  });
+
+  test('the box: A picks a Pokémon up and puts it down: on another one they swap, on an empty place it moves; B puts it back', async ({ page }) => {
+    const data = fixture('save-v2-viridian.json');
+    await openGame(page, { scene: 'city' }, { save: data });
+    const ids = async () => {
+      const s = await save(page);
+      return [s.party.map(p => p.speciesId), s.box.map(p => p.speciesId)];
+    };
+    await page.getByTestId('city-box').click();
+    await page.getByTestId('party-slot-2').focus();
+    await page.keyboard.press('s');
+    const [[a, b], [c]] = await ids();
+
+    // In the party: the first and the second swap.
+    await page.getByTestId('party-slot-0').click();
+    await expect(page.getByTestId('box-holding')).toContainText('Where should');
+    await expect(page.getByTestId('party-slot-0')).toHaveAttribute('aria-pressed', 'true');
+    await page.getByTestId('party-slot-1').click();
+    expect(await ids()).toEqual([[b, a], [c]]);
+    await expect(page.getByTestId('box-holding')).toHaveCount(0);
+
+    // Between the box and the party: with the keyboard (Enter picks up, Enter puts down).
+    await page.getByTestId('box-slot-0').focus();
+    await page.keyboard.press('Enter');
+    await page.getByTestId('party-slot-0').focus();
+    await page.keyboard.press('Enter');
+    expect(await ids()).toEqual([[c, a], [b]]);
+
+    // On the empty place after the party: it joins it.
+    await page.getByTestId('box-slot-0').click();
+    await page.getByTestId('party-drop').click();
+    expect(await ids()).toEqual([[c, a, b], []]);
+
+    // B (Esc) puts it back, and stays in the box.
+    await page.getByTestId('party-slot-0').click();
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('box-holding')).toHaveCount(0);
+    await expect(page.getByTestId('party-slot-0')).toHaveAttribute('aria-pressed', 'false');
+    expect(await ids()).toEqual([[c, a, b], []]);
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('city')).toBeVisible();
+  });
+
+  test('Tab (Select on a controller) opens the map from the city, and closes it again', async ({ page }) => {
+    await openGame(page, { scene: 'city' }, { save: fixture('save-v2-viridian.json') });
+    await page.keyboard.press('Tab');
+    await expect(page.getByTestId('map')).toBeVisible();
+    await page.keyboard.press('Tab');
+    await expect(page.getByTestId('city')).toBeVisible();
   });
 
   test('a potion from the party screen heals, and is used up', async ({ page }) => {

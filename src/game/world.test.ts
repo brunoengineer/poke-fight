@@ -9,7 +9,7 @@ import { KANTO as KANTO_REGION } from '../data/regions/kanto';
 const KANTO = KANTO_REGION.cities;
 import { createRng } from '../engine/rng';
 import { HP_UNITS } from '../fight/constants';
-import { addCaught, canSendToBox, canTakeFromBox, sendToBox, swapInParty, takeFromBox } from './box';
+import { addCaught, canPlace, canSendToBox, canTakeFromBox, place, sendToBox, swapInParty, takeFromBox } from './box';
 import { catchChance, catchValue, DIFFICULTY_PENALTY, throwBall, WILD_SPIRIT } from './capture';
 import { addItem, buy, countOf, moneyAfterLoss, prizeMoney, removeItem, START_BAG, START_MONEY, usePotion } from './economy';
 import { bestRod, chances, encounterTable, hasEncounters, huntTable, oldFaces, RARE_BITE, rollEncounter, rollIvs, wildPokemon } from './encounters';
@@ -103,12 +103,20 @@ describe('catching (the Gen 8 formula with a wild spirit, no performance bonus)'
   const x = (catchRate: number, ball: number, wildLevel: number, playerLevel = 50, badges = 0) =>
     catchValue({ catchRate, ball, wildLevel, playerLevel, badges });
 
-  it('matches the plan: a common Pokémon ≈ 30% (3–4 fights), Pikachu ≈ 24%, Snorlax ≈ 5% / 7% / 9%', () => {
-    expect(catchChance(x(255, 1, 3))).toBeCloseTo(0.3, 2);
-    expect(catchChance(x(190, 1, 5))).toBeCloseTo(0.24, 2);
-    expect(catchChance(x(25, 1, 30))).toBeCloseTo(0.053, 2);
-    expect(catchChance(x(25, 1.5, 30))).toBeCloseTo(0.072, 2);
-    expect(catchChance(x(25, 2, 30))).toBeCloseTo(0.089, 2);
+  it('matches the plan: a common Pokémon ≈ 68%, Pikachu ≈ 55%, a typical one (45) ≈ 25% with a Great Ball, Snorlax ≈ 12% / 16% / 20%', () => {
+    expect(catchChance(x(255, 1, 3))).toBeCloseTo(0.682, 2);
+    expect(catchChance(x(190, 1, 5))).toBeCloseTo(0.547, 2);
+    // 3–5 Great Balls for most Pokémon worth catching (decided after milestone 12; it was ~9).
+    expect(catchChance(x(45, 1.5, 30))).toBeCloseTo(0.252, 2);
+    expect(catchChance(x(25, 1, 30))).toBeCloseTo(0.119, 2);
+    expect(catchChance(x(25, 1.5, 30))).toBeCloseTo(0.162, 2);
+    expect(catchChance(x(25, 2, 30))).toBeCloseTo(0.201, 2);
+  });
+
+  it('a Safari Ball counts double: the Safari’s rare ones take 3–4 throws (Kangaskhan ≈ 31%, Chansey ≈ 23%)', () => {
+    expect(ITEMS['safari-ball'].kind === 'ball' && ITEMS['safari-ball'].bonus).toBe(2);
+    expect(catchChance(x(45, 2, 25))).toBeCloseTo(0.312, 2);
+    expect(catchChance(x(30, 2, 25))).toBeCloseTo(0.23, 2);
   });
 
   it('the level no longer matters (no low-level bonus), only the ball and the species', () => {
@@ -116,11 +124,11 @@ describe('catching (the Gen 8 formula with a wild spirit, no performance bonus)'
     expect(x(255, 2, 5)).toBe(2 * x(255, 1, 5));
   });
 
-  it('even a common Pokémon is often not caught on the first try; the Master Ball always catches', () => {
+  it('even a common Pokémon is sometimes not caught on the first try; the Master Ball always catches', () => {
     const rng = createRng(5);
     const first = Array.from({ length: 2000 }, () => throwBall(x(255, 1, 3), rng).caught).filter(Boolean).length / 2000;
-    expect(first).toBeGreaterThan(0.25);
-    expect(first).toBeLessThan(0.35);
+    expect(first).toBeGreaterThan(0.63);
+    expect(first).toBeLessThan(0.73);
     expect(throwBall(x(3, Infinity, 70), createRng(1)).caught).toBe(true);
   });
 
@@ -131,7 +139,7 @@ describe('catching (the Gen 8 formula with a wild spirit, no performance bonus)'
   });
 
   it('the shake checks give the formula chance (statistically, with a fixed seed)', () => {
-    const value = x(255, 1, 30); // ≈ 30%
+    const value = x(45, 1.5, 30); // ≈ 25%
     const rng = createRng(11);
     const caught = Array.from({ length: 20_000 }, () => throwBall(value, rng).caught).filter(Boolean).length / 20_000;
     expect(caught).toBeCloseTo(catchChance(value), 1);
@@ -209,6 +217,34 @@ describe('PC box', () => {
     expect(swapInParty(party, 2, 0).map(x => x.speciesId)).toEqual([id('rattata'), id('pidgey'), id('charmander')]);
     expect(party[0].speciesId).toBe(id('charmander'));
     expect(() => swapInParty(party, 0, 3)).toThrow();
+  });
+
+  it('a held Pokémon put on another one swaps places with it: in the party, in the box, or between them', () => {
+    const team = { party: [p('charmander'), p('pidgey')], box: [p('rattata'), p('caterpie')] };
+    const ids = (t: { party: { speciesId: number }[]; box: { speciesId: number }[] }) => [t.party.map(x => x.speciesId), t.box.map(x => x.speciesId)];
+    expect(ids(place(team, { where: 'party', index: 0 }, { where: 'party', index: 1 }))).toEqual([[id('pidgey'), id('charmander')], [id('rattata'), id('caterpie')]]);
+    expect(ids(place(team, { where: 'box', index: 1 }, { where: 'box', index: 0 }))).toEqual([[id('charmander'), id('pidgey')], [id('caterpie'), id('rattata')]]);
+    // Between them: the party keeps its size, even with one Pokémon.
+    expect(ids(place(team, { where: 'party', index: 1 }, { where: 'box', index: 1 }))).toEqual([[id('charmander'), id('caterpie')], [id('rattata'), id('pidgey')]]);
+    const one = { party: [p('charmander')], box: [p('rattata')] };
+    expect(ids(place(one, { where: 'party', index: 0 }, { where: 'box', index: 0 }))).toEqual([[id('rattata')], [id('charmander')]]);
+    expect(team.party[0].speciesId).toBe(id('charmander'));
+  });
+
+  it('put on the empty place after a list, it moves there, if the party keeps 1 to 6', () => {
+    const team = { party: [p('charmander'), p('pidgey')], box: [p('rattata')] };
+    const moved = place(team, { where: 'party', index: 0 }, { where: 'box', index: 1 });
+    expect(moved.party.map(x => x.speciesId)).toEqual([id('pidgey')]);
+    expect(moved.box.map(x => x.speciesId)).toEqual([id('rattata'), id('charmander')]);
+    expect(place(team, { where: 'box', index: 0 }, { where: 'party', index: 2 }).party).toHaveLength(3);
+    // The last one in the party can't leave it; a full party takes no one more.
+    expect(canPlace(moved, { where: 'party', index: 0 }, { where: 'box', index: 2 })).toBe(false);
+    const full = { party: Array.from({ length: 6 }, () => p('pidgey')), box: [p('rattata')] };
+    expect(canPlace(full, { where: 'box', index: 0 }, { where: 'party', index: 6 })).toBe(false);
+    expect(canPlace(full, { where: 'box', index: 0 }, { where: 'party', index: 3 })).toBe(true);
+    // Not past the empty place, and only a Pokémon that is there.
+    expect(canPlace(team, { where: 'party', index: 0 }, { where: 'box', index: 5 })).toBe(false);
+    expect(() => place(team, { where: 'box', index: 4 }, { where: 'party', index: 0 })).toThrow();
   });
 });
 

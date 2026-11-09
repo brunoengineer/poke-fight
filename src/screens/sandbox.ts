@@ -5,6 +5,7 @@ import { pushHistory, type HistoryEntry } from '../engine/input/history';
 import { createAdvantageTracker, trackAdvantage, type AdvantageTracker } from '../fight/advantage';
 import { cpuStep, createCpu, describeCpu, resetCpuMemory, type CpuState } from '../fight/ai/cpu';
 import { DIFFICULTIES, makeProfile, STYLES, type AiProfile, type Difficulty, type Style } from '../fight/ai/profiles';
+import { makeBoss, type BossAttackId } from '../fight/boss';
 import { battleStep, cancelSwitch, createBattle, requestSwitch, type BattleEvent, type BattleState, type TeamMember } from '../fight/battle';
 import { PP_MAX } from '../fight/constants';
 import { DUMMY_MODES, dummyInput, type DummyMode } from '../fight/dummy';
@@ -139,6 +140,11 @@ export interface SandboxOptions {
   trainers?: [TrainerLook | null, TrainerLook | null];
   /** Wild fights: per opponent team member, whether the player has one of that species (see SandboxView.owned). */
   owned?: boolean[];
+  /**
+   * Training: every opponent becomes a legendary boss (4× HP) with these attacks, to watch and practice them. Journey
+   * bosses come with `boss` in their own team member instead.
+   */
+  boss?: BossAttackId[];
 }
 
 /** How long the intro message stays (frames). */
@@ -149,7 +155,7 @@ const difficultyOf = (opponent: Opponent): Difficulty | null =>
 
 export function createSandbox(options: SandboxOptions = {}): Sandbox {
   let player = options.player ?? PLAYER_TEAM;
-  const opponentTeam = options.opponentTeam ?? OPPONENT_TEAM;
+  const opponentTeam = (options.opponentTeam ?? OPPONENT_TEAM).map(m => (options.boss ? makeBoss(m, options.boss) : m));
   const seed = options.seed ?? 1;
   const newBattle = () => createBattle([player, opponentTeam], { roundFrames: options.roundFrames });
 

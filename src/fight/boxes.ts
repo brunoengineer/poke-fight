@@ -70,7 +70,12 @@ export function isGuarding(f: Fighter): boolean {
   return (f.action === 'guard' || f.action === 'blockstun') && f.y === 0;
 }
 
-/** Fighters that pass through the other: knocked out, dashing, or rushing. */
+/** Fighters that pass through the other: knocked out, dashing, rushing, or a boss on a rampage. */
 export function passesThrough(f: Fighter): boolean {
-  return f.action === 'ko' || f.action === 'dash' || (f.action === 'big' && f.loadout.big.shape === 'rush');
+  return (
+    f.action === 'ko' ||
+    f.action === 'dash' ||
+    (f.action === 'big' && f.loadout.big.shape === 'rush') ||
+    (f.action === 'bossAttack' && f.boss?.current?.id === 'rampage')
+  );
 }

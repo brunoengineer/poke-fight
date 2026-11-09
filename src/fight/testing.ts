@@ -1,5 +1,6 @@
 // Helpers for the fight tests: run scripted inputs frame by frame and collect what happened.
 
+import { bossAttackInfo, type BossAttackId } from './boss';
 import { px } from './constants';
 import { computeDamage } from './damage';
 import { PHYSICAL_POWER } from './frame-data';
@@ -56,6 +57,12 @@ export function damageOf(state: FightState, attacker: FighterId, attack: AttackI
 
 /** A tackle between the two default test fighters (Lv. 50, all stats 100). */
 export const TACKLE_DAMAGE = damageOf(createFight(), 0, { power: PHYSICAL_POWER, type: null, category: 'physical' });
+
+/** The full damage of a boss attack (no guard, no combo scaling), in this state. */
+export function bossDamage(state: FightState, attack: BossAttackId, boss: FighterId = 1): number {
+  const [attacker, defender] = [state.fighters[boss], state.fighters[boss === 0 ? 1 : 0]];
+  return computeDamage(attacker, defender, bossAttackInfo(attacker, defender, attack)).damage;
+}
 
 /** The default test fighter's specials (from DEFAULT_LOADOUT) on the other default fighter. */
 export function specialDamage(slot: 'elemental' | 'big', state: FightState = createFight(), attacker: FighterId = 0): number {

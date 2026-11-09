@@ -1,8 +1,9 @@
 // Visual effects: particles (sparks, rings, dust, trails, glows), screen shake, and the HP "damage trail". Purely
 // for the eyes: fed by the fight's events and state after each simulated frame, never touching the fight itself.
 
-import { SUB } from '../fight/constants';
-import type { ActionKind, FightEvent, FightState } from '../fight/state';
+import { BOSS_ATTACK, VORTEX } from '../fight/boss';
+import { BODY_HEIGHT, SUB } from '../fight/constants';
+import type { ActionKind, FightEvent, FightState, Fighter } from '../fight/state';
 import { TYPE_COLORS } from './colors';
 import { FLOOR_Y } from './stage';
 
@@ -35,6 +36,8 @@ export interface Fx {
 const sx = (x: number) => x / SUB;
 const sy = (y: number) => FLOOR_Y - y / SUB;
 const typeColor = (type: string | null) => (type ? (TYPE_COLORS[type] ?? '#ffffff') : '#ffffff');
+/** The middle of a standing body, on screen. */
+const BOSS_MID = FLOOR_Y - BODY_HEIGHT / SUB / 2;
 
 export function createFx(): Fx {
   let particles: Particle[] = [];
@@ -87,6 +90,39 @@ export function createFx(): Fx {
   const quake = (amplitude: number, frames: number) => {
     if (amplitude >= shake.amplitude) shake = { amplitude, frames };
   };
+  const glowAt = (x: number, y: number, vx: number, vy: number, life: number, size: number, color: string) =>
+    particles.push({ x, y, vx, vy, life, max: life, size, color, gravity: 0, kind: 'glow' });
+  /** A boss's attack in progress leaves particles: energy drawn in, sparks off the wave, dust behind a charge. */
+  const bossParticles = (boss: Fighter) => {
+    const a = boss.boss?.current;
+    if (!a || boss.action === 'ko') return;
+    const color = typeColor(boss.types[0] ?? null);
+    const t = BOSS_ATTACK[a.id].telegraph;
+    const x = sx(boss.x);
+    if (a.frame <= t && a.frame % 2 === 0) {
+      const angle = random() * Math.PI * 2;
+      const distance = 40 + random() * 20;
+      glowAt(x + Math.cos(angle) * distance, BOSS_MID + Math.sin(angle) * distance, (-Math.cos(angle) * distance) / 12, (-Math.sin(angle) * distance) / 12, 12, 2, color);
+    }
+    if (a.id === 'slash') {
+      for (const wave of a.parts) {
+        for (let k = 0; k < 2; k++) {
+          glowAt(sx(wave.x) - wave.dir * random() * 10, FLOOR_Y - random() * 230, -wave.dir * (1 + random() * 2), (random() - 0.5) * 0.6, 14, 2.5, k ? '#ffffff' : color);
+        }
+      }
+    } else if (a.id === 'rampage' && a.run === 'run' && a.frame % 3 === 0) {
+      dust(x - a.dir * 14, FLOOR_Y, a.dir);
+    } else if (a.id === 'vortex' && a.frame > t && a.frame <= t + VORTEX.pullFrames) {
+      // Streaks pulled into the vortex.
+      for (let k = 0; k < 2; k++) {
+        const angle = random() * Math.PI * 2;
+        const distance = 120 + random() * 50;
+        glowAt(x + Math.cos(angle) * distance, BOSS_MID + Math.sin(angle) * distance * 0.45, (-Math.cos(angle) * distance) / 18, (-Math.sin(angle) * distance * 0.45) / 18, 18, 2, k ? '#ffffff' : color);
+      }
+    } else if (a.id === 'meteor' && a.frame <= t + 12 && a.frame % 2 === 0) {
+      glowAt(x + (random() - 0.5) * 20, BOSS_MID - 20, (random() - 0.5) * 0.5, -6 - random() * 3, 20, 3, color);
+    }
+  };
 
   return {
     onTick(round, events) {
@@ -97,7 +133,12 @@ export function createFx(): Fx {
           const x = sx(target.x) - Math.sign(target.x - attacker.x) * 8;
           const y = sy(target.y) - 26;
           const special = e.source === 'elemental' || e.source === 'big';
-          const color = special ? typeColor(e.source === 'big' ? attacker.loadout.big.type : attacker.loadout.elemental.type) : '#ffffff';
+          const color =
+            e.source === 'boss'
+              ? typeColor(attacker.types[0] ?? null)
+              : special
+                ? typeColor(e.source === 'big' ? attacker.loadout.big.type : attacker.loadout.elemental.type)
+                : '#ffffff';
           if (e.effectiveness === 0) {
             ring(x, y, 'rgba(200,200,220,0.8)', 10);
             continue;
@@ -118,8 +159,41 @@ export function createFx(): Fx {
           burst(sx(target.x), sy(target.y) - 24, 34, ['#ffffff', '#ffd25e', '#ff6fae'], 4.5);
           ring(sx(target.x), sy(target.y) - 24, '#ffffff', 46, 26);
           quake(6, 22);
+        } else if (e.type === 'bossImpact') {
+          const color = typeColor(round.fighters[e.fighter].types[0] ?? null);
+          const x = sx(e.x);
+          if (e.attack === 'vortex') {
+            burst(x, BOSS_MID, 26, ['#ffffff', color], 4.2);
+            ring(x, BOSS_MID, color, 30, 20);
+            quake(6, 18);
+          } else if (e.attack === 'quake') {
+            dust(x - 10, FLOOR_Y, -1);
+            dust(x + 10, FLOOR_Y, 1);
+            burst(x, FLOOR_Y - 2, 12, ['#e8d2a8', '#ffffff', color], 3);
+            quake(5, 14);
+          } else {
+            // A meteor: debris and sparks thrown up, a ring on the ground.
+            dust(x, FLOOR_Y, 1);
+            burst(x, FLOOR_Y - 4, 12, ['#ffffff', '#ffe27a', color], 3.2);
+            ring(x, FLOOR_Y - 6, color, 12, 14);
+            quake(3, 8);
+          }
+        } else if (e.type === 'bossAttack' && e.phase === 'active') {
+          const boss = round.fighters[e.fighter];
+          if (e.attack === 'slash') quake(4, 12);
+          else if (e.attack === 'nova') {
+            ring(sx(boss.x), BOSS_MID, '#ffffff', 20, 18);
+            quake(5, 20);
+          }
+        } else if (e.type === 'bossEnraged') {
+          const boss = round.fighters[e.fighter];
+          burst(sx(boss.x), sy(boss.y) - 26, 24, ['#ff2a3a', '#ff8a8a', '#ffffff'], 3.5);
+          ring(sx(boss.x), sy(boss.y) - 26, '#ff2a3a', 26, 22);
+          quake(3, 10);
         }
       }
+
+      for (const boss of round.fighters) bossParticles(boss);
 
       for (const f of round.fighters) {
         const before = lastActions[f.id];

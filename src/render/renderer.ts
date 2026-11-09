@@ -1,8 +1,9 @@
 // Draws the fight. It only reads the state and never changes it.
 //
-// Layers, back to front: the place (render/stage.ts) → the trainers at the edges → dust and shadows → the Pokémon
-// (sprites posed by code, or a stand-in rectangle while a sprite loads) → projectiles and beams → particles
-// (render/fx.ts) → the HUD → banners, "Super effective!", the entrance's Poké Balls and "FIGHT!", K.O. → debug (F1).
+// Layers, back to front: the place (render/stage.ts) → the trainers at the edges → dust, a boss's ground warnings and
+// shadows → the Pokémon (sprites posed by code, or a stand-in rectangle while a sprite loads) → projectiles and beams →
+// a boss's attacks (render/boss.ts) → particles (render/fx.ts) → the HUD → banners (a boss attack's name), "Super
+// effective!", the entrance's Poké Balls and "FIGHT!", K.O. → debug (F1).
 
 import { activeHitbox, bodyBox, currentMove, isGuarding, isInvincible, movePhase, projectileBox, type WorldBox } from '../fight/boxes';
 import type { BattleEvent } from '../fight/battle';
@@ -16,6 +17,7 @@ import { EFFECT_FRAMES, isFightEvent, type SandboxView } from '../screens/sandbo
 import { BODY_FONT, DISPLAY_FONT, TYPE_COLORS, typeColor } from './colors';
 import { backdropUrl } from '../data/art';
 import { drawAmbience } from './ambience';
+import { BOSS_BANNER_FRAMES, bossFlash, bossPose, drawBossBack, drawBossFront, skyFallShade } from './boss';
 import { createFx } from './fx';
 import { getImage } from './images';
 import { VIEW_H, VIEW_W } from './screen';
@@ -63,11 +65,14 @@ export function createRenderer(ctx: CanvasRenderingContext2D): Renderer {
       ctx.save();
       ctx.translate(shake.x, shake.y);
       drawStage(ctx, view.stage, ambient());
+      drawSkyShade(ctx, skyFallShade(round));
       drawTrainers(ctx, view);
       fx.drawBack(ctx);
+      drawBossBack(ctx, round);
       for (const f of round.fighters) drawShadow(ctx, f, view);
       for (const f of round.fighters) drawFighter(ctx, f, view);
       drawProjectiles(ctx, round, ambient());
+      drawBossFront(ctx, round);
       // Leaves, snow, embers… passing in front of the fighters, once the place's picture shows.
       if (view.stage.backdrop && getImage(backdropUrl(view.stage.backdrop))) drawAmbience(ctx, view.stage.backdrop, ambient(), 'front');
       fx.drawFront(ctx);
@@ -75,11 +80,13 @@ export function createRenderer(ctx: CanvasRenderingContext2D): Renderer {
       ctx.restore();
       drawHud(ctx, view, fx.trail);
       drawBanner(ctx, view);
+      drawBossBanner(ctx, view);
       drawEffect(ctx, view);
       drawFightText(ctx, view);
       if (view.debug) drawDebug(ctx, view);
-      if (view.flash > 0) {
-        ctx.fillStyle = `rgba(255, 255, 255, ${(0.55 * view.flash) / 8})`;
+      const flash = Math.max((0.55 * view.flash) / 8, bossFlash(round));
+      if (flash > 0) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${flash})`;
         ctx.fillRect(0, 0, VIEW_W, VIEW_H);
       }
       drawPhase(ctx, view, options.pad === true);
@@ -315,6 +322,11 @@ function drawPokemon(ctx: CanvasRenderingContext2D, f: Fighter, sprite: Sprite) 
       angle = -f.facing * (f.y === 0 ? Math.PI / 2 : 0.8);
       alpha = 0.75;
       break;
+    case 'bossAttack': {
+      const pose = bossPose(f);
+      if (pose) ({ dx, dy, scaleX, scaleY, angle } = pose);
+      break;
+    }
     default:
       break;
   }
@@ -555,6 +567,185 @@ function drawOwnedBall(ctx: CanvasRenderingContext2D, x: number, y: number, owne
   ctx.restore();
 }
 
+// ── Legendary bosses: their HUD, the attack's name, the darkened sky ─────────────────────────────────────────────
+
+/** Gradients at fixed places (the HUD panels, the banner, the sky) are made once. */
+const cachedGradients = new Map<string, CanvasGradient>();
+function cachedGradient(key: string, make: () => CanvasGradient): CanvasGradient {
+  let g = cachedGradients.get(key);
+  if (!g) cachedGradients.set(key, (g = make()));
+  return g;
+}
+
+/** While meteors fall, the sky darkens to a deep red. */
+function drawSkyShade(ctx: CanvasRenderingContext2D, shade: number) {
+  if (shade <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = shade;
+  ctx.fillStyle = cachedGradient('sky', () => {
+    const g = ctx.createLinearGradient(0, 0, 0, 170);
+    g.addColorStop(0, 'rgba(36,4,22,0.75)');
+    g.addColorStop(0.6, 'rgba(70,10,30,0.3)');
+    g.addColorStop(1, 'rgba(70,10,30,0)');
+    return g;
+  });
+  ctx.fillRect(0, 0, VIEW_W, 170);
+  ctx.restore();
+}
+
+/** A gold frame around a legendary's panel; it pulses red once the boss is enraged. */
+function drawGoldFrame(ctx: CanvasRenderingContext2D, left: number, width: number, enraged: boolean, frame: number) {
+  ctx.save();
+  if (enraged) {
+    roundRect(ctx, left - 2.5, 2.5, width + 5, 45, 9);
+    ctx.strokeStyle = `rgba(255,50,70,${0.35 + 0.3 * Math.sin(frame * 0.2)})`;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+  roundRect(ctx, left - 1, 4, width + 2, 42, 8);
+  ctx.strokeStyle = cachedGradient(`frame${left}`, () => {
+    const g = ctx.createLinearGradient(left, 0, left + width, 0);
+    g.addColorStop(0, '#b07818');
+    g.addColorStop(0.3, '#fff1b0');
+    g.addColorStop(0.55, '#e0a530');
+    g.addColorStop(0.8, '#fff1b0');
+    g.addColorStop(1, '#b07818');
+    return g;
+  });
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  roundRect(ctx, left + 1.5, 6.5, width - 3, 37, 6);
+  ctx.strokeStyle = 'rgba(255,220,120,0.3)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** A small gold crown (centered on x, y). */
+function drawCrown(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x - 6, y + 4);
+  ctx.lineTo(x - 6, y - 3);
+  ctx.lineTo(x - 3, y);
+  ctx.lineTo(x, y - 5);
+  ctx.lineTo(x + 3, y);
+  ctx.lineTo(x + 6, y - 3);
+  ctx.lineTo(x + 6, y + 4);
+  ctx.closePath();
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#3a2000';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#ffd25e';
+  ctx.fill();
+  ctx.fillStyle = '#fff6c8';
+  ctx.fillRect(x - 6, y - 1, 12, 1);
+  ctx.fillStyle = '#ff4a6a';
+  ctx.fillRect(x - 1, y + 1, 2, 2);
+  ctx.restore();
+}
+
+/** A legendary's HP bar: four segments (each one its normal HP), with a gold rim. */
+function drawBossBar(ctx: CanvasRenderingContext2D, barX: number, barW: number, mirror: boolean, enraged: boolean, frame: number) {
+  ctx.save();
+  if (enraged) {
+    ctx.fillStyle = `rgba(255,40,60,${0.12 + 0.12 * Math.sin(frame * 0.25)})`;
+    ctx.fillRect(barX, 23, barW, 6);
+  }
+  for (let k = 1; k < 4; k++) {
+    const x = Math.round(barX + (barW * k) / 4);
+    ctx.fillStyle = 'rgba(10,10,25,0.95)';
+    ctx.fillRect(x - 1, 22, 2, 8);
+    ctx.fillStyle = '#ffd25e';
+    ctx.fillRect(x - 1, 20, 2, 2);
+    ctx.fillRect(x - 1, 30, 2, 2);
+  }
+  roundRect(ctx, barX - 0.5, 21.5, barW + 1, 9, 3);
+  ctx.strokeStyle = 'rgba(255,210,94,0.85)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  // "×4" at the bar's outer end (the end that empties last).
+  ctx.font = font(7);
+  ctx.textAlign = mirror ? 'right' : 'left';
+  outlined(ctx, '×4', mirror ? barX + barW - 2 : barX + 2, 22, '#ffe9a0', 'rgba(0,0,0,0.8)', 2);
+  ctx.restore();
+}
+
+/** "LEGENDARY" (or "ENRAGED!") under the panel. */
+function drawBossTag(ctx: CanvasRenderingContext2D, x: number, mirror: boolean, enraged: boolean, frame: number) {
+  const text = t(enraged ? 'boss.enraged' : 'boss.legendary');
+  ctx.save();
+  ctx.font = font(8);
+  const w = Math.ceil(ctx.measureText(text).width) + 12;
+  const left = mirror ? x - w : x;
+  roundRect(ctx, left, 47, w, 12, 4);
+  ctx.fillStyle = enraged ? 'rgba(96,8,22,0.9)' : 'rgba(58,34,4,0.88)';
+  ctx.fill();
+  ctx.strokeStyle = enraged ? '#ff5a6a' : '#ffd25e';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.textAlign = 'center';
+  ctx.fillStyle = enraged ? (Math.floor(frame / 8) % 2 === 0 ? '#ff9aa4' : '#ffffff') : '#ffd25e';
+  ctx.fillText(text, left + w / 2, 48);
+  ctx.restore();
+}
+
+/** The attack's name in a red ribbon when it starts, and how to survive it under it. */
+function drawBossBanner(ctx: CanvasRenderingContext2D, view: SandboxView) {
+  if (view.battle.phase !== 'fight') return;
+  const a = view.battle.round.fighters.find(f => f.boss?.current)?.boss?.current;
+  if (!a || a.frame > BOSS_BANNER_FRAMES) return;
+  const age = a.frame;
+  const pop = age < 6 ? 0.5 + (age / 6) * 0.65 : age < 10 ? 1.15 - ((age - 6) / 4) * 0.15 : 1;
+  const alpha = age > BOSS_BANNER_FRAMES - 12 ? (BOSS_BANNER_FRAMES - age) / 12 : 1;
+  const name = t(`boss.attack.${a.id}`);
+  const hint = t(`boss.hint.${a.id}`);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(VIEW_W / 2, 72);
+  ctx.scale(pop, pop);
+  ctx.font = font(18);
+  const w = Math.ceil(ctx.measureText(name).width) + 56;
+  // A slanted ribbon with gold edges.
+  ctx.beginPath();
+  ctx.moveTo(-w / 2 + 10, -13);
+  ctx.lineTo(w / 2 + 6, -13);
+  ctx.lineTo(w / 2 - 10, 13);
+  ctx.lineTo(-w / 2 - 6, 13);
+  ctx.closePath();
+  ctx.fillStyle = cachedGradient('ribbon', () => {
+    const g = ctx.createLinearGradient(-160, 0, 160, 0);
+    g.addColorStop(0, 'rgba(70,6,30,0.2)');
+    g.addColorStop(0.2, 'rgba(120,10,40,0.92)');
+    g.addColorStop(0.8, 'rgba(70,14,90,0.92)');
+    g.addColorStop(1, 'rgba(40,10,70,0.2)');
+    return g;
+  });
+  ctx.fill();
+  ctx.fillStyle = '#ffd25e';
+  ctx.fillRect(-w / 2 + 10, -14, w - 4, 1.5);
+  ctx.fillRect(-w / 2 - 6, 12.5, w - 4, 1.5);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const gold = cachedGradient('bannerText', () => {
+    const g = ctx.createLinearGradient(0, -10, 0, 10);
+    g.addColorStop(0, '#fffbe0');
+    g.addColorStop(0.5, '#ffd25e');
+    g.addColorStop(1, '#ff8a3d');
+    return g;
+  });
+  outlined(ctx, name, 0, 0, gold, '#2a0610', 4);
+  ctx.font = font(8, 'normal');
+  const hw = Math.ceil(ctx.measureText(hint).width) + 14;
+  roundRect(ctx, -hw / 2, 17, hw, 12, 4);
+  ctx.fillStyle = 'rgba(10,8,24,0.8)';
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(hint, 0, 23.5);
+  ctx.restore();
+}
+
 function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView, trail: (id: 0 | 1, hp: number) => number) {
   const { battle } = view;
   const width = 200;
@@ -572,11 +763,17 @@ function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView, trail: (id: 0
     ctx.strokeStyle = 'rgba(160,175,255,0.25)';
     ctx.lineWidth = 1;
     ctx.stroke();
+    // A legendary: a gold frame and a crown before its name.
+    const crown = f.boss ? 13 : 0;
+    if (f.boss) {
+      drawGoldFrame(ctx, left, width, f.boss.enraged, battle.round.frame);
+      drawCrown(ctx, mirror ? left + width - 14 : left + 14, 14);
+    }
 
     // Name and level.
     ctx.font = font(10);
     ctx.textAlign = mirror ? 'right' : 'left';
-    const nameX = mirror ? left + width - 8 : left + 8;
+    const nameX = mirror ? left + width - 8 - crown : left + 8 + crown;
     outlined(ctx, f.name, nameX, 9, '#ffffff', 'rgba(0,0,0,0.5)', 2);
     ctx.font = font(8, 'normal');
     ctx.textAlign = mirror ? 'left' : 'right';
@@ -630,6 +827,7 @@ function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView, trail: (id: 0
     ctx.fillRect(at(fill(ratio)), 23, fill(ratio), 6);
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.fillRect(at(fill(ratio)), 23, fill(ratio), 1);
+    if (f.boss) drawBossBar(ctx, barX, barW, mirror, f.boss.enraged, battle.round.frame);
 
     // PP: marks every ¼ (one elemental special); glowing purple when full (the big special is ready).
     const ppW = 112;
@@ -671,6 +869,7 @@ function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView, trail: (id: 0
         ctx.stroke();
       }
     });
+    if (f.boss) drawBossTag(ctx, mirror ? left + width - 8 : left + 8, mirror, f.boss.enraged, battle.round.frame);
     ctx.restore();
   }
 

@@ -2,6 +2,7 @@
 // the frame's events, so the rules are tested without Web Audio.
 
 import type { BattleEvent } from '../fight/battle';
+import type { BossAttackId } from '../fight/boss';
 import type { ActionKind, Fighter } from '../fight/state';
 import { ENTRANCE, type Entrance } from '../screens/entrance';
 
@@ -19,7 +20,10 @@ export type SoundId =
   | 'ballOpen'
   | 'shake'
   | 'caught'
-  | 'levelUp';
+  | 'levelUp'
+  | 'bossWarn'
+  | 'bossSweep'
+  | 'bossBlast';
 
 /** What the cues remember from the last frame. */
 export interface CueMemory {
@@ -50,6 +54,12 @@ const STARTS: Partial<Record<ActionKind, SoundId>> = {
   big: 'charge',
 };
 
+/**
+ * A boss attack's active part: the sweeping ones whoosh, the nova blasts. Meteors and shockwaves sound on each impact
+ * instead (bossImpact).
+ */
+const BOSS_RELEASE: Partial<Record<BossAttackId, SoundId>> = { slash: 'bossSweep', nova: 'bossBlast', rampage: 'bossSweep', vortex: 'bossSweep' };
+
 export function fightCues(memory: CueMemory, view: FrameView, events: readonly BattleEvent[]): Cues {
   const sounds: SoundId[] = [];
   const cries: number[] = [];
@@ -71,6 +81,10 @@ export function fightCues(memory: CueMemory, view: FrameView, events: readonly B
     if (e.type === 'hit') sounds.push(e.big ? 'bigHit' : 'hit');
     else if (e.type === 'block') sounds.push('block');
     else if (e.type === 'ko') sounds.push('ko');
+    else if (e.type === 'bossEnraged') sounds.push('bossWarn');
+    else if (e.type === 'bossImpact') sounds.push('bossBlast');
+    else if (e.type === 'bossAttack' && e.phase === 'telegraph') sounds.push('bossWarn');
+    else if (e.type === 'bossAttack' && e.phase === 'active' && BOSS_RELEASE[e.attack]) sounds.push(BOSS_RELEASE[e.attack]!);
   }
 
   const actions: CueMemory['actions'] = [null, null];

@@ -119,6 +119,22 @@ export function createWebAudio(startMuted: boolean, startVolumes: Volumes = DEFA
     },
     caught: (t, bus) => [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(bus, 'square', f, f, t + i * 0.09, 0.12, 0.12)),
     levelUp: (t, bus) => [523, 587, 659, 784, 1047].forEach((f, i) => tone(bus, 'triangle', f, f, t + i * 0.07, 0.12, 0.18)),
+    // Legendary bosses: an ominous rising warning (two detuned voices), a whoosh, and a deep blast.
+    bossWarn: (t, bus) => {
+      tone(bus, 'sawtooth', 98, 196, t, 0.55, 0.12);
+      tone(bus, 'sawtooth', 104, 208, t, 0.55, 0.1);
+      tone(bus, 'sine', 392, 784, t + 0.3, 0.3, 0.08);
+    },
+    bossSweep: (t, bus) => {
+      hiss(bus, 'bandpass', 700, t, 0.4, 0.7);
+      hiss(bus, 'highpass', 4000, t + 0.05, 0.25, 0.25);
+      tone(bus, 'square', 340, 70, t, 0.35, 0.18);
+    },
+    bossBlast: (t, bus) => {
+      hiss(bus, 'lowpass', 700, t, 0.5, 0.9);
+      tone(bus, 'sine', 90, 28, t, 0.5, 0.5);
+      tone(bus, 'square', 160, 40, t, 0.2, 0.15);
+    },
   };
 
   /** Music: a scheduler fills the next ~0.2 s of notes, so timing stays exact even if the page stutters. */

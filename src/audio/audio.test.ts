@@ -51,6 +51,17 @@ describe('fight sounds', () => {
     expect(fightCues(freshCues(), view(), [{ type: 'hit', big: true } as never, { type: 'ko', loser: 1 } as never]).sounds).toEqual(['bigHit', 'ko']);
   });
 
+  it('a boss: a warning on the telegraph, a whoosh or a blast when it strikes, a blast on each impact', () => {
+    const cues = (events: unknown[]) => fightCues(freshCues(), view(), events as never).sounds;
+    expect(cues([{ type: 'bossAttack', fighter: 1, attack: 'slash', phase: 'telegraph' }])).toEqual(['bossWarn']);
+    expect(cues([{ type: 'bossAttack', fighter: 1, attack: 'slash', phase: 'active' }])).toEqual(['bossSweep']);
+    expect(cues([{ type: 'bossAttack', fighter: 1, attack: 'nova', phase: 'active' }])).toEqual(['bossBlast']);
+    expect(cues([{ type: 'bossAttack', fighter: 1, attack: 'meteor', phase: 'active' }])).toEqual([]);
+    expect(cues([{ type: 'bossImpact', fighter: 1, attack: 'meteor', x: 0 }, { type: 'bossImpact', fighter: 1, attack: 'meteor', x: 9 }])).toEqual(['bossBlast']);
+    expect(cues([{ type: 'bossAttack', fighter: 1, attack: 'nova', phase: 'end' }])).toEqual([]);
+    expect(cues([{ type: 'bossEnraged', fighter: 1 }])).toEqual(['bossWarn']);
+  });
+
   it('jump, dash and charge sound once, when they start', () => {
     const jumping = view(([p1]) => (p1.action = 'prejump'));
     const first = fightCues(freshCues(), jumping, []);

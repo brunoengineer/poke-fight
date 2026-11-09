@@ -8,7 +8,10 @@
 //   5. Projectiles: new ones appear, all move, opposite ones cancel out.
 //   6. Hits: everything that connects on this frame is found first, then applied (two hits on one frame trade).
 //   7. Round timer.
+// A legendary boss (fight/boss.ts) also starts its attacks before 2, and advances them between 4 and 5; what they
+// connect with is applied in 6 with everything else.
 
+import { bossAttackInfo, BOSS_ATTACK, scheduleBoss, updateBoss, type BossAttackId, type BossHit } from './boss';
 import { activeHitbox, bodyBox, currentMove, isGuarding, isInvincible, moveOf, overlaps, passesThrough, projectileBox } from './boxes';
 import { BODY_HALF_WIDTH, BODY_HEIGHT, BUFFER_FRAMES, CHIP_DIVISOR, ELEMENTAL_COST, PP_MAX, STAGE_WIDTH } from './constants';
 import { computeDamage, scaledDamage } from './damage';
@@ -52,6 +55,7 @@ export function step(previous: FightState, inputs: readonly [InputMask, InputMas
   }
 
   const [a, b] = state.fighters;
+  for (const f of state.fighters) if (f.boss) scheduleBoss(state, f, events);
   // Both decide from the positions at the start of the frame, so player 1 has no advantage over player 2.
   const startX = [a.x, b.x];
   think(a, startX[1], events);
@@ -59,9 +63,10 @@ export function step(previous: FightState, inputs: readonly [InputMask, InputMas
   move(a);
   move(b);
   separate(a, b);
+  const bossHits = state.fighters.flatMap(f => (f.boss ? updateBoss(state, f, events) : []));
   spawnProjectiles(state);
   moveProjectiles(state);
-  resolveHits(state, events);
+  resolveHits(state, events, bossHits);
   tickTimer(state, events);
   return { state, events };
 }
@@ -357,6 +362,9 @@ interface Connection {
   /** A melee hit (tackle, beam, rush) rather than a projectile: it marks the attacker's move as hit or blocked. */
   melee: boolean;
   source: HitSource;
+  /** A guard keeps 1/guardDivisor of the damage (default: specials' chip, CHIP_DIVISOR). */
+  guardDivisor?: number;
+  bossAttack?: BossAttackId;
 }
 
 function meleeSource(f: Fighter): HitSource {
@@ -365,7 +373,7 @@ function meleeSource(f: Fighter): HitSource {
   return 'tackle';
 }
 
-function resolveHits(state: FightState, events: FightEvent[]) {
+function resolveHits(state: FightState, events: FightEvent[], bossHits: readonly BossHit[]) {
   const [a, b] = state.fighters;
   const connections: Connection[] = [];
 
@@ -387,6 +395,22 @@ function resolveHits(state: FightState, events: FightEvent[]) {
     return false;
   });
 
+  for (const { boss, attack, away } of bossHits) {
+    const [attacker, defender] = boss === 0 ? [a, b] : [b, a];
+    const data = BOSS_ATTACK[attack];
+    connections.push({
+      attacker,
+      defender,
+      hit: data.hit,
+      attack: bossAttackInfo(attacker, defender, attack),
+      away,
+      melee: false,
+      source: 'boss',
+      guardDivisor: data.guard,
+      bossAttack: attack,
+    });
+  }
+
   for (const connection of connections) {
     if (connection.defender.hp > 0) applyHit(state, connection, events);
   }
@@ -398,15 +422,18 @@ function resolveHits(state: FightState, events: FightEvent[]) {
 /** Blocked hits freeze for less time than clean hits. */
 const blockHitstop = (hit: HitData) => Math.max(4, Math.floor(hit.hitstop / 2));
 
-function applyHit(state: FightState, { attacker, defender, hit, attack, away, melee, source }: Connection, events: FightEvent[]) {
+function applyHit(state: FightState, connection: Connection, events: FightEvent[]) {
+  const { attacker, defender, hit, attack, away, melee, source } = connection;
+  // Only boss hits carry the attack's name (other events keep their exact shape).
+  const named = connection.bossAttack ? { bossAttack: connection.bossAttack } : {};
   const { damage: fullDamage, effectiveness } = computeDamage(attacker, defender, attack);
   if (isGuarding(defender)) {
     if (melee) attacker.contact = 'block';
-    const chip = hit.chip ? Math.floor(fullDamage / CHIP_DIVISOR) : 0;
+    const chip = hit.chip ? Math.floor(fullDamage / (connection.guardDivisor ?? CHIP_DIVISOR)) : 0;
     defender.hp = Math.max(0, defender.hp - chip);
     defender.combo = 0;
     state.hitstop = Math.max(state.hitstop, blockHitstop(hit));
-    events.push({ type: 'block', attacker: attacker.id, defender: defender.id, chip, source });
+    events.push({ type: 'block', attacker: attacker.id, defender: defender.id, chip, source, ...named });
     if (defender.hp === 0) return knockOut(defender, away, events);
     setAction(defender, 'blockstun', hit.blockstun);
     defender.actionFrame = 0; // blockstun starts on the next frame
@@ -418,7 +445,7 @@ function applyHit(state: FightState, { attacker, defender, hit, attack, away, me
   const air = defender.y > 0;
   // A type that can't touch the defender (Normal → Ghost, Electric → Ground…): it passes harmlessly.
   if (effectiveness === 0) {
-    events.push({ type: 'hit', attacker: attacker.id, defender: defender.id, damage: 0, effectiveness, air, big: hit.big, combo: defender.combo, source });
+    events.push({ type: 'hit', attacker: attacker.id, defender: defender.id, damage: 0, effectiveness, air, big: hit.big, combo: defender.combo, source, ...named });
     return;
   }
   const damage = Math.max(1, scaledDamage(fullDamage, defender.combo));
@@ -427,9 +454,11 @@ function applyHit(state: FightState, { attacker, defender, hit, attack, away, me
   defender.buffer = { physical: 0, special: 0, big: 0, dash: 0 };
   attacker.pp = Math.min(PP_MAX, attacker.pp + hit.ppGain);
   state.hitstop = Math.max(state.hitstop, hit.hitstop);
-  events.push({ type: 'hit', attacker: attacker.id, defender: defender.id, damage, effectiveness, air, big: hit.big, combo: defender.combo, source });
+  events.push({ type: 'hit', attacker: attacker.id, defender: defender.id, damage, effectiveness, air, big: hit.big, combo: defender.combo, source, ...named });
 
   if (defender.hp === 0) return knockOut(defender, away, events);
+  // Super armor: a boss locked in one of its attacks takes the damage but isn't stunned or pushed (fight/boss.ts).
+  if (defender.action === 'bossAttack') return;
   if (air || hit.launch) {
     setAction(defender, 'airHitstun');
     defender.vx = away * (hit.launch?.push ?? AIR_HIT.push);

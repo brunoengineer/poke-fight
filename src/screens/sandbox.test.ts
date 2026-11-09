@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PP_MAX } from '../fight/constants';
+import { BOSS_HP_MULTIPLIER, BOSS_SCHEDULE } from '../fight/boss';
 import { DUMMY_ATTACK_EVERY, DUMMY_SPECIAL_EVERY } from '../fight/dummy';
 import { KO_DELAY } from '../fight/battle';
 import { Button } from '../fight/input';
@@ -145,6 +146,17 @@ describe('the trainers’ entrance', () => {
     expect(sandbox.view().entrance).toMatchObject({ sides: [true, false], first: false });
     ticks(sandbox, ENTRANCE.total + 5);
     expect(sandbox.trySwitch()).toBe('used');
+  });
+
+  it('training against a legendary: the opponents become bosses with 4× HP, and attack on their own', () => {
+    const sandbox = createSandbox({ boss: ['nova'] });
+    const [, boss] = sandbox.view().battle.round.fighters;
+    expect(boss.maxHp).toBe(OPPONENT_TEAM[0].maxHp * BOSS_HP_MULTIPLIER);
+    expect(boss.boss).toMatchObject({ attacks: ['nova'] });
+    const events = Array.from({ length: BOSS_SCHEDULE.first[1] + 2 }, () => sandbox.tick(0)).flat();
+    expect(events).toContainEqual({ type: 'bossAttack', fighter: 1, attack: 'nova', phase: 'telegraph' });
+    // Without the option, nobody is a boss.
+    expect(createSandbox().view().battle.round.fighters.some(f => f.boss)).toBe(false);
   });
 
   it('reset (R) plays the whole entrance again', () => {

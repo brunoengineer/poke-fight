@@ -1,7 +1,9 @@
 // The state of one fight between two Pokémon: plain data (no classes, no functions), so it can be copied, compared,
 // saved and replayed. A battle (6 vs 6) is a series of these, see battle.ts.
 
+import { createBossState, type BossAttackId, type BossPhase, type BossSetup, type BossState } from './boss';
 import { MAX_HP, PP_START, ROUND_FRAMES, START_X } from './constants';
+export { BOSS_ATTACKS, type BossAttackId, type BossSetup } from './boss';
 import type { BigShape, ElementalShape, HitData, SpecialSlot } from './frame-data';
 import type { InputMask } from './input';
 
@@ -23,7 +25,9 @@ export type ActionKind =
   | 'hitstun'
   | 'airHitstun'
   | 'blockstun'
-  | 'ko';
+  | 'ko'
+  /** A legendary boss doing one of its attacks (fight/boss.ts). */
+  | 'bossAttack';
 
 export type FighterId = 0 | 1;
 
@@ -94,6 +98,8 @@ export interface Fighter {
   held: InputMask;
   /** Frames a press is still remembered for; 0 = nothing buffered. */
   buffer: { physical: number; special: number; big: number; dash: number };
+  /** Legendary bosses only (the key is absent on everyone else): the attack schedule and the attack in progress. */
+  boss?: BossState;
 }
 
 export interface Projectile {
@@ -113,7 +119,7 @@ export interface Projectile {
 export type Winner = FighterId | 'draw' | null;
 
 /** The move behind a hit or a block. */
-export type HitSource = 'tackle' | 'air' | 'elemental' | 'big';
+export type HitSource = 'tackle' | 'air' | 'elemental' | 'big' | 'boss';
 
 export interface FightState {
   /** Simulated frames since the fight started. */
@@ -142,11 +148,19 @@ export type FightEvent =
       combo: number;
       /** What landed. */
       source: HitSource;
+      /** Which legendary attack, when the source is 'boss'. */
+      bossAttack?: BossAttackId;
     }
-  | { type: 'block'; attacker: FighterId; defender: FighterId; chip: number; source: HitSource }
+  | { type: 'block'; attacker: FighterId; defender: FighterId; chip: number; source: HitSource; bossAttack?: BossAttackId }
   | { type: 'special'; fighter: FighterId; slot: SpecialSlot }
   | { type: 'ko'; loser: FighterId }
-  | { type: 'timeout' };
+  | { type: 'timeout' }
+  /** A boss attack's telegraph starts, its active part starts, or it is over (sounds and effects follow these). */
+  | { type: 'bossAttack'; fighter: FighterId; attack: BossAttackId; phase: BossPhase }
+  /** Part of a boss attack hits the ground: a meteor, a slam, the vortex's burst (x in sub-pixels). */
+  | { type: 'bossImpact'; fighter: FighterId; attack: BossAttackId; x: number }
+  /** The boss fell below 30% HP: its attacks come more often. */
+  | { type: 'bossEnraged'; fighter: FighterId };
 
 /** Who is fighting: everything that comes from the Pokémon (the rest is the fight's own state). */
 export interface FighterSetup {
@@ -161,6 +175,8 @@ export interface FighterSetup {
   hp: number;
   pp: number;
   loadout: Loadout;
+  /** A legendary boss: it performs these attacks on its own (fight/boss.ts). */
+  boss?: BossSetup;
 }
 
 export interface FightOptions {
@@ -201,8 +217,13 @@ function createFighter(id: FighterId, x: number, setup: FighterSetup): Fighter {
     combo: 0,
     held: 0,
     buffer: { physical: 0, special: 0, big: 0, dash: 0 },
+    // Only bosses get the key, so every other fighter stays exactly as it was.
+    ...(setup.boss ? { boss: createBossState(setup.boss, bossSeed(setup)) } : {}),
   };
 }
+
+/** A boss's default schedule seed: from its species and HP, so each round (and each boss) plays a little differently. */
+const bossSeed = (setup: FighterSetup) => (Math.imul(setup.speciesId ?? 0, 0x9e3779b1) ^ Math.imul(setup.hp + 1, 0x85ebca6b) ^ setup.maxHp) >>> 0;
 
 /** The test fighter: Lv. 50, every stat 100, Normal type, average speed. */
 const DEFAULT_SETUP: FighterSetup = {

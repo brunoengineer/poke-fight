@@ -406,4 +406,6 @@ export const pt: Record<MessageKey, string> = {
   'results.learned': 'Aprendeu {move}',
   'results.toCity': 'Voltar à cidade',
   'results.toSafari': 'Voltar à entrada',
+  'evolution.done': 'Parabéns! {name} evoluiu para {species}!',
+  'evolution.move': '{name} aprendeu {move}!',
 };

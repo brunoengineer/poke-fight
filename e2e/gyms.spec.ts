@@ -81,6 +81,8 @@ test.describe('evolution items', () => {
     await page.getByTestId('member-1').focus();
     await expect(page.getByTestId('evolve-thunder-stone-1')).toHaveCount(0);
     await page.getByTestId('evolve-link-cable-1').click();
+    await expect(page.getByTestId('evolution-text')).toContainText('evolved into Alakazam');
+    await page.getByTestId('evolution-done').click();
     await expect(page.getByTestId('member-1')).toContainText('Alakazam');
     const after = await save(page);
     expect(after.party[1].speciesId).toBe(65);

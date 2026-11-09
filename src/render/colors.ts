@@ -24,5 +24,7 @@ export const TYPE_COLORS: Record<string, string> = {
 
 export const typeColor = (type: string | null | undefined) => (type ? (TYPE_COLORS[type] ?? '#a0a0a0') : '#a0a0a0');
 
-/** The fonts loaded by index.html, with fallbacks (canvas texts). */
+/** The fonts loaded by index.html, with fallbacks (canvas texts, the same as the menus'). */
 export const PIXEL_FONT = '"Pixelify Sans", ui-monospace, monospace';
+export const DISPLAY_FONT = '"Barlow Condensed", "Arial Narrow", sans-serif';
+export const BODY_FONT = 'Inter, system-ui, sans-serif';

@@ -405,6 +405,8 @@ export const en = {
   'results.learned': 'Learned {move}',
   'results.toCity': 'Back to the city',
   'results.toSafari': 'Back to the gate',
+  'evolution.done': 'Congratulations! {name} evolved into {species}!',
+  'evolution.move': '{name} learned {move}!',
 } as const;
 
 export type MessageKey = keyof typeof en;

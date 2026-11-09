@@ -524,8 +524,21 @@ Pokémon sprites are single front/back images, not fighting-game animation frame
 - Trainers at the edges and in the story: **Pokémon Showdown's trainer sprites** (80×80, by URL: the player, the
   rival, the Professor, Nurse Joy, the Mart clerk, the leaders, the Elite Four, a trainer class for the battle field).
   Until a sprite loads (or offline, or in the browser tests) a pixel figure painted by code stands in.
-- Places: **Showdown's battle backgrounds** (by URL), both as the fight's stage and behind the menus. The painted
-  stages stay as the stand-in. Items and badges: the PokeAPI sprites.
+- Places: **Showdown's battle backgrounds** (by URL), both as the fight's stage and behind the menus, with life drawn
+  over them (`render/ambience.ts`: leaves and light rays, water sparkles, bubbles, dust, snow, embers, lightning,
+  stars, spotlights; some pass in front of the fighters). The painted stages stay as the stand-in.
+- **Cities**: a pixel-art panorama per city painted by code (`render/town.ts`: the sky for its mood, the skyline with
+  the Pokémon Center, the Mart, the gym and its landmark, the plaza). It's the city's backdrop in the menus and the
+  stage of its battle field's fights.
+- Items and badges: the PokeAPI sprites.
+- **Rendering**: the fight is laid out in 480×270 art pixels but drawn at the screen's resolution, with a whole number
+  of *device* pixels per art pixel and positions snapped to device pixels (`render/screen.ts`). Stretching a
+  480×270 canvas made texts blurry and moving sprites flicker on screens with 125% / 150% display scaling. The HUD
+  uses the menus' fonts (Barlow Condensed, Inter), drawn sharp.
+- **Shadows and stance**: a soft contact shadow the feet stand in (centered just above the feet line); idle
+  Pokémon breathe (a slight squash) instead of bobbing up, so they never look like they float.
+- **Evolution**: an animation, as in the games (glow, white silhouettes swapping faster and faster, a flash, the new
+  form in color), after a battle and with an evolution item; A skips it (`ui/screens/evolution.ts`).
 - Menus show each Pokémon's sprite (city, party, box, Center, results, Hall of Fame).
 - Which picture goes where is data: `src/data/art.ts` (cities, gyms by type, people, the world map's layout).
 

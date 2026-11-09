@@ -54,6 +54,7 @@ import { renderMap } from './ui/screens/map';
 import { renderMart } from './ui/screens/mart';
 import { renderStarter } from './ui/screens/starter';
 import { renderDialog } from './ui/screens/dialog';
+import { renderEvolution } from './ui/screens/evolution';
 import { renderOptions } from './ui/screens/options';
 import { renderTitle, type TitleOption } from './ui/screens/title';
 import { moveFocus, pressBack, pressFocused, pressShortcut, trackInput } from './ui/focus';
@@ -325,7 +326,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     if (save && !confirmed) return confirm(t('speaker.professor'), PEOPLE.professor, 'title.confirmNew', () => newGame(true), goTitle);
     notice = null;
     const pallet = cityArt('pallet');
-    backdrop.set({ image: pallet.backdrop, theme: pallet.color, mode: 'scene' });
+    backdrop.set({ image: pallet.backdrop, town: 'pallet', theme: pallet.color, mode: 'scene' });
     // The starters' sprites load while the Professor talks.
     preloadSprites([...STARTERS]);
     tell([professor('story.welcome'), professor('story.live')], () =>
@@ -422,7 +423,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     const s = save;
     const here = city(s.location);
     const art = cityArt(here.id);
-    backdrop.set({ image: art.backdrop, theme: art.color, mode: 'scene' });
+    backdrop.set({ image: art.backdrop, town: here.id, theme: art.color, mode: 'scene' });
     // Everything that can appear here (and the party) starts loading now, so a hunt starts with its sprites ready.
     const rod = ownsRod(s);
     const possible = (['grass', 'cave', 'water'] as HuntKind[]).flatMap(kind => encounterTable(here, kind, rod).map(e => e.speciesId));
@@ -636,7 +637,10 @@ export function startApp(elements: AppElements, options: TestOptions) {
   }
 
   /** An indoor screen: the city's picture, blurred, in the room's color. */
-  const indoors = (color: string) => backdrop.set({ image: cityArt(save?.location ?? 'pallet').backdrop, theme: color, mode: 'interior' });
+  const indoors = (color: string) => {
+    const location = save?.location ?? 'pallet';
+    backdrop.set({ image: cityArt(location).backdrop, town: location, theme: color, mode: 'interior' });
+  };
 
   function showCenter(message: MessageKey | null) {
     if (!save) return;
@@ -819,7 +823,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
   function enterFight(next: FightMode, player: TeamMember[], opponents: TeamMember[], setup: FightSetup = {}) {
     const stage: StageSpec = setup.stage ?? { id: 'stadium', backdrop: 'spl' };
     const trainers: [TrainerLook, TrainerLook | null] = [LOOKS.player, setup.rivalLook === undefined ? LOOKS.trainer : setup.rivalLook];
-    backdrop.set({ image: stage.backdrop ?? 'spl', theme: stage.tint ?? '#6c8cff', mode: 'fight' });
+    backdrop.set({ image: stage.backdrop ?? 'spl', town: stage.town, theme: stage.tint ?? '#6c8cff', mode: 'fight' });
     preloadImages([
       ...(stage.backdrop ? [backdropUrl(stage.backdrop)] : []),
       ...trainers.flatMap(look => (look?.sprite ? [trainerUrl(look.sprite)] : [])),
@@ -869,7 +873,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     gym = null;
     update(s => ({ ...s, dex: register(s, opponents.map(p => p.speciesId)) }));
     enterFight('trainer', party.map(toFighter), opponents.map(toFighter), {
-      stage: { id: 'stadium', backdrop: cityArt(save.location).backdrop },
+      stage: { id: 'stadium', backdrop: cityArt(save.location).backdrop, town: save.location },
       rivalLook: { ...LOOKS.trainer, sprite: trainerClassFor(opponents.map(p => p.speciesId)) },
       intro: { step: null, key: 'trainer.challenge', params: {} },
     });
@@ -1149,7 +1153,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
   const reportKind = (key: MessageKey): ReportKind => {
     if (key === 'results.xp') return 'xp';
     if (key === 'results.level') return 'level';
-    if (key === 'results.move') return 'move';
+    if (key === 'results.move' || key === 'evolution.move') return 'move';
     if (key === 'results.prize' || key === 'results.whiteout') return 'money';
     if (key === 'gym.badgeEarned') return 'badge';
     if (key === 'capture.caught' || key === 'capture.toBox' || key === 'capture.shakes') return 'ball';
@@ -1281,12 +1285,25 @@ export function startApp(elements: AppElements, options: TestOptions) {
       const evolved = evolve(before, to);
       update(s => ({ ...s, party: s.party.map((p, i) => (i === index ? evolved.pokemon : p)), dex: register(s, [], [to]) }));
       results.lines.push({ key: 'results.evolved', params: { name: nameOf(before), species: nameOf(evolved.pokemon) } });
-      audio.play('levelUp');
-      for (const m of evolved.moves) results.lines.push({ key: 'results.move', params: { name: nameOf(evolved.pokemon), move: move(m).name } });
-    } else {
-      results.lines.push({ key: 'results.stopped', params: { name: nameOf(before) } });
+      for (const m of evolved.moves) results.lines.push({ key: 'evolution.move', params: { name: nameOf(evolved.pokemon), move: move(m).name } });
+      return playEvolution(before, evolved.pokemon, showResults);
     }
+    results.lines.push({ key: 'results.stopped', params: { name: nameOf(before) } });
     showResults();
+  }
+
+  /** The evolution animation (after a battle, or an evolution item from the party), then `then`. */
+  function playEvolution(before: Pokemon, after: Pokemon, then: () => void) {
+    renderEvolution(overlayRoot, {
+      from: spriteUrl(before.speciesId),
+      to: spriteUrl(after.speciesId),
+      start: t('results.evolving', { name: nameOf(before) }),
+      done: t('evolution.done', { name: nameOf(before), species: nameOf(after) }),
+      next: t('dialog.next'),
+      hints: [{ pad: 'a', key: 'Enter', label: t('dialog.next') }],
+      onMoment: moment => audio.play(moment === 'start' ? 'charge' : moment === 'flash' ? 'ballOpen' : 'levelUp'),
+      onDone: then,
+    });
   }
 
   function closeModal() {
@@ -1517,16 +1534,16 @@ export function startApp(elements: AppElements, options: TestOptions) {
             onClick: () => {
               const to = itemEvolution(p, id)!.to;
               preloadSprites([to]);
+              const evolved = evolve(p, to).pokemon;
               update(current => ({
                 ...current,
                 bag: removeItem(current.bag, id),
                 party: current.party.map((q, i) => (i === index ? evolve(q, to).pokemon : q)),
                 dex: register(current, [], [to]),
               }));
-              audio.play('levelUp');
               partyChanged = true;
               partySelected = index;
-              showParty(`member-${index}`);
+              playEvolution(p, evolved, () => showParty(`member-${index}`));
             },
           })),
         ],

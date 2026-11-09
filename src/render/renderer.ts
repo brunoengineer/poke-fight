@@ -13,25 +13,34 @@ import { displayHp } from '../game/pokemon';
 import { t, type MessageKey } from '../i18n';
 import { ENTRANCE } from '../screens/entrance';
 import { EFFECT_FRAMES, type SandboxView } from '../screens/sandbox';
-import { PIXEL_FONT, TYPE_COLORS, typeColor } from './colors';
+import { BODY_FONT, DISPLAY_FONT, TYPE_COLORS, typeColor } from './colors';
+import { backdropUrl } from '../data/art';
+import { drawAmbience } from './ambience';
 import { createFx } from './fx';
+import { getImage } from './images';
 import { VIEW_H, VIEW_W } from './screen';
 import { getSprite, type Sprite } from './sprites';
-import { drawStage, FLOOR_Y, type StageSpec } from './stage';
+import { drawStage, FLOOR_Y } from './stage';
 import { drawBall, drawTrainer, handOf } from './trainers';
 
 export { FLOOR_Y, TYPE_COLORS };
 
-const sx = (x: number) => Math.round(x / SUB);
-const sy = (y: number) => FLOOR_Y - Math.round(y / SUB);
-const font = (size: number, weight = 'bold') => `${weight} ${size}px ${PIXEL_FONT}`;
+/**
+ * Device pixels per art pixel for the frame being drawn (set by draw()). Positions snap to whole device pixels, so a
+ * sprite moves smoothly and its pixels never land between two screen pixels (that's what made sprites flicker).
+ */
+let deviceScale = 1;
+const snap = (value: number) => Math.round(value * deviceScale) / deviceScale;
+const sx = (x: number) => snap(x / SUB);
+const sy = (y: number) => FLOOR_Y - snap(y / SUB);
+/** Titles and names: the menus' display font. Small labels: the menus' text font. Both drawn at full resolution. */
+const font = (size: number, weight = 'bold') =>
+  weight === 'normal' ? `600 ${size * 0.92}px ${BODY_FONT}` : `italic 800 ${size * 1.2}px ${DISPLAY_FONT}`;
 
 export interface Renderer {
   draw(view: SandboxView): void;
   /** After each simulated frame: effects follow the fight. */
   onTick(view: SandboxView, events: readonly BattleEvent[]): void;
-  /** The place with nobody in it: behind the title, the story and the menus. */
-  backdrop(stage: StageSpec): void;
   reset(): void;
 }
 
@@ -43,6 +52,10 @@ export function createRenderer(ctx: CanvasRenderingContext2D): Renderer {
   return {
     draw(view) {
       const { round } = view.battle;
+      // Everything below is laid out in art pixels; the canvas holds a whole number of device pixels per art pixel.
+      deviceScale = Math.max(1, Math.round(ctx.canvas.width / VIEW_W));
+      ctx.setTransform(deviceScale, 0, 0, deviceScale, 0, 0);
+      ctx.clearRect(0, 0, VIEW_W, VIEW_H);
       ctx.imageSmoothingEnabled = false;
       ctx.textBaseline = 'top';
       const shake = fx.shake();
@@ -54,6 +67,8 @@ export function createRenderer(ctx: CanvasRenderingContext2D): Renderer {
       for (const f of round.fighters) drawShadow(ctx, f, view);
       for (const f of round.fighters) drawFighter(ctx, f, view);
       drawProjectiles(ctx, round, ambient());
+      // Leaves, snow, embers… passing in front of the fighters, once the place's picture shows.
+      if (view.stage.backdrop && getImage(backdropUrl(view.stage.backdrop))) drawAmbience(ctx, view.stage.backdrop, ambient(), 'front');
       fx.drawFront(ctx);
       drawEntranceBalls(ctx, view);
       ctx.restore();
@@ -71,13 +86,6 @@ export function createRenderer(ctx: CanvasRenderingContext2D): Renderer {
     onTick(view, events) {
       const fightEvents = events.filter((e): e is FightEvent => e.type !== 'roundStart' && e.type !== 'battleOver');
       fx.onTick(view.battle.round, fightEvents);
-    },
-    backdrop(stage) {
-      ctx.imageSmoothingEnabled = false;
-      drawStage(ctx, stage, ambient());
-      // A soft veil, so the menus read well over it.
-      ctx.fillStyle = 'rgba(8, 10, 24, 0.35)';
-      ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     },
     reset() {
       fx.reset();
@@ -201,15 +209,33 @@ function drawFightText(ctx: CanvasRenderingContext2D, view: SandboxView) {
 
 // ── Fighters ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-/** A shadow on the floor, so jumps read clearly. */
+/**
+ * A soft shadow under each Pokémon. Its middle sits a little above the feet line, so the feet stand *in* it (a shadow
+ * centered below the feet made grounded Pokémon look like they float); it shrinks and fades as they jump.
+ */
 function drawShadow(ctx: CanvasRenderingContext2D, f: Fighter, view: SandboxView) {
   const look = entranceLook(view, f);
   if (look.hidden) return;
-  const width = Math.max(10, 30 - Math.round((f.y / SUB - look.dy) / 6)) * look.scale;
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
+  const height = f.y / SUB - look.dy;
+  const lift = Math.min(1, height / 60);
+  const sprite = spriteOf(f);
+  const base = sprite ? Math.min(40, Math.max(18, sprite.width * 0.7)) : 30;
+  const rx = (base / 2) * (1 - lift * 0.45) * look.scale;
+  const ry = Math.max(1.5, rx * 0.2);
+  const x = sx(f.x) + look.dx;
+  const y = FLOOR_Y - ry * 0.35;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(1, ry / rx);
+  const shade = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+  shade.addColorStop(0, `rgba(0, 0, 0, ${0.5 * (1 - lift * 0.6)})`);
+  shade.addColorStop(0.6, `rgba(0, 0, 0, ${0.32 * (1 - lift * 0.6)})`);
+  shade.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = shade;
   ctx.beginPath();
-  ctx.ellipse(sx(f.x) + look.dx, FLOOR_Y + 1, width / 2, 3, 0, 0, Math.PI * 2);
+  ctx.arc(0, 0, rx, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
 }
 
 const spriteOf = (f: Fighter) => (f.speciesId !== null ? getSprite(f.speciesId) : null);
@@ -240,17 +266,18 @@ function drawPokemon(ctx: CanvasRenderingContext2D, f: Fighter, sprite: Sprite) 
   const move = currentMove(f);
   const phase = move ? movePhase(move, f.actionFrame) : null;
   let [dx, dy, scaleX, scaleY, angle, alpha] = [0, 0, 1, 1, 0, 1];
-  const bob = (period: number) => Math.round(1 - Math.cos((f.actionFrame / period) * Math.PI * 2));
 
   switch (f.action) {
     case 'idle':
     case 'guard':
-      dy = -bob(60);
-      scaleY = 1 + 0.02 * Math.sin((f.actionFrame / 60) * Math.PI * 2);
+      // Breathing: the body swells a little, the feet stay planted.
+      scaleY = 1 + 0.025 * Math.sin((f.actionFrame / 60) * Math.PI * 2);
       break;
     case 'walkForward':
     case 'walkBack':
-      dy = -bob(16);
+      // A step: a small bounce (a squash on each footfall, a lift between them).
+      dy = -Math.max(0, Math.sin((f.actionFrame / 16) * Math.PI * 2)) * 1.5;
+      scaleY = 1 - 0.03 * Math.max(0, -Math.sin((f.actionFrame / 16) * Math.PI * 2));
       break;
     case 'prejump':
     case 'land':
@@ -294,14 +321,16 @@ function drawPokemon(ctx: CanvasRenderingContext2D, f: Fighter, sprite: Sprite) 
 
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.translate(sx(f.x) + dx, sy(f.y) + dy);
+  ctx.translate(snap(sx(f.x) + dx), snap(sy(f.y) + dy));
   ctx.rotate(angle);
   ctx.scale(f.facing === 1 ? -scaleX : scaleX, scaleY);
   const justHit = (f.action === 'hitstun' || f.action === 'airHitstun') && f.actionFrame <= 3;
   if (justHit) ctx.filter = 'brightness(0) invert(1)'; // a white flash
   // Lying down (rotated a quarter turn), the sprite is lifted so it rests on the floor.
   const lying = f.action === 'ko' && f.y === 0;
-  ctx.drawImage(sprite.image, -sprite.width / 2, lying ? -sprite.width / 2 - sprite.height / 2 : -sprite.height);
+  // Whole art pixels (an odd width would put the sprite half a pixel off).
+  const left = -Math.floor(sprite.width / 2);
+  ctx.drawImage(sprite.image, left, lying ? -Math.floor(sprite.width / 2) - Math.floor(sprite.height / 2) : -sprite.height);
   ctx.restore();
 }
 

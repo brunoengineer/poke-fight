@@ -10,7 +10,8 @@ const overlay = document.querySelector<HTMLElement>('#overlay');
 const backdrop = document.querySelector<HTMLElement>('#backdrop');
 if (!frame || !canvas || !overlay || !backdrop) throw new Error('missing #frame, #screen, #overlay or #backdrop');
 
-const fit = () => fitFrame(frame, canvas, window.innerWidth, window.innerHeight);
+// Zooming the page also changes devicePixelRatio, and fires a resize.
+const fit = () => fitFrame(frame, canvas, window.innerWidth, window.innerHeight, window.devicePixelRatio);
 fit();
 window.addEventListener('resize', fit);
 

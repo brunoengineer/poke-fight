@@ -44,6 +44,9 @@ test.describe('evolution', () => {
     await expect(page.getByTestId('xp-0')).toContainText('Level up!');
     await expect(page.getByTestId('results-prompt')).toHaveText('What? Charmander is evolving!');
     await page.getByTestId('evolve').click();
+    // The evolution plays (the browser tests skip its animation), then the results again.
+    await expect(page.getByTestId('evolution-text')).toHaveText('Congratulations! Charmander evolved into Charmeleon!');
+    await page.getByTestId('evolution-done').click();
     await expect(page.getByTestId('results-lines')).toContainText('Charmander evolved into Charmeleon!');
     await page.getByTestId('continue').click();
 

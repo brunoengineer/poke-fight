@@ -28,7 +28,9 @@ Run all three before saying a task is done. CI (`.github/workflows/ci.yml`) runs
   game state).
 - The simulation advances in fixed 1/60 s steps (`engine/loop.ts`). Rendering only reads the state.
 - Fight positions are whole numbers in sub-pixels (planned: 1 px = 256 units), never floats.
-- Menus are DOM (with `data-testid` for tests); only the fight is drawn on the canvas (480×270, whole-number scale).
+- Menus are DOM (with `data-testid` for tests); only the fight is drawn on the canvas. It is laid out in a 480×270
+  world but drawn at the screen's resolution, a whole number of *device* pixels per art pixel (`render/screen.ts`):
+  never stretch a low-resolution canvas (it blurs texts and makes moving sprites flicker).
   Menus live in a 16:9 frame and are sized in `cqh` (1% of the frame's height), never px. Screens are in
   `src/ui/screens/` and are built from `src/ui/kit.ts`; every interactive piece is a `<button>`. Show a screen with
   `mount()` (`ui/focus.ts`), which keeps the focus on redraw. Mark the main button `primary`, the leaving one `back`

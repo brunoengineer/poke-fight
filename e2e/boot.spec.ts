@@ -6,9 +6,9 @@ test('shows the fight screen at a whole-number scale', async ({ page }) => {
   await openGame(page);
   const screen = page.getByTestId('screen');
   await expect(screen).toBeVisible();
-  // 1280×800 window → ×2 → 960×540.
-  await expect(screen).toHaveJSProperty('width', 480);
-  await expect(screen).toHaveJSProperty('height', 270);
+  // 1280×800 window → a 1280×720 frame → ×2 → 960×540 (drawn at the screen's resolution: 2 device pixels per art pixel).
+  await expect(screen).toHaveJSProperty('width', 960);
+  await expect(screen).toHaveJSProperty('height', 540);
   expect(await screen.boundingBox()).toMatchObject({ width: 960, height: 540 });
 });
 
@@ -44,4 +44,19 @@ test('test hooks do not exist in a normal game', async ({ page }) => {
   // A normal game starts on the title screen (the fight canvas only shows during fights).
   await expect(page.getByTestId('title')).toBeVisible();
   expect(await page.evaluate(() => window.__pf)).toBeUndefined();
+});
+
+test.describe('with Windows display scaling at 125%', () => {
+  test.use({ deviceScaleFactor: 1.25 });
+
+  test('the fight is drawn at the screen’s resolution: 3 device pixels per art pixel, on whole device pixels', async ({ page }) => {
+    await openGame(page);
+    const screen = page.getByTestId('screen');
+    // 1280×720 frame × 1.25 = 1600×900 device pixels → ×3 → 1440×810.
+    await expect(screen).toHaveJSProperty('width', 1440);
+    await expect(screen).toHaveJSProperty('height', 810);
+    const box = (await screen.boundingBox())!;
+    expect(box.width * 1.25).toBe(1440);
+    expect(Number.isInteger(Math.round(box.x * 1.25 * 1000) / 1000)).toBe(true);
+  });
 });

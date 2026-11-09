@@ -7,7 +7,7 @@ import { createFight, type FightEvent, type FightState, type Loadout } from '../
 import { step } from '../step';
 import { fightAt, on } from '../testing';
 import { cpuStep, createCpu, resetCpuMemory, type CpuState } from './cpu';
-import { DIFFICULTIES, makeProfile, STYLES, type AiProfile, type Difficulty } from './profiles';
+import { boosted, DIFFICULTIES, makeProfile, STYLES, type AiProfile, type Difficulty } from './profiles';
 
 /** A CPU that only reacts to threats: no plans of its own (it just waits). */
 const reactive = (overrides: Partial<AiProfile>): AiProfile => ({
@@ -112,9 +112,10 @@ describe('the CPU answers threats', () => {
     expect(d.final.projectiles).toHaveLength(0);
   });
 
-  it('guards a beam while it is being charged', () => {
+  it('guards a beam while it is being charged (pressed late, it can even be a parry)', () => {
     const d = vsCpu(60, on(Button.Special, 1), reactive({ guard: 1 }), withLoadout(fightAt(200), BEAM));
-    expect(contacts(d).map(e => e.type)).toEqual(['block']);
+    expect(d.events.some(e => e.type === 'hit' && e.defender === 1)).toBe(false);
+    expect(d.events.filter(e => e.type === 'block' || e.type === 'parry')).toHaveLength(1);
   });
 
   it('anti-airs a jump-in with a tackle', () => {
@@ -130,9 +131,10 @@ describe('the CPU answers threats', () => {
     // reacts): it stays on the ground.
     const jumper = vsCpu(200, on(Button.Big, 1), reactive({ guard: 0, jump: 1, planFrames: [400, 400] }), start());
     expect(jumper.cpuInputs.some(input => has(input, Button.Up))).toBe(false);
-    // One that guards: it blocks it.
+    // One that guards: it blocks it (or parries it).
     const guard = vsCpu(200, on(Button.Big, 1), reactive({ guard: 1, jump: 1 }), start());
-    expect(contacts(guard).map(e => e.type)).toEqual(['block']);
+    expect(guard.events.some(e => e.type === 'hit' && e.defender === 1)).toBe(false);
+    expect(guard.events.filter(e => e.type === 'block' || e.type === 'parry')).toHaveLength(1);
   });
 
   it('guards a rush, then punishes the long recovery', () => {
@@ -216,10 +218,13 @@ describe('balance', () => {
   const wins = (a: Difficulty, b: Difficulty) =>
     Array.from({ length: 20 }, (_, s) => cpuDuel(makeProfile(a), makeProfile(b), s + 1)).filter(d => d.final.winner === 0).length;
 
-  it('hard beats easy (measured 19/20) and normal (17/20); normal beats easy (17/20)', () => {
-    expect(wins('hard', 'easy')).toBeGreaterThanOrEqual(16);
-    expect(wins('hard', 'normal')).toBeGreaterThanOrEqual(13);
-    expect(wins('normal', 'easy')).toBeGreaterThanOrEqual(13);
+  // 20 fights is a smoke test; the real numbers come from the fight lab (npm run sim -- ladder: hard beats normal
+  // 62%, easy 91%; normal beats easy 75%, 400 duels each, docs/fight-lab.md). Normal got closer to hard after
+  // milestone 13 (it guards more, and a CPU far behind plays a step up).
+  it('hard beats easy (measured 20/20) and normal (12/20); normal beats easy (20/20)', () => {
+    expect(wins('hard', 'easy')).toBeGreaterThanOrEqual(17);
+    expect(wins('hard', 'normal')).toBeGreaterThanOrEqual(11);
+    expect(wins('normal', 'easy')).toBeGreaterThanOrEqual(17);
   });
 
   it('every difficulty beats a player who does nothing, well before the timer', () => {
@@ -236,5 +241,39 @@ describe('balance', () => {
       d => d.final.winner === 1,
     ).length;
     expect(cpuWins).toBeGreaterThanOrEqual(17);
+  });
+});
+
+describe('after milestone 13', () => {
+  it("plays a step up while its opponent is more than half a bar ahead, and back once the gap is under a quarter", () => {
+    const behind = createFight({ hp: [1000, 400] });
+    const first = cpuStep(createCpu(1, makeProfile('normal'), 1), behind);
+    expect(first.cpu.boosted).toBe(true);
+    // Still behind by 0.3: it stays boosted (no flicker around the threshold).
+    expect(cpuStep(first.cpu, createFight({ hp: [1000, 700] })).cpu.boosted).toBe(true);
+    expect(cpuStep(first.cpu, createFight({ hp: [1000, 800] })).cpu.boosted).toBe(false);
+    // Ahead or close, never boosted (it never plays worse than its level either).
+    expect(cpuStep(createCpu(1, makeProfile('normal'), 1), createFight({ hp: [400, 1000] })).cpu.boosted).toBe(false);
+  });
+
+  it('a boosted CPU is faster and guards more, within limits', () => {
+    const normal = makeProfile('normal');
+    const up = boosted(normal);
+    expect(up.reaction).toBeLessThan(normal.reaction);
+    expect(up.guard).toBeGreaterThan(normal.guard);
+    expect(boosted(makeProfile('hard')).guard).toBeLessThanOrEqual(0.95);
+  });
+
+  it('cashes in a bonus up close: with a back attack ready it tackles at once', () => {
+    const state = fightAt(40);
+    state.fighters[1].bonus = { kind: 'back', frames: 20 };
+    const d = vsCpu(12, () => 0, reactive({}), state);
+    expect(d.events.find(e => e.type === 'hit')).toMatchObject({ attacker: 1, bonus: 'back' });
+  });
+
+  it('guards a projectile special from mid range on its charge (in flight it would arrive faster than a reaction)', () => {
+    const d = vsCpu(80, on(Button.Special, 1), reactive({ guard: 1, parry: 0, reaction: 18 }), fightAt(110));
+    expect(d.events.some(e => e.type === 'hit' && e.defender === 1)).toBe(false);
+    expect(d.events.some(e => e.type === 'block')).toBe(true);
   });
 });

@@ -20,6 +20,7 @@ npm run e2e        # Playwright: the real game in Chromium (e2e/)
 npm run typecheck  # src + e2e
 npm run build      # dist/, linked under /poke-fight/ (GitHub Pages); npm run preview serves it there
 npm run endgame    # a local build from the endgame save (every League won; state/endgame.ts), opened in the browser
+npm run sim -- report  # the fight lab: CPU-vs-CPU fights, win rates with intervals (docs/fight-lab.md)
 npm run data       # rebuild src/data/generated/ (generations 1–4) from PokeAPI (committed; the game never calls PokeAPI)
 ```
 
@@ -80,6 +81,9 @@ Run all three before saying a task is done. CI (`.github/workflows/ci.yml`) runs
   tests. (Waiting is only fine to prove that nothing happens, as in `e2e/boot.spec.ts`.)
 - Balance numbers (frame data, damage, catch rates) are pinned in tests on purpose. A change that breaks them is either
   a bug or a design change, and then plan.md and the test change together.
+- **Changes to the fight, the CPU or the economy are measured with the fight lab** (`docs/fight-lab.md`): run the
+  report before and after (`--baseline docs/fight-lab/baseline.json`), believe only what is real at 95%, and save the
+  new baseline when the change is accepted.
 
 ## Environment
 

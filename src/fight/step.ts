@@ -11,13 +11,15 @@
 // A legendary boss (fight/boss.ts) also starts its attacks before 2, and advances them between 4 and 5; what they
 // connect with is applied in 6 with everything else.
 
-import { bossAttackInfo, BOSS_ATTACK, scheduleBoss, updateBoss, type BossAttackId, type BossHit } from './boss';
+import { bossAttackInfo, BOSS_ATTACK, BOSS_HP_MULTIPLIER, scheduleBoss, updateBoss, type BossAttackId, type BossHit } from './boss';
 import { activeHitbox, bodyBox, currentMove, isGuarding, isInvincible, moveOf, overlaps, passesThrough, projectileBox } from './boxes';
-import { BODY_HALF_WIDTH, BODY_HEIGHT, BUFFER_FRAMES, CHIP_DIVISOR, ELEMENTAL_COST, PP_MAX, STAGE_WIDTH } from './constants';
-import { computeDamage, scaledDamage } from './damage';
+import { BODY_HALF_WIDTH, BODY_HEIGHT, BUFFER_FRAMES, CHIP_DIVISOR, ELEMENTAL_COST, PP_MAX, PP_PER_HP_PERCENT, STAGE_WIDTH } from './constants';
+import { BIG_DAMAGE, bigDamage, computeDamage, scaledDamage } from './damage';
 import {
   AIR_CONTROL,
   AIR_HIT,
+  BACK_ATTACK,
+  PARRY,
   AIR_PHYSICAL_POWER,
   BACKDASH,
   DASH,
@@ -64,6 +66,14 @@ export function step(previous: FightState, inputs: readonly [InputMask, InputMas
   move(a);
   move(b);
   separate(a, b);
+  // A dash that went through the opponent (a dasher keeps facing where the opponent was when it set off, so it is
+  // now behind): the next hit, soon after the dash ends, is a back attack.
+  for (const f of state.fighters) {
+    const other = state.fighters[f.id === 0 ? 1 : 0];
+    if (f.action === 'dash' && (other.x - f.x) * f.facing < 0 && f.bonus?.kind !== 'back') {
+      f.bonus = { kind: 'back', frames: BACK_ATTACK.window + dashLength(DASH) - f.actionFrame };
+    }
+  }
   const bossHits = state.fighters.flatMap(f => (f.boss ? updateBoss(state, f, events) : []));
   spawnProjectiles(state);
   moveProjectiles(state);
@@ -87,6 +97,9 @@ function readInput(f: Fighter, mask: InputMask) {
   if (has(pressed, Button.Special)) f.buffer.special = BUFFER_FRAMES;
   if (has(pressed, Button.Big)) f.buffer.big = BUFFER_FRAMES;
   if (has(pressed, Button.Dash)) f.buffer.dash = BUFFER_FRAMES;
+  // A fresh guard press opens the parry window (holding guard doesn't: the press is what is timed).
+  if (f.parry > 0) f.parry--;
+  if (has(pressed, Button.Guard)) f.parry = PARRY.window;
 }
 
 // ── 2. Actions ────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -102,6 +115,7 @@ function setAction(f: Fighter, action: ActionKind, length = 0) {
 const FREE_ACTIONS: readonly ActionKind[] = ['idle', 'walkForward', 'walkBack', 'guard'];
 
 function think(f: Fighter, opponentX: number, events: FightEvent[]) {
+  if (f.bonus && --f.bonus.frames <= 0) f.bonus = null;
   // Advance the current action; when it ends, the fighter is free again on this same frame.
   f.actionFrame++;
   if (f.actionLength > 0 && f.actionFrame > f.actionLength) {
@@ -371,7 +385,7 @@ function spawnProjectiles(state: FightState) {
           id: id++,
           owner: f.id,
           slot,
-          attack: { ...attack, power: Math.max(1, Math.round(attack.power * b.share)) },
+          attack: { ...attack, part: b.share },
           x: f.x,
           halfWidth: b.halfWidth,
           y1: f.y + b.fromY,
@@ -509,10 +523,38 @@ function applyHit(state: FightState, connection: Connection, events: FightEvent[
   const { attacker, defender, hit, attack, away, melee, source } = connection;
   // Only boss hits carry the attack's name (other events keep their exact shape).
   const named = connection.bossAttack ? { bossAttack: connection.bossAttack } : {};
-  const { damage: fullDamage, effectiveness } = computeDamage(attacker, defender, attack);
+  // A big special hits by its own rule (a share of the defender's HP: fight/damage.ts bigDamage); a boss's own
+  // attacks keep theirs.
+  const big = hit.big && source !== 'boss';
+  const baseHp = defender.boss ? defender.maxHp / BOSS_HP_MULTIPLIER : defender.maxHp;
+  const { damage: fullDamage, effectiveness } = big ? bigDamage(attacker, defender, attack, baseHp) : computeDamage(attacker, defender, attack);
+  // A parry: a guard pressed just before the hit. Nothing gets through, the attacker is left open.
+  if (defender.parry > 0 && isGuarding(defender)) {
+    defender.parry = 0;
+    if (melee) attacker.contact = 'block';
+    attacker.bonus = null;
+    state.hitstop = Math.max(state.hitstop, PARRY.hitstop);
+    defender.bonus = { kind: 'counter', frames: PARRY.counter };
+    events.push({ type: 'parry', attacker: attacker.id, defender: defender.id, source });
+    // Up close, the attacker staggers (a boss's super armor doesn't).
+    if (melee && attacker.action !== 'bossAttack' && attacker.action !== 'ko') {
+      setAction(attacker, 'hitstun', PARRY.stun);
+      attacker.actionFrame = 0;
+      attacker.actionable = false;
+      attacker.vx = 0;
+    }
+    return;
+  }
+  // The attacker's bonus (a back attack, a counter) is spent on its first hit, landed or blocked.
+  const bonus = attacker.bonus?.kind ?? null;
+  attacker.bonus = null;
   if (isGuarding(defender)) {
     if (melee) attacker.contact = 'block';
-    const chip = hit.chip ? Math.floor(fullDamage / (connection.guardDivisor ?? CHIP_DIVISOR)) : 0;
+    const chip = big
+      ? Math.floor(fullDamage * BIG_DAMAGE.guardKeeps)
+      : hit.chip
+        ? Math.floor(fullDamage / (connection.guardDivisor ?? CHIP_DIVISOR))
+        : 0;
     defender.hp = Math.max(0, defender.hp - chip);
     defender.combo = 0;
     state.hitstop = Math.max(state.hitstop, blockHitstop(hit));
@@ -531,13 +573,16 @@ function applyHit(state: FightState, connection: Connection, events: FightEvent[
     events.push({ type: 'hit', attacker: attacker.id, defender: defender.id, damage: 0, effectiveness, air, big: hit.big, combo: defender.combo, source, ...named });
     return;
   }
-  const damage = Math.max(1, scaledDamage(fullDamage, defender.combo));
+  const scaled = big ? fullDamage : Math.max(1, scaledDamage(fullDamage, defender.combo));
+  const damage = bonus ? Math.round(scaled * (bonus === 'back' ? BACK_ATTACK.multiplier : PARRY.multiplier)) : scaled;
   defender.combo++;
+  defender.bonus = null;
   defender.hp = Math.max(0, defender.hp - damage);
   defender.buffer = { physical: 0, special: 0, big: 0, dash: 0, motion: 0 };
   attacker.pp = Math.min(PP_MAX, attacker.pp + hit.ppGain);
+  defender.pp = Math.min(PP_MAX, defender.pp + Math.floor((damage * 100 * PP_PER_HP_PERCENT) / defender.maxHp));
   state.hitstop = Math.max(state.hitstop, hit.hitstop);
-  events.push({ type: 'hit', attacker: attacker.id, defender: defender.id, damage, effectiveness, air, big: hit.big, combo: defender.combo, source, ...named });
+  events.push({ type: 'hit', attacker: attacker.id, defender: defender.id, damage, effectiveness, air, big: hit.big, combo: defender.combo, source, ...named, ...(bonus ? { bonus } : {}) });
 
   if (defender.hp === 0) return knockOut(defender, away, events);
   // Super armor: a boss locked in one of its attacks takes the damage but isn't stunned or pushed (fight/boss.ts).

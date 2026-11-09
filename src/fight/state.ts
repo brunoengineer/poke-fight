@@ -36,6 +36,8 @@ export interface AttackInfo {
   power: number;
   type: string | null;
   category: 'physical' | 'special';
+  /** A part of a big special (a barrage's rock): this share of its damage. */
+  part?: number;
 }
 
 /** A Pokémon's two specials, as the fight needs them (built from its moves by game/pokemon.ts). */
@@ -104,6 +106,10 @@ export interface Fighter {
   freeSpecial: boolean;
   /** A strike's spot (x, sub-pixels), locked during its charge (fight/frame-data.ts StrikeData); null otherwise. */
   target: number | null;
+  /** Frames left to parry: guard was freshly pressed this recently (PARRY.window). */
+  parry: number;
+  /** The next hit's bonus and the frames left to land it: after a dash through ('back') or a parry ('counter'). */
+  bonus: { kind: Bonus; frames: number } | null;
   /** Legendary bosses only (the key is absent on everyone else): the attack schedule and the attack in progress. */
   boss?: BossState;
 }
@@ -128,6 +134,9 @@ export interface Projectile {
 }
 
 export type Winner = FighterId | 'draw' | null;
+
+/** A hit's bonus (fight/frame-data.ts BACK_ATTACK, PARRY). */
+export type Bonus = 'back' | 'counter';
 
 /** The move behind a hit or a block. */
 export type HitSource = 'tackle' | 'air' | 'elemental' | 'big' | 'boss';
@@ -161,7 +170,11 @@ export type FightEvent =
       source: HitSource;
       /** Which legendary attack, when the source is 'boss'. */
       bossAttack?: BossAttackId;
+      /** Present when it hit harder: after a dash through, or a parry. */
+      bonus?: Bonus;
     }
+  /** The defender parried the attacker's hit (fight/frame-data.ts PARRY). */
+  | { type: 'parry'; attacker: FighterId; defender: FighterId; source: HitSource }
   | { type: 'block'; attacker: FighterId; defender: FighterId; chip: number; source: HitSource; bossAttack?: BossAttackId }
   | { type: 'special'; fighter: FighterId; slot: SpecialSlot }
   | { type: 'ko'; loser: FighterId }
@@ -231,6 +244,8 @@ function createFighter(id: FighterId, x: number, setup: FighterSetup): Fighter {
     buffer: { physical: 0, special: 0, big: 0, dash: 0, motion: 0 },
     freeSpecial: false,
     target: null,
+    parry: 0,
+    bonus: null,
     // Only bosses get the key, so every other fighter stays exactly as it was.
     ...(setup.boss ? { boss: createBossState(setup.boss, bossSeed(setup)) } : {}),
   };

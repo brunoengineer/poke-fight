@@ -467,7 +467,16 @@ function drawEffect(ctx: CanvasRenderingContext2D, view: SandboxView) {
   ctx.font = font(13);
   ctx.textAlign = 'center';
   ctx.globalAlpha = Math.min(1, effect.frames / 10);
-  const fill = effect.text === 'effect.super' ? '#ffd25e' : effect.text === 'effect.none' ? '#d0d4e0' : '#9ad0ff';
+  const fill =
+    effect.text === 'effect.super'
+      ? '#ffd25e'
+      : effect.text === 'effect.none'
+        ? '#d0d4e0'
+        : effect.text === 'effect.parry'
+          ? '#7fe0ff'
+          : effect.text === 'effect.counter' || effect.text === 'effect.back'
+            ? '#ff8a5c'
+            : '#9ad0ff';
   outlined(ctx, t(effect.text), 0, 0, fill);
   ctx.restore();
 }
@@ -895,7 +904,7 @@ function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView, trail: (id: 0
     ctx.fillStyle = '#d8dcf0';
     ctx.fillText(t('controls.fight'), VIEW_W / 2, top + 2);
     if (view.tools) {
-      ctx.fillText(t('motion.hint'), VIEW_W / 2, top + 12);
+      ctx.fillText(`${t('motion.hint')} · ${t('parry.hint')}`, VIEW_W / 2, top + 12);
       ctx.fillText(t('controls.sandbox'), VIEW_W / 2, top + 22);
     }
   }

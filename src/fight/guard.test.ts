@@ -34,9 +34,10 @@ describe('guard', () => {
     expect(at(r, 5).fighters[0]).toMatchObject({ action: 'attack', actionFrame: 1 });
   });
 
+  // (The guard is held from frame 1 and the attacks come later: a guard pressed just before a hit is a parry.)
   it('blocks a tackle: no damage, blockstun, no PP for the attacker', () => {
-    const r = run(40, on(Physical, 1), Guard, fightAt(40));
-    expect(r.events).toEqual([{ type: 'block', attacker: 0, defender: 1, chip: 0, source: 'tackle', frame: 6 }]);
+    const r = run(50, on(Physical, 10), Guard, fightAt(40));
+    expect(r.events).toEqual([{ type: 'block', attacker: 0, defender: 1, chip: 0, source: 'tackle', frame: 15 }]);
     expect(r.final.fighters[1].hp).toBe(MAX_HP);
     expect(r.final.fighters[0].pp).toBe(PP_START);
     expect(r.frames.some(s => s.fighters[1].action === 'blockstun')).toBe(true);
@@ -46,7 +47,7 @@ describe('guard', () => {
     let state = fightAt(40);
     let tracker = createAdvantageTracker();
     for (let frame = 1; frame <= 60; frame++) {
-      const result = step(state, [frame === 1 ? Physical : 0, Guard]);
+      const result = step(state, [frame === 10 ? Physical : 0, Guard]);
       state = result.state;
       tracker = trackAdvantage(tracker, state, result.events);
     }
@@ -82,7 +83,7 @@ describe('guard', () => {
 // The tackle blocked by a defender who keeps guarding: the defender never loses HP.
 describe('guard against a series of tackles', () => {
   it('takes no damage', () => {
-    const r = run(300, f => (f % 25 === 1 ? Physical : 0) | Right, Guard, fightAt(40));
+    const r = run(300, f => (f % 25 === 10 ? Physical : 0) | Right, Guard, fightAt(40));
     expect(r.events.every(e => e.type === 'block')).toBe(true);
     expect(r.final.fighters[1].hp).toBe(MAX_HP);
   });

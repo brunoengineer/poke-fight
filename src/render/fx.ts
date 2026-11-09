@@ -229,6 +229,15 @@ export function createFx(): Fx {
           ring(x, y, color, e.big ? 34 : 16, e.big ? 22 : 14);
           if (e.effectiveness > 1) ring(x, y, '#ffd25e', 24, 20);
           quake(e.big ? 5 : e.effectiveness > 1 ? 3 : 2, e.big ? 16 : 7);
+        } else if (e.type === 'parry') {
+          // A bright flash where the hit was turned aside, and a ring.
+          const target = round.fighters[e.defender];
+          const x = sx(target.x) + target.facing * 18;
+          const y = sy(target.y) - 26;
+          burst(x, y, 18, ['#ffffff', '#bff4ff', '#7fe0ff'], 3.4);
+          ring(x, y, '#ffffff', 10, 16);
+          ring(x, y, '#7fe0ff', 20, 22);
+          quake(3, 8);
         } else if (e.type === 'block') {
           const target = round.fighters[e.defender];
           const x = sx(target.x) + target.facing * 18;

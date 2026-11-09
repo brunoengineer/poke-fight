@@ -186,8 +186,8 @@ describe('money and items', () => {
     expect(() => usePotion({ ...hurt, hp: 0 }, 'potion')).toThrow();
   });
 
-  it('trainers pay their levels × 20; losing costs half the money', () => {
-    expect(prizeMoney([5, 5, 5])).toBe(300);
+  it('trainers pay their levels × 12; losing costs half the money', () => {
+    expect(prizeMoney([5, 5, 5])).toBe(180);
     expect(moneyAfterLoss(3001)).toBe(1500);
   });
 });

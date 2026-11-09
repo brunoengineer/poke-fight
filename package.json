@@ -12,7 +12,8 @@
     "test:watch": "node scripts/vitest.mjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p e2e",
     "e2e": "playwright test",
-    "data": "node scripts/build-data.mjs"
+    "data": "node scripts/build-data.mjs",
+    "sim": "node scripts/sim.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.0",

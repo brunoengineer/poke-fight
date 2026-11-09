@@ -37,8 +37,12 @@ export function buy(money: number, bag: Bag, id: ItemId): BuyResult {
   return { ok: true, money: money - item.price, bag: addItem(bag, id) };
 }
 
-/** Trainers (the battle field) pay the sum of their Pokémon's levels × 20. Wild Pokémon pay nothing. */
-export const PRIZE_PER_LEVEL = 20;
+/**
+ * Trainers (the battle field) pay the sum of their Pokémon's levels × 12. Wild Pokémon pay nothing. (It was × 20:
+ * decided after milestone 13, with the fight lab's economy table, `npm run sim -- economy`: a few battles bought too
+ * much. The targets are in plan.md §5, Economy.)
+ */
+export const PRIZE_PER_LEVEL = 12;
 export const prizeMoney = (opponentLevels: readonly number[]) => opponentLevels.reduce((sum, level) => sum + level, 0) * PRIZE_PER_LEVEL;
 
 /** Losing a battle: half the money is lost (rounded down). */

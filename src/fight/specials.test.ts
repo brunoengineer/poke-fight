@@ -6,9 +6,9 @@ import { ELEMENTAL_COST, MAX_HP, PP_MAX, PP_START, STAGE_WIDTH, px } from './con
 import { BIG, ELEMENTAL, PHYSICAL, moveLength, type BigShape, type ElementalShape } from './frame-data';
 import { Button } from './input';
 import { createFight, type FightOptions, type Loadout } from './state';
-import { at, fightAt, on, run, specialDamage, TACKLE_DAMAGE } from './testing';
+import { at, between, bigHitDamage, fightAt, hitPp, on, run, specialDamage, TACKLE_DAMAGE } from './testing';
 
-const { Physical, Special, Big, Up } = Button;
+const { Physical, Special, Big, Up, Guard } = Button;
 
 /** Normal-type test specials (the test fighters are Normal: same-type bonus). A big rush is physical. */
 function loadout(elemental: ElementalShape, big: BigShape): Loadout {
@@ -30,9 +30,16 @@ describe('PP bar', () => {
     expect(createFight().fighters.map(f => f.pp)).toEqual([PP_START, PP_START]);
   });
 
-  it(`a landed tackle gives ${PHYSICAL.hit.ppGain} PP; being hit gives nothing`, () => {
+  it(`a landed tackle gives ${PHYSICAL.hit.ppGain} PP; being hit gives 1 PP for every 2% of HP lost`, () => {
     const r = run(30, on(Physical, 1), 0, fightAt(40));
-    expect(r.final.fighters.map(f => f.pp)).toEqual([PP_START + PHYSICAL.hit.ppGain, PP_START]);
+    expect(r.final.fighters.map(f => f.pp)).toEqual([PP_START + PHYSICAL.hit.ppGain, PP_START + hitPp(TACKLE_DAMAGE)]);
+    expect(hitPp(200)).toBe(10); // a 20% hit: +10 PP
+  });
+
+  it('guarding gives nothing (turtling never fills the bar)', () => {
+    const r = run(60, on(Special, 1), between(Guard, 1, 60), setup(200, 'projectile', 'beam'));
+    expect(r.events.some(e => e.type === 'block')).toBe(true);
+    expect(r.final.fighters[1].pp).toBe(PP_START);
   });
 
   it('never goes above the maximum', () => {
@@ -101,7 +108,7 @@ describe('elemental special (K)', () => {
     expect(at(r, 1).fighters[0].pp).toBe(PP_START - ELEMENTAL_COST);
     expect(r.frames.every(s => s.projectiles.length === 0)).toBe(true);
     expect(r.events.filter(e => e.type === 'hit').map(e => (e.type === 'hit' ? e.attacker : -1))).toEqual([1]);
-    expect(r.final.fighters[0].pp).toBe(PP_START);
+    expect(r.final.fighters[0].pp).toBe(PP_START + hitPp(TACKLE_DAMAGE));
   });
 
   it('once it has come out, a hit no longer gives the PP back', () => {
@@ -111,7 +118,7 @@ describe('elemental special (K)', () => {
       [15, 0],
       [15, 1],
     ]);
-    expect(r.final.fighters[0].pp).toBe(PP_START - ELEMENTAL_COST + ELEMENTAL.beam.hit.ppGain);
+    expect(r.final.fighters[0].pp).toBe(PP_START - ELEMENTAL_COST + ELEMENTAL.beam.hit.ppGain + hitPp(TACKLE_DAMAGE));
   });
 
   it('works in the air (one air move per jump), fired at the jump height', () => {
@@ -180,7 +187,7 @@ describe('big special (I)', () => {
     for (const f of state.fighters) f.loadout = loadout('projectile', 'beam');
     const r = run(60, on(Big, 1), 0, state);
     const hit = r.events.find(e => e.type === 'hit');
-    expect(hit).toMatchObject({ frame: 41, damage: specialDamage('big', state), big: true });
+    expect(hit).toMatchObject({ frame: 41, damage: bigHitDamage(state), big: true });
   });
 
   it('knocks the opponent down, with a long hitstop', () => {
@@ -193,7 +200,7 @@ describe('big special (I)', () => {
   it('rush: charges through the opponent, hits it, and ends up on the other side', () => {
     const r = run(120, on(Big, 1), 0, setup(100, 'projectile', 'rush', { pp: [PP_MAX, 50] }));
     const state = setup(100, 'projectile', 'rush', { pp: [PP_MAX, 50] });
-    expect(r.events.find(e => e.type === 'hit')).toMatchObject({ attacker: 0, damage: specialDamage('big', state), big: true });
+    expect(r.events.find(e => e.type === 'hit')).toMatchObject({ attacker: 0, damage: bigHitDamage(state), big: true });
     expect(r.final.fighters[0].x).toBeGreaterThan(r.final.fighters[1].x);
   });
 

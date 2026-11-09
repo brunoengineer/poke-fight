@@ -45,6 +45,11 @@ export const HITSTOP = 6;
 export const PP_MAX = 100;
 export const PP_START = 50;
 export const ELEMENTAL_COST = 25;
+/**
+ * Taking damage fills the PP bar too: +1 PP for every 2% of max HP lost (decided after milestone 13, as most fighting
+ * games do: the side being beaten gets its specials sooner). Guarding gives nothing, so turtling never fills it.
+ */
+export const PP_PER_HP_PERCENT = 0.5;
 
 /** Specials do this fraction of their damage through a guard. */
 export const CHIP_DIVISOR = 4;

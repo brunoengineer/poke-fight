@@ -1,8 +1,8 @@
 // Helpers for the fight tests: run scripted inputs frame by frame and collect what happened.
 
 import { bossAttackInfo, type BossAttackId } from './boss';
-import { px } from './constants';
-import { computeDamage } from './damage';
+import { MAX_HP, PP_PER_HP_PERCENT, px } from './constants';
+import { bigDamage, computeDamage } from './damage';
 import { PHYSICAL_POWER } from './frame-data';
 import type { InputMask } from './input';
 import { createFight, type AttackInfo, type FightEvent, type FightOptions, type FightState, type FighterId } from './state';
@@ -55,6 +55,9 @@ export function damageOf(state: FightState, attacker: FighterId, attack: AttackI
   return computeDamage(state.fighters[attacker], state.fighters[attacker === 0 ? 1 : 0], attack).damage;
 }
 
+/** The PP a fighter gets for taking this much damage (fight/constants.ts PP_PER_HP_PERCENT). */
+export const hitPp = (damage: number, maxHp = MAX_HP) => Math.floor((damage * 100 * PP_PER_HP_PERCENT) / maxHp);
+
 /** A tackle between the two default test fighters (Lv. 50, all stats 100). */
 export const TACKLE_DAMAGE = damageOf(createFight(), 0, { power: PHYSICAL_POWER, type: null, category: 'physical' });
 
@@ -62,6 +65,13 @@ export const TACKLE_DAMAGE = damageOf(createFight(), 0, { power: PHYSICAL_POWER,
 export function bossDamage(state: FightState, attack: BossAttackId, boss: FighterId = 1): number {
   const [attacker, defender] = [state.fighters[boss], state.fighters[boss === 0 ? 1 : 0]];
   return computeDamage(attacker, defender, bossAttackInfo(attacker, defender, attack)).damage;
+}
+
+/** A big special's damage (fight/damage.ts bigDamage) from this fighter on the other, in this state. */
+export function bigHitDamage(state: FightState, attacker: FighterId = 0, part?: number): number {
+  const [a, d] = [state.fighters[attacker], state.fighters[attacker === 0 ? 1 : 0]];
+  const { power, type, category } = a.loadout.big;
+  return bigDamage(a, d, { power, type, category, part }, d.maxHp).damage;
 }
 
 /** The default test fighter's specials (from DEFAULT_LOADOUT) on the other default fighter. */

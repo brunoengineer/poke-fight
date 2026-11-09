@@ -15,17 +15,17 @@
 
 import { createRng } from '../../engine/rng';
 import { moveOf, movePhase } from '../boxes';
-import { ELEMENTAL_COST, PP_MAX, px, SUB } from '../constants';
-import { JUMP, type BigShape } from '../frame-data';
+import { BODY_HALF_WIDTH, ELEMENTAL_COST, PP_MAX, px, SUB } from '../constants';
+import { DASH, JUMP, type BigShape } from '../frame-data';
 import { Button, has, type InputMask } from '../input';
 import type { ActionKind, FightState, Fighter, FighterId, Projectile } from '../state';
-import type { AiProfile } from './profiles';
+import { boosted, BOOST, type AiProfile } from './profiles';
 
 /** What the CPU sees of the opponent and the projectiles (the delayed part). */
 export interface Observation {
   frame: number;
   opponent: Pick<Fighter, 'x' | 'y' | 'vx' | 'vy' | 'action' | 'actionFrame' | 'facing' | 'loadout'>;
-  projectiles: Pick<Projectile, 'id' | 'owner' | 'x' | 'vx' | 'y1' | 'y2' | 'vy'>[];
+  projectiles: Pick<Projectile, 'id' | 'owner' | 'x' | 'vx' | 'y1' | 'y2' | 'vy' | 'halfWidth'>[];
 }
 
 export type PlanKind =
@@ -57,10 +57,12 @@ export interface CpuState {
   lastAction: ActionKind;
   /** The round just started: its first plan is an opening, picked more freely (so no two rounds start the same). */
   opening: boolean;
+  /** Its opponent is far ahead: it plays a step up the skill scale (profiles.ts boosted) until the gap closes. */
+  boosted: boolean;
 }
 
 export function createCpu(me: FighterId, profile: AiProfile, seed: number): CpuState {
-  return { me, profile, rng: seed >>> 0, seen: [], plan: { kind: 'wait', until: 0 }, responses: {}, last: 0, lastAction: 'idle', opening: true };
+  return { me, profile, rng: seed >>> 0, seen: [], plan: { kind: 'wait', until: 0 }, responses: {}, last: 0, lastAction: 'idle', opening: true, boosted: false };
 }
 
 /** Forget the last round (a new Pokémon came in), keep the random sequence going. */
@@ -79,7 +81,7 @@ export function observe(state: FightState, me: FighterId): Observation {
   return {
     frame: state.frame,
     opponent: { x: o.x, y: o.y, vx: o.vx, vy: o.vy, action: o.action, actionFrame: o.actionFrame, facing: o.facing, loadout: o.loadout },
-    projectiles: state.projectiles.filter(p => p.owner !== me).map(p => ({ id: p.id, owner: p.owner, x: p.x, vx: p.vx, y1: p.y1, y2: p.y2, vy: p.vy })),
+    projectiles: state.projectiles.filter(p => p.owner !== me).map(p => ({ id: p.id, owner: p.owner, x: p.x, vx: p.vx, y1: p.y1, y2: p.y2, vy: p.vy, halfWidth: p.halfWidth })),
   };
 }
 
@@ -93,6 +95,10 @@ export const PROJECTILE_ALERT = 110;
 const RECOVER_GUARD = 12;
 /** Jump over a projectile when it is about this close (its estimated position now): the jump clears it. */
 const JUMP_OVER_AT = 60;
+/** Closer than this (px), a projectile special is guarded on its charge (it would land before a reaction). */
+const CHARGE_ALERT = 160;
+/** The least chance to jump a jumpable projectile, whatever the personality. */
+const JUMP_SPECIALS = 0.35;
 
 interface Wish {
   /** Directions relative to the CPU's facing, and guard. */
@@ -107,13 +113,18 @@ export interface CpuStepResult {
 
 export function cpuStep(previous: CpuState, state: FightState): CpuStepResult {
   const cpu: CpuState = { ...previous, seen: [...previous.seen, observe(state, previous.me)], responses: { ...previous.responses } };
-  cpu.seen = cpu.seen.slice(-(cpu.profile.reaction + 1));
-  const view = cpu.seen[0];
   const self = state.fighters[cpu.me];
+  // Far behind (its opponent's HP bar ahead by more than half), it plays a step up; back once the gap is under a quarter.
+  const other = state.fighters[cpu.me === 0 ? 1 : 0];
+  const lead = other.hp / other.maxHp - self.hp / self.maxHp;
+  cpu.boosted = cpu.boosted ? lead > BOOST.off : lead > BOOST.on;
+  const profile = cpu.boosted ? boosted(cpu.profile) : cpu.profile;
+  cpu.seen = cpu.seen.slice(-(profile.reaction + 1));
+  const view = cpu.seen[0];
   const rng = createRng(cpu.rng);
   const roll = (chance: number) => rng.next() < chance;
 
-  const wish = state.winner === null ? decide(cpu, self, view, state.frame, roll, rng.int) : {};
+  const wish = state.winner === null ? decide(cpu, profile, self, view, state.frame, roll, rng.int) : {};
   const input = toMask(wish, self, cpu.last);
   cpu.rng = rng.state;
   cpu.last = input;
@@ -126,13 +137,13 @@ const MEMORY = 240;
 
 function decide(
   cpu: CpuState,
+  profile: AiProfile,
   self: Fighter,
   view: Observation,
   now: number,
   roll: (chance: number) => boolean,
   int: (max: number) => number,
 ): Wish {
-  const { profile } = cpu;
   const opp = view.opponent;
   const distance = Math.abs(opp.x - self.x) / SUB;
   const towardsMe = (vx: number, x: number) => vx !== 0 && Math.sign(self.x - x) === Math.sign(vx);
@@ -156,6 +167,9 @@ function decide(
   // Busy (attacking, in hitstun…): nothing to do but keep guarding if it was.
   if (!self.actionable) return self.action === 'blockstun' ? { hold: { guard: true } } : {};
 
+  // A hit that would count more (after a dash through it, after a parry): land it now, while it lasts.
+  if (self.bonus && distance < TACKLE_RANGE) return { press: 'physical' };
+
   // Just blocked an attack: hit back right away. (The tackle is -1 on block, so this beats an opponent who keeps
   // pressing.) It is its own state, not the opponent's, so there is no reaction delay.
   if (cpu.lastAction === 'blockstun' && respond('counter', now, [['punish', profile.punish]]) === 'punish') {
@@ -176,24 +190,46 @@ function decide(
   const oppMove = moveOf(opp.action, opp.loadout);
   const oppPhase = oppMove ? movePhase(oppMove, opp.actionFrame) : null;
 
+  /**
+   * Guarding a hit due in about `frames` frames: `parry` of the time it waits and presses guard right before the hit
+   * (a parry on purpose); otherwise it guards now. A guard that comes late lands in the parry window too: the hard
+   * CPU's quick reactions parry some charged specials that way, as a quick player would. (Measured with the fight lab:
+   * turning those late guards into hits let 28% of big specials land instead of 13%: docs/fight-lab.md.)
+   */
+  const guardIn = (kind: string, start: number, frames: number): Response =>
+    respond(`parry-${kind}`, start, [['guard', profile.parry]]) === 'guard' && frames > 3 ? 'none' : 'guard';
+
   for (const p of view.projectiles) {
     const gap = Math.abs(p.x - self.x) / SUB;
-    if (!towardsMe(p.vx, p.x) || gap > PROJECTILE_ALERT) continue;
+    // It sees late, so it estimates where the projectile is now from its speed (people do too), and reacts to that:
+    // a projectile seen coming from afar is answered in time (measured: normal let 51% of elementals land when it
+    // waited for the late view to come close).
+    const speed = Math.abs(p.vx) / SUB;
+    const gapNow = gap - speed * profile.reaction;
+    if (!towardsMe(p.vx, p.x) || gapNow > PROJECTILE_ALERT) continue;
     // Too tall to jump (a surf wave, a tornado) or falling from above (a barrage): guard only.
     const jumpable = p.vy === undefined && p.y2 - p.y1 <= px(48);
-    // Once per throw (ids: 16 per frame, fight/step.ts), so a barrage's rocks share one decision.
-    const r = respond('projectile', Math.floor(p.id / 16), [['guard', profile.guard], ...(jumpable ? [['jump', profile.jump] as [Response, number]] : [])]);
-    // Jump when it is close. It sees late, so it estimates where the projectile is now from its speed (people do too).
-    const gapNow = gap - (Math.abs(p.vx) / SUB) * profile.reaction;
+    // Once per throw (ids: 16 per frame, fight/step.ts), so a barrage's rocks share one decision. A jumpable one is
+    // jumped more than its personality alone would (decided after milestone 13).
+    const start = Math.floor(p.id / 16);
+    const r = respond('projectile', start, [['guard', profile.guard], ...(jumpable ? [['jump', Math.max(profile.jump, JUMP_SPECIALS)] as [Response, number]] : [])]);
     if (r === 'jump' && gapNow > JUMP_OVER_AT) continue;
-    if (r !== 'none') threat = r;
+    if (r === 'guard') {
+      const contact = (p.halfWidth + BODY_HALF_WIDTH) / SUB;
+      if (guardIn('projectile', start, (gapNow - contact) / speed) === 'guard') threat = 'guard';
+    } else if (r !== 'none') threat = r;
   }
 
-  // A beam or a rush being charged: nothing flies, so guard on the charge.
+  // A special being charged: guard on the charge. One that flies is answered in flight from afar, but from closer
+  // than CHARGE_ALERT it arrives faster than a reaction (measured: a normal CPU let 67–80% of the projectiles thrown
+  // from 70–150 px land), so its charge is the warning.
   const charging = (opp.action === 'elemental' || opp.action === 'big') && oppPhase === 'startup';
   const chargedShape = opp.action === 'big' ? opp.loadout.big.shape : opp.loadout.elemental.shape;
-  if (charging && chargedShape !== 'projectile') {
-    if (respond('charge', actionStart, [['guard', profile.guard]]) === 'guard') threat = 'guard';
+  if (charging && (chargedShape !== 'projectile' || distance < CHARGE_ALERT)) {
+    if (respond('charge', actionStart, [['guard', profile.guard]]) === 'guard') {
+      // (No parry on purpose here: the release is only estimated through its reaction delay, so it guards now.)
+      threat = 'guard';
+    }
   }
 
   // An attack up close (hard to see coming: lower chance than a projectile).
@@ -217,8 +253,13 @@ function decide(
   if (threat === 'jump') return { hold: { up: true } };
 
   // ── 3. Punish ──
+  const dashing = opp.action === 'dash' || opp.action === 'backdash';
   const stuck =
-    (oppPhase === 'recovery' && !oppAirborne) || (opp.action === 'land' && opp.actionFrame === 1) || opp.action === 'guardEnd';
+    (oppPhase === 'recovery' && !oppAirborne) ||
+    (opp.action === 'land' && opp.actionFrame === 1) ||
+    opp.action === 'guardEnd' ||
+    // The end of a dash (it can't act until it stops): a dash through is not free.
+    (dashing && opp.actionFrame > DASH.startup + DASH.moving);
   if (stuck && distance < TACKLE_RANGE + 10 && respond('punish', actionStart, [['punish', profile.punish]]) === 'punish') {
     return { press: 'physical' };
   }
@@ -251,6 +292,9 @@ const BIG_REACH: Record<BigShape, number> = {
   barrage: 200,
 };
 
+/** The big special forms worth starting up close. */
+const CLOSE_FORMS: readonly BigShape[] = ['burst', 'blizzard', 'rush'];
+
 /** Plans that are a single press: once pressed, the CPU thinks again as soon as it can act. */
 const ONE_SHOT: readonly PlanKind[] = ['tackle', 'special', 'big', 'dash', 'backdash'];
 
@@ -275,14 +319,18 @@ function chooseOpening(profile: AiProfile, self: Fighter, roll: (c: number) => b
 
 function choosePlan(profile: AiProfile, self: Fighter, distance: number, roll: (c: number) => boolean): PlanKind {
   const canSpecial = self.pp >= ELEMENTAL_COST;
-  if (self.pp >= PP_MAX && roll(profile.big) && distance < BIG_REACH[self.loadout.big.shape]) return 'big';
+  const shape = self.loadout.big.shape;
+  // Its long charge point-blank gets it hit (decided after milestone 13): up close, only the forms made for it.
+  const fits = distance < BIG_REACH[shape] && (CLOSE_FORMS.includes(shape) || distance >= CLOSE + 20);
+  if (self.pp >= PP_MAX && fits && roll(profile.big)) return 'big';
   const weights: [PlanKind, number][] =
     distance < CLOSE
       ? [
           ['tackle', profile.aggression],
           ['guard', profile.caution],
           ['backdash', profile.zoning * 0.5],
-          ['dash', profile.aggression * 0.25],
+          // Dashing through to hit from behind pays now (a back attack).
+          ['dash', profile.aggression * 0.4],
           ['retreat', profile.zoning * 0.5],
           ['wait', 0.1],
         ]

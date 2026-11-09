@@ -49,7 +49,7 @@ export interface ProjectileData {
 
 /**
  * Several projectiles thrown in arcs (rocks, meteors), each landing `distances` in front of the attacker after `flight`
- * frames. Each one hits with `hit` and a `share` of the move's power; it is gone once it sinks into the floor.
+ * frames. Each one hits with `hit` and a `share` of the big special's damage; it is gone once it sinks into the floor.
  */
 export interface BarrageData {
   distances: readonly number[];
@@ -246,7 +246,7 @@ export const BIG: Record<BigShape, MoveData> = {
       halfWidth: px(9),
       height: px(18),
       gravity: px(0.5),
-      share: 0.5,
+      share: 0.4,
       hit: { hitstun: 24, blockstun: 18, knockback: px(3), hitstop: 10, ppGain: 0, chip: true, launch: BIG_LAUNCH, big: true },
     },
   },
@@ -285,6 +285,20 @@ export const dashLength = (dash: typeof DASH) => dash.startup + dash.moving + da
 
 /** Guard (L / RB, held): blocks everything on the ground. Letting go takes a few frames. */
 export const GUARD = { release: 3 };
+
+/**
+ * A dash through the opponent (decided after milestone 13, to make dashing worth it): the dasher's first hit within
+ * `window` frames after the dash ends does `multiplier` × ("Back attack!"). Only the first one, hit or blocked.
+ */
+export const BACK_ATTACK = { window: 30, multiplier: 1.5 };
+
+/**
+ * Parry (decided after milestone 13): guard pressed (a fresh press, not held) at most `window` frames before a hit
+ * lands. No damage, no chip; both freeze `hitstop` frames; a melee attacker is stuck `stun` frames (in reach of a
+ * tackle), and the parrier's first hit within `counter` frames does `multiplier` × ("Counter!"). Holding guard is an
+ * ordinary guard, and letting go of it takes GUARD.release frames, so mashing doesn't parry.
+ */
+export const PARRY = { window: 6, hitstop: 12, stun: 20, counter: 24, multiplier: 1.5 };
 
 /** A fighter hit in the air pops up, falls, and stays down for a moment after landing. */
 export const AIR_HIT = { launch: px(3), push: px(2), knockdown: 20 };

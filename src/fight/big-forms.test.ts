@@ -6,7 +6,7 @@ import { PP_MAX, px } from './constants';
 import { BIG, type BigShape } from './frame-data';
 import { Button } from './input';
 import type { FightState } from './state';
-import { at, between, damageOf, fightAt, on, run, specialDamage } from './testing';
+import { at, between, bigHitDamage, fightAt, on, run } from './testing';
 
 const { Big, Up, Guard, Dash, Left, Right } = Button;
 
@@ -140,12 +140,12 @@ describe('barrage (Rock, Dragon)', () => {
     expect(at(r, 80).projectiles).toEqual([]);
   });
 
-  it('each one hits with half the move power; standing beyond them is safe', () => {
+  it("each one hits with 40% of the big special's damage; standing beyond them is safe", () => {
     const state = setup(130, 'barrage');
     const r = run(100, on(Big, 1), 0, state);
-    const half = damageOf(state, 0, { power: 55, type: 'normal', category: 'special' });
-    expect(hitsOn(r, 1)[0]).toMatchObject({ damage: half, big: true });
-    expect(half).toBeLessThan(specialDamage('big', state));
+    const rock = bigHitDamage(state, 0, BIG.barrage.barrage!.share);
+    expect(hitsOn(r, 1)[0]).toMatchObject({ damage: rock, big: true });
+    expect(rock).toBe(Math.round(bigHitDamage(state) * 0.4));
     expect(hitsOn(run(100, on(Big, 1), 0, setup(300, 'barrage')), 1)).toEqual([]);
   });
 });

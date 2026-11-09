@@ -10,6 +10,7 @@ export type SoundId =
   | 'hit'
   | 'bigHit'
   | 'block'
+  | 'parry'
   | 'charge'
   | 'ko'
   | 'jump'
@@ -78,8 +79,9 @@ export function fightCues(memory: CueMemory, view: FrameView, events: readonly B
   }
 
   for (const e of events) {
-    if (e.type === 'hit') sounds.push(e.big ? 'bigHit' : 'hit');
+    if (e.type === 'hit') sounds.push(e.big || e.bonus ? 'bigHit' : 'hit');
     else if (e.type === 'block') sounds.push('block');
+    else if (e.type === 'parry') sounds.push('parry');
     else if (e.type === 'ko') sounds.push('ko');
     else if (e.type === 'bossEnraged') sounds.push('bossWarn');
     else if (e.type === 'bossImpact') sounds.push('bossBlast');

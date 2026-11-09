@@ -1,0 +1,91 @@
+{
+  "sides.p1": {
+    "k": 208.5,
+    "n": 400,
+    "p": 0.52125,
+    "lo": 0.47232511569885194,
+    "hi": 0.5697705970756617
+  },
+  "ladder.easy_vs_normal": {
+    "k": 76,
+    "n": 400,
+    "p": 0.19,
+    "lo": 0.15457325560638852,
+    "hi": 0.23132458156541352
+  },
+  "ladder.easy_vs_hard": {
+    "k": 36,
+    "n": 400,
+    "p": 0.09,
+    "lo": 0.065716912967122,
+    "hi": 0.12208345232461616
+  },
+  "ladder.normal_vs_easy": {
+    "k": 307,
+    "n": 400,
+    "p": 0.7675,
+    "lo": 0.7236764828773743,
+    "hi": 0.8062342544017964
+  },
+  "ladder.normal_vs_hard": {
+    "k": 155.5,
+    "n": 400,
+    "p": 0.38875,
+    "lo": 0.3422525632273697,
+    "hi": 0.43736399930605924
+  },
+  "ladder.hard_vs_easy": {
+    "k": 362,
+    "n": 400,
+    "p": 0.905,
+    "lo": 0.8722909782843385,
+    "hi": 0.9300037828299202
+  },
+  "ladder.hard_vs_normal": {
+    "k": 246.5,
+    "n": 400,
+    "p": 0.61625,
+    "lo": 0.56770125698575,
+    "hi": 0.6625870540748242
+  },
+  "mechanics.seconds.mean": 15.866666666666676,
+  "mechanics.seconds.p50": 15.65,
+  "mechanics.timeOuts": 0,
+  "mechanics.bonusShare": 0.04502316728900649,
+  "mechanics.comebacks50": {
+    "k": 15,
+    "n": 394,
+    "p": 0.03807106598984772,
+    "lo": 0.02320488514812994,
+    "hi": 0.061858114799587964
+  },
+  "mechanics.elementalLanded": {
+    "k": 466,
+    "n": 2268,
+    "p": 0.2054673721340388,
+    "lo": 0.18934318231940736,
+    "hi": 0.22258764947802076
+  },
+  "mechanics.bigLanded": {
+    "k": 67,
+    "n": 526,
+    "p": 0.12737642585551331,
+    "lo": 0.10156144404005431,
+    "hi": 0.15859479888235872
+  },
+  "mechanics.share.tackle": 0.6559999999999999,
+  "mechanics.share.air": 0.054000000000000006,
+  "mechanics.share.elemental": 0.203,
+  "mechanics.share.big": 0.087,
+  "mechanics.share.boss": 0,
+  "mechanics.perFight.hits landed": 7.11875,
+  "mechanics.perFight.hits guarded": 2.02625,
+  "mechanics.perFight.parries": 0.82375,
+  "mechanics.perFight.back attacks": 0.2225,
+  "mechanics.perFight.counters": 0.64375,
+  "mechanics.perFight.elemental specials": 2.835,
+  "mechanics.perFight.big specials": 0.6575,
+  "mechanics.perFight.dashes": 1.4775,
+  "mechanics.perFight.dashes through": 0.485,
+  "mechanics.perFight.jumps": 2.24375
+}

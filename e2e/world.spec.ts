@@ -266,9 +266,9 @@ test.describe('the battle field', () => {
     await page.getByTestId('city-training').click();
     expect(await scene(page)).toMatchObject({ mode: 'trainer' });
     await winBattle(page);
-    // Three Lv. 5 Pokémon: (5 + 5 + 5) × 20.
-    await expect(page.getByTestId('results-lines')).toContainText('You got ₽300 for winning!');
+    // Three Lv. 5 Pokémon: (5 + 5 + 5) × 12.
+    await expect(page.getByTestId('results-lines')).toContainText('You got ₽180 for winning!');
     await page.getByTestId('continue').click();
-    expect((await save(page)).money).toBe(3300);
+    expect((await save(page)).money).toBe(3180);
   });
 });

@@ -92,12 +92,13 @@ test.describe('evolution items', () => {
   });
 
   test('stones and the Link Cable are sold at the Saffron mall', async ({ page }) => {
-    await openGame(page, { scene: 'city' }, { save: team({ location: 'saffron', badges: ['boulder', 'cascade', 'thunder', 'rainbow', 'soul'], money: 5000 }) });
+    await openGame(page, { scene: 'city' }, { save: team({ location: 'saffron', badges: ['boulder', 'cascade', 'thunder', 'rainbow', 'soul'], money: 12000 }) });
     await page.getByTestId('city-shop').click();
     await page.getByTestId('buy-moon-stone').click();
     await page.getByTestId('buy-link-cable').click();
     expect((await save(page)).bag).toMatchObject({ 'moon-stone': 1, 'link-cable': 1 });
-    expect((await save(page)).money).toBe(5000 - 2 * 2100);
+    // Every evolution item costs 5000 (plan.md §5, Economy).
+    expect((await save(page)).money).toBe(12000 - 2 * 5000);
   });
 });
 

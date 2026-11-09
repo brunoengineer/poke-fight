@@ -28,6 +28,9 @@ const base = {
   'effect.super': 'Super effective!',
   'effect.weak': 'Not very effective…',
   'effect.none': 'No effect',
+  'effect.parry': 'Parry!',
+  'effect.counter': 'Counter!',
+  'effect.back': 'Back attack!',
   'battle.choose': 'Choose your next Pokémon',
   'battle.fainted': 'fainted',
 

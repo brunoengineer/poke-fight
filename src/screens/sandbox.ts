@@ -23,7 +23,7 @@ export const BIG_HIT_FLASH = 8;
 export const EFFECT_FRAMES = 45;
 
 export interface EffectMessage {
-  text: 'effect.super' | 'effect.weak' | 'effect.none';
+  text: 'effect.super' | 'effect.weak' | 'effect.none' | 'effect.parry' | 'effect.counter' | 'effect.back';
   /** The Pokémon that was hit (the message floats above it). */
   fighter: FighterId;
   frames: number;
@@ -223,8 +223,10 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
       flash = result.events.some(e => e.type === 'hit' && e.big) ? BIG_HIT_FLASH : Math.max(0, flash - 1);
       effect = effect && effect.frames > 1 ? { ...effect, frames: effect.frames - 1 } : null;
       for (const e of result.events) {
-        const text = e.type === 'hit' ? effectText(e.effectiveness) : null;
+        // A bonus says why the hit hurt more ("Counter!", "Back attack!"); a parry is announced over the parrier.
+        const text = e.type === 'hit' ? (e.bonus ? (e.bonus === 'counter' ? 'effect.counter' : 'effect.back') : effectText(e.effectiveness)) : null;
         if (e.type === 'hit' && text) effect = { text, fighter: e.defender, frames: EFFECT_FRAMES };
+        if (e.type === 'parry') effect = { text: 'effect.parry', fighter: e.defender, frames: EFFECT_FRAMES };
       }
       return result.events;
     },

@@ -16,6 +16,11 @@ export interface AiProfile {
   antiAir: number;
   /** Chance to punish an opponent stuck in recovery nearby. */
   punish: number;
+  /**
+   * Chance to parry a hit it sees coming (fight/frame-data.ts PARRY): it times its guard to the hit. A guard that
+   * would come too late to be an ordinary one is a parry this often, and a hit otherwise.
+   */
+  parry: number;
   /** 0–1: walks in and attacks vs waits. */
   aggression: number;
   /** 0–1: likes range specials and keeping its distance. */
@@ -34,17 +39,18 @@ export type Difficulty = (typeof DIFFICULTIES)[number];
 export const STYLES = ['balanced', 'aggressive', 'defensive', 'zoner'] as const;
 export type Style = (typeof STYLES)[number];
 
-export type Skill = Pick<AiProfile, 'reaction' | 'planFrames' | 'guard' | 'antiAir' | 'punish'>;
+export type Skill = Pick<AiProfile, 'reaction' | 'planFrames' | 'guard' | 'antiAir' | 'punish' | 'parry'>;
 export type Personality = Pick<AiProfile, 'aggression' | 'zoning' | 'jump' | 'big' | 'caution'>;
 
+// Guard raised after milestone 13 (decided: the CPU guards and jumps specials more); parry added with the parry.
 const SKILL: Record<Difficulty, Skill> = {
-  easy: { reaction: 30, planFrames: [20, 50], guard: 0.15, antiAir: 0.1, punish: 0.1 },
-  normal: { reaction: 18, planFrames: [12, 35], guard: 0.5, antiAir: 0.4, punish: 0.5 },
-  hard: { reaction: 10, planFrames: [6, 20], guard: 0.85, antiAir: 0.75, punish: 0.85 },
+  easy: { reaction: 30, planFrames: [20, 50], guard: 0.25, antiAir: 0.1, punish: 0.1, parry: 0 },
+  normal: { reaction: 18, planFrames: [12, 35], guard: 0.65, antiAir: 0.4, punish: 0.5, parry: 0.1 },
+  hard: { reaction: 10, planFrames: [6, 20], guard: 0.9, antiAir: 0.75, punish: 0.85, parry: 0.3 },
 };
 
 /** Below easy: a wild Pokémon that barely knows it is in a fight. */
-const CLUMSY: Skill = { reaction: 36, planFrames: [26, 64], guard: 0.05, antiAir: 0.03, punish: 0.04 };
+const CLUMSY: Skill = { reaction: 36, planFrames: [26, 64], guard: 0.05, antiAir: 0.03, punish: 0.04, parry: 0 };
 
 /** Where each difficulty sits on the skill scale. */
 export const SKILL_OF: Record<Difficulty, number> = { easy: 1 / 3, normal: 2 / 3, hard: 1 };
@@ -64,8 +70,29 @@ export function skillAt(skill: number): Skill {
     guard: mix(from.guard, to.guard),
     antiAir: mix(from.antiAir, to.antiAir),
     punish: mix(from.punish, to.punish),
+    parry: mix(from.parry, to.parry),
   };
 }
+
+/**
+ * The CPU one step up the skill scale (a third of it: normal plays like hard), for when its opponent is far ahead
+ * (decided after milestone 13: the fight gets harder when the player is winning by a lot; never easier).
+ */
+export function boosted(p: AiProfile): AiProfile {
+  const up = (value: number) => Math.min(0.95, value + 0.15);
+  return {
+    ...p,
+    reaction: Math.max(6, Math.round(p.reaction * 0.7)),
+    planFrames: [Math.max(4, Math.round(p.planFrames[0] * 0.75)), Math.max(8, Math.round(p.planFrames[1] * 0.75))],
+    guard: up(p.guard),
+    antiAir: up(p.antiAir),
+    punish: up(p.punish),
+    parry: up(p.parry),
+  };
+}
+
+/** The opponent's lead (HP bars, 0–1) at which the CPU steps up, and the one at which it steps back. */
+export const BOOST = { on: 0.5, off: 0.25 };
 
 /** A style's personality numbers (game/ai.ts varies them a little per Pokémon). */
 export const personalityOf = (style: Style): Personality => ({ ...PERSONALITY[style] });

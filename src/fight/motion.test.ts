@@ -5,7 +5,7 @@ import { ELEMENTAL_COST, PP_START } from './constants';
 import { ELEMENTAL, moveLength, type ElementalShape } from './frame-data';
 import { Button, type InputMask } from './input';
 import { MOTION, MOTION_HISTORY, motionDone } from './motion';
-import { at, fightAt, run, specialDamage, type Script } from './testing';
+import { at, fightAt, hitPp, run, specialDamage, TACKLE_DAMAGE, type Script } from './testing';
 
 const { Left, Right, Down, Up, Physical, Special } = Button;
 
@@ -74,7 +74,7 @@ describe('motion + attack: the free elemental special', () => {
     const r = run(30, MOTION_RIGHT, (f: number) => (f === 3 ? Physical : 0), setup(40));
     expect(r.events.some(e => e.type === 'hit' && e.defender === 0)).toBe(true);
     expect(r.frames.every(s => s.projectiles.length === 0)).toBe(true);
-    expect(r.final.fighters[0].pp).toBe(PP_START);
+    expect(r.final.fighters[0].pp).toBe(PP_START + hitPp(TACKLE_DAMAGE));
   });
 
   it('works with an empty PP bar', () => {

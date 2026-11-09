@@ -191,11 +191,18 @@ with the debug overlay:
 - **Guard** (L / RB): active on the frame it is pressed, can't move while held, blocks everything on the ground from
   both sides (a dash through doesn't get around it). You can attack straight out of a guard; letting go takes 3
   frames. No air guard. Blocked hits give no PP. The tackle is **−1 on block**.
+- **Parry** (decided after milestone 13): guard **pressed** (not held) at most 6 frames before a hit lands. No damage,
+  no chip, both freeze 12 frames, a melee attacker staggers 20 frames, and the parrier's first hit within 24 frames
+  does 1.5× ("Counter!"). Projectiles can be parried too (their thrower is out of reach). Holding guard is an
+  ordinary guard, and letting go takes 3 frames, so mashing doesn't parry (`PARRY`, pinned by `bonus.test.ts`).
+- **Back attack** (decided after milestone 13, to make dashing worth it): a dash that goes through the opponent makes
+  the dasher's first hit within 30 frames after the dash ends do 1.5× ("Back attack!"). Only the first hit, landed or
+  guarded; the dash's own recovery can still be punished (`BACK_ATTACK`).
 - **Chip damage**: specials do ¼ of their damage through a guard, and chip can finish a Pokémon.
 - **PP bar**: 100, starts at 50. Elemental special −25, big special −100 (needs a full bar), paid when the charge
   starts; a special that never comes out (hit during the charge) gives it back (decided after milestone 12: losing it
-  felt like a bug). Landing: tackle / air attack +15, elemental +5, big +0. A press without
-  enough PP does nothing. The motion input's free elemental special (above) costs 0 and earns 0.
+  felt like a bug). Landing: tackle / air attack +15, elemental +5, big +0. **Taking damage: +1 for every 2% of
+  max HP lost** (decided after milestone 13; guarding gives nothing). A press without enough PP does nothing. The motion input's free elemental special (above) costs 0 and earns 0.
 - **Elemental special**: 14-frame charge. Projectile: fired on frame 15 at 4 px/frame, 33 frames in total.
   Beam: hits on frames 15–20, up to ~230 px. Also in the air (shares the one air move per jump); landing before the
   charge ends doesn't lose it: the charge goes on from the ground and it fires there (decided after milestone 12: a
@@ -217,16 +224,26 @@ level). You choose them in the party screen when the Pokémon learns a new move:
 | Slot | Button | Use | Default pick |
 |------|--------|-----|--------------|
 | **Elemental special** | K | **Always a range attack** (projectile or beam). Short charge (14 frames), normal power, costs **¼ of the PP bar** | Best move of its own type (STAB) |
-| **Big special** | I | Needs and spends the **full PP bar**, long charge (40 frames), power ×2, screen flash + slowdown on hit | Highest-power move it knows |
+| **Big special** | I | Needs and spends the **full PP bar**, long charge (40 frames), **about half the HP bar** (below), screen flash + slowdown on hit | Highest-power move it knows |
 
 Together with the tackle (J), every Pokémon has a close attack, a range attack and a big finisher.
+
+**Big special damage** (decided after milestone 13: it spent the whole bar yet hit like an elemental special, with the
+same formula and often the same move): a share of the defender's max HP, **45%** (×1.1 with the same-type bonus: about
+half the bar between equals). Type effectiveness, the level ratio, the attack/defense ratio and the move's power still
+count, softened (square roots, clamped: super effective ≈ 65–70%, resisted ≈ 35%, immune 0), and it stays between
+**12% and 75%** (no knockout from full HP). **Guarded, 45% of it gets through** (≈ 20% of the bar); parried, nothing.
+No combo scaling. A barrage's rock is 40% of it. Against a legendary boss, the share is of its own HP, not its ×4 bar
+(`fight/damage.ts` bigDamage, pinned by `big-damage.test.ts`). Fight lab: the big special's share of all damage
+3.9% → 8.7%, fights 1 s shorter, fairness and the ladder unchanged.
 
 **PP bar** (decided): one per Pokémon, shown under its HP bar.
 
 - Starts **half full** when the Pokémon enters a fight, so it can open with a range attack (2 shots).
-- Fills **only when your attacks land**: the tackle and the air attack fill the most, so the loop is
-  "get in with physical hits → earn PP → spend it on range attacks or save it for the big special". Taking damage
-  or guarding does not fill it. Starting numbers to tune: tackle / air attack +15%, elemental special +5%,
+- Fills when your attacks land: the tackle and the air attack fill the most, so the loop is
+  "get in with physical hits → earn PP → spend it on range attacks or save it for the big special". **Taking damage
+  fills it too** (+1 per 2% of HP lost; decided after milestone 13, as most fighting games do: the side being beaten
+  gets its specials sooner). Guarding doesn't fill it, so turtling never does. Starting numbers to tune: tackle / air attack +15%, elemental special +5%,
   big special +0%.
 - Not shared: in a 6 vs 6 battle, each Pokémon comes in with its own half-full bar.
 - Why PP **and** a charge: PP controls *how often* (no spamming projectiles from across the screen), the charge
@@ -337,6 +354,21 @@ More archetypes can come later (status effects: paralysis = slower, burn = damag
   reaction time:
   - Wild: slow, random. Trainers: medium. Gym leaders: a style per type (Brock = defensive/guard, Misty = zoning,
     Surge = aggressive rush). Elite Four / Champion: fast reactions, punishes mistakes.
+
+**After milestone 13** (decided; measured with the fight lab, `docs/fight-lab.md`):
+
+- **It guards specials more**: guard chances up (easy 0.25, normal 0.65, hard 0.9), jumpable projectiles jumped at
+  least 35% of the time, and a projectile special charged closer than 160 px is guarded on its charge (from there it
+  arrives faster than a reaction). Elementals that land against a hard CPU: 35% → 20%; normal: 49% → 35%.
+- **Parry**: a `parry` chance per difficulty (easy 0, normal 0.1, hard 0.3): it waits and times its guard to a
+  projectile. A guard that comes late is a parry by the rules too (the hard CPU's quick reactions parry some charged
+  specials, as a quick player would).
+- **Comeback**: when its opponent leads by more than half an HP bar, it plays a step up the skill scale (normal like
+  hard: faster, guards and punishes more) until the gap is under a quarter. Never easier when it is winning.
+- **Dashes**: it dashes through more (a back attack pays), tackles at once with a bonus ready, and punishes the end
+  of a dash.
+- **Big special**: its long charge isn't started point-blank (it got hit out of it); only burst, blizzard and rush
+  are used up close.
 
 **Built in milestone 3** (`src/fight/ai/`, pinned by `cpu.test.ts`):
 
@@ -618,8 +650,14 @@ World map (cities unlocked by badges)
   drops and wobbles once per shake check passed, then clicks shut (a green light, stars, "Gotcha!") or bursts open
   ("Aargh! Almost had it! Pidgey broke free.": after the games' lines by the number of wobbles, each saying plainly that it got away; the games' "It appeared to be caught!" read like a catch). A skips to the end. A caught Pokémon arrives rested (full
   HP) and joins the party, or the box when the party is full.
-- **Money**: start ₽3000 and 5 Poké Balls. Battle field (trainers) pays the sum of their levels × 20; wild Pokémon
-  pay nothing. **Losing** (wild or trainer): half the money is lost, the party is healed, back to the city.
+- **Money**: start ₽3000 and 5 Poké Balls. Battle field (trainers) pays the sum of their levels × 12 (× 20 until
+  milestone 13); wild Pokémon pay nothing.
+- **Economy** (decided after milestone 13: "with a few battles I buy a lot of stuff"; the table is
+  `npm run sim -- economy`). Prices are set against targets in **battle-field battles** at the stage an item is
+  bought (one battle ≈ 2 minutes): an evolution item ≈ 5 battles when first sold and ≈ 3 by Saffron (₽5,000, every
+  evolution item); a Master Ball ≈ 15 battles at the sanctuary (₽30,000: each legendary is a half-hour goal); an Ultra
+  Ball or a Hyper Potion ≈ 1 battle in mid-game. Gym, Elite Four and Champion prizes (99 × their best level) are
+  one-time and unchanged. **Losing** (wild or trainer): half the money is lost, the party is healed, back to the city.
 - **Shop** (per city), **Pokémon Center** (free healing), **PC box** in any city (decided: swap freely, the party
   keeps 1–6), **potions** used from the party screen (they can't revive), **world map** (locked cities say how many
   badges they need), **Pokédex** (seen / caught counts).
@@ -867,13 +905,21 @@ and fast to test.
 - **Frame data tests**: "physical attack hits on frame 6 and recovers on frame 21", "a press buffered during recovery
   fires on the first free frame", "a hit on back-dash frame 6 misses, on frame 7 it lands", "a hit during the big
   special's charge cancels it and gives the PP back", "the big special can't start without a full PP bar",
-  "the elemental special can't start below ¼ PP", "a landed tackle adds PP, being hit doesn't".
+  "the elemental special can't start below ¼ PP", "a landed tackle adds PP, being hit adds 1 per 2% of HP".
 - **Input latency test**: press on frame N → state shows the action starting on frame N (target 0, at most 1 frame).
 - **Replay / golden tests**: recorded input logs + seed → final state hash. Any engine change that alters a result
   fails clearly (and is updated on purpose when the design changes).
 - **Rules**: damage, type chart (full table), XP/level curves, evolution triggers, catch probability (formula +
   statistical test with a fixed seed), shop prices, unlock order, save migrations.
 - **AI**: profiles behave within ranges (e.g., the "defensive" profile guards ≥ X% of attacks over 1000 frames).
+
+### 8.4 The fight lab (`npm run sim`, `docs/fight-lab.md`)
+
+Balance is measured, not guessed: the lab plays thousands of CPU-against-CPU fights through the real fight code
+(deterministic, ~15 ms a fight) and reports win rates with 95% intervals: side fairness, the difficulty ladder,
+styles, big special forms, species matchups, fight length, damage by source, mechanics used, comebacks, and the
+economy along a journey. Method: measure, change one thing, compare with `docs/fight-lab/baseline.json`, pin the
+result in a test, save the new baseline.
 
 ### 8.2 Playwright (the real game in a browser)
 
@@ -914,6 +960,7 @@ Each milestone ends with something playable, tests, and green CI.
 | 11 | ✅ **Design overhaul** | A console-style 16:9 frame, the places' art behind the menus and as fight stages, trainer and character sprites, every screen redesigned (city hub of cards, Center with Nurse Joy, Mart, box grid, illustrated map, party with HP bars and reordering, results, League hall), controller-first spatial navigation with glyph hints |
 | 12 | ✅ **Regions** | Johto, Hoenn and Sinnoh (their cities, gyms, Leagues, starters, towns and maps; generations 2–4 data), a journey per region, the plane, regions opened by Leagues, the Legends' Sanctuary with boss legendaries (Master Ball only, XP for the whole party) |
 | 13 | **Moves by type** | Elemental specials drawn by type (✅), big specials by type with real hits (✅), signature moves for 11 famous Pokémon, legendary moves (§4.9) |
+| 14 | ✅ **Combat depth + fight lab** | PP from damage taken, back attacks after a dash through, parry and counter, big specials that hit for about half the bar (a fifth through a guard), a smarter CPU (guards specials, parries, comes back when far behind, uses dashes), the economy repriced, and the fight lab (`npm run sim`, `docs/fight-lab.md`) |
 
 Milestones 1–3 come **before** any Pokémon content on purpose: if the fight doesn't feel good with rectangles, the
 sprites won't save it.

@@ -930,7 +930,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     renderOptions(overlayRoot, {
       title: t('options.title'),
       info: t(waiting ? 'controls.waiting' : (notice ?? 'controls.info')),
-      motion: t('motion.info'),
+      motion: `${t('motion.info')} ${t('parry.info')}`,
       sound: { label: t('options.sound'), value: t(settings.muted ? 'options.off' : 'options.on'), on: !settings.muted, onClick: () => {
         applySettings({ ...settings, muted: !settings.muted });
         showOptions(from);

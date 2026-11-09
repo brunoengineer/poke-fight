@@ -93,6 +93,12 @@ export function createWebAudio(startMuted: boolean, startVolumes: Volumes = DEFA
       tone(bus, 'triangle', 1100, 700, t, 0.08, 0.35);
       hiss(bus, 'highpass', 5000, t, 0.05, 0.3);
     },
+    // A parry: a bright ring, like a blade deflected.
+    parry: (t, bus) => {
+      tone(bus, 'triangle', 1500, 1500, t, 0.18, 0.3);
+      tone(bus, 'sine', 2250, 2250, t + 0.02, 0.22, 0.18);
+      hiss(bus, 'highpass', 6000, t, 0.06, 0.35);
+    },
     charge: (t, bus) => tone(bus, 'sine', 280, 900, t, 0.25, 0.18),
     ko: (t, bus) => {
       tone(bus, 'square', 660, 60, t, 0.7, 0.3);

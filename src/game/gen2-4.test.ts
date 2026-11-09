@@ -14,11 +14,11 @@ const id = (slug: string) => speciesBySlug(slug).id;
 const at = (slug: string, level = 30) => createPokemon(id(slug), level);
 
 describe('new evolution items', () => {
-  it('are sold: stones at 2100, the Soothe Bell at 3000', () => {
+  it('are sold at 5000, like every evolution item (decided after milestone 13: plan.md §5, Economy)', () => {
     for (const stone of ['sun-stone', 'dusk-stone', 'shiny-stone', 'dawn-stone'] as const) {
-      expect(ITEMS[stone]).toEqual({ id: stone, kind: 'evolution', price: 2100 });
+      expect(ITEMS[stone]).toEqual({ id: stone, kind: 'evolution', price: 5000 });
     }
-    expect(ITEMS['soothe-bell']).toEqual({ id: 'soothe-bell', kind: 'evolution', price: 3000 });
+    expect(ITEMS['soothe-bell']).toEqual({ id: 'soothe-bell', kind: 'evolution', price: 5000 });
     expect(EVOLUTION_ITEMS).toEqual(expect.arrayContaining(['sun-stone', 'dusk-stone', 'shiny-stone', 'dawn-stone', 'soothe-bell']));
   });
 

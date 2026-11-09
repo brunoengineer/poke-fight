@@ -1,13 +1,14 @@
-// Builds the game's Pokémon data from PokeAPI: `npm run data` (or `node scripts/build-data.mjs --gen 1`).
+// Builds the game's Pokémon data from PokeAPI: `npm run data` (every generation) or `node scripts/build-data.mjs --gen 2`.
 //
 // Writes, and these files are committed (the game never calls PokeAPI; sprites are loaded by URL):
 //   src/data/generated/gen<N>.json  species (stats, types, catch rate, growth, evolutions, level-up learnset,
-//                                   wild encounters, and the Pokédex: genus, height, weight, entry) and every move
-//                                   those learnsets use
+//                                   wild encounters, and the Pokédex: genus, height, weight, entry), every move
+//                                   those learnsets use, and (Gen 2 on) the region's wild encounter tables
 //   src/data/generated/types.json   the type chart (modern, 18 types: decided in plan.md §4.5)
 //
-// Learnsets and encounters come from the region's own games (Gen 1: Red/Blue); types, stats and move data are the
-// modern ones (what PokeAPI returns by default).
+// Learnsets and encounters come from the region's own games (Gen 1: Red/Blue; Gen 2: HeartGold/SoulSilver; Gen 3:
+// Emerald, with Ruby/Sapphire encounters; Gen 4: Platinum, with Diamond/Pearl encounters); types, stats and move data
+// are the modern ones (what PokeAPI returns by default).
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
@@ -15,12 +16,20 @@ import { fileURLToPath } from 'node:url';
 
 const API = 'https://pokeapi.co/api/v2';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const gen = Number(process.argv[process.argv.indexOf('--gen') + 1] || 1);
 
-/** Per generation: which games the learnsets and encounters come from. */
+/**
+ * Per generation: which games the learnsets (versionGroup), encounters (versions) and Pokédex entries (dexVersions, in
+ * order of preference) come from.
+ */
 const SOURCES = {
-  1: { versionGroup: 'red-blue', versions: ['red', 'blue'] },
+  1: { versionGroup: 'red-blue', versions: ['red', 'blue'], dexVersions: ['red'] },
+  2: { versionGroup: 'heartgold-soulsilver', versions: ['heartgold', 'soulsilver'], dexVersions: ['heartgold', 'soulsilver'] },
+  3: { versionGroup: 'emerald', versions: ['ruby', 'sapphire', 'emerald'], dexVersions: ['emerald', 'ruby', 'sapphire'] },
+  4: { versionGroup: 'platinum', versions: ['diamond', 'pearl', 'platinum'], dexVersions: ['platinum', 'diamond', 'pearl'] },
 };
+
+const genArg = process.argv.indexOf('--gen');
+const gens = genArg >= 0 ? [Number(process.argv[genArg + 1])] : Object.keys(SOURCES).map(Number);
 
 const cache = new Map();
 async function get(url) {
@@ -97,12 +106,103 @@ async function buildTypes() {
   return { types: list, chart };
 }
 
-async function build() {
+// --- Region encounter tables (Gen 2 on) ---
+
+/** The ways of hunting the game has: walking (grass, caves) and the three rods. */
+const HUNT_METHODS = ['walk', 'old-rod', 'good-rod', 'super-rod'];
+const TIMES = ['time-morning', 'time-day', 'time-night'];
+/** Story-time tables: before the National Dex, before the Trophy Garden's owner mentions a Pokémon. */
+const USUAL = ['story-progress-before-national-dex', 'backlot-not-mentioned'];
+/**
+ * An ordinary day's encounters: any time of day, but no swarm, Poké Radar, GBA game in slot 2, Hoenn/Sinnoh radio
+ * show, Bug-Catching Contest, weekday special, Safari Zone blocks… (PokeAPI marks the slots those replace with
+ * "swarm-no", "radar-off", "slot2-none", "radio-off"…).
+ */
+const usualCondition = name => TIMES.includes(name) || USUAL.includes(name) || /-(no|off|none|inactive)$/.test(name);
+
+/** location-area → its location's region and English name (cached). */
+async function areaInfo(areaName) {
+  const area = await get(`location-area/${areaName}`);
+  const location = await get(area.location.url);
+  return { region: location.region?.name ?? null, location: english(location.names)?.name ?? location.name };
+}
+
+/**
+ * Every walk and rod encounter of species 1..lastId in the region's versions, inside the region (HeartGold/SoulSilver
+ * also visit Kanto: those areas stay out). Entries with the same area, version, method, species and levels are merged
+ * (chances summed). Where an area's table changes with the time of day (Gen 2 and 4), each entry's chance is summed
+ * over morning, day and night, so an entry for all day weighs three times one for the morning only.
+ */
+async function regionEncounters(lastId, source, region, dropped) {
+  const ids = Array.from({ length: lastId }, (_, i) => i + 1);
+  const raw = (
+    await mapLimit(ids, 12, async speciesId =>
+      (await get(`pokemon/${speciesId}/encounters`)).flatMap(area =>
+        area.version_details
+          .filter(v => source.versions.includes(v.version.name))
+          .flatMap(v =>
+            v.encounter_details
+              .filter(e => HUNT_METHODS.includes(e.method.name))
+              .filter(e => {
+                const odd = e.condition_values.map(c => c.name).filter(c => !usualCondition(c));
+                for (const c of odd) dropped.set(c, (dropped.get(c) ?? 0) + 1);
+                return odd.length === 0;
+              })
+              .map(e => ({
+                area: area.location_area.name,
+                version: v.version.name,
+                method: e.method.name,
+                speciesId,
+                minLevel: e.min_level,
+                maxLevel: e.max_level,
+                chance: e.chance,
+                times: e.condition_values.filter(c => TIMES.includes(c.name)).length,
+              })),
+          ),
+      ),
+    )
+  ).flat();
+
+  const areas = [...new Set(raw.map(e => e.area))];
+  const info = new Map(await mapLimit(areas, 12, async name => [name, await areaInfo(name)]));
+  const inRegion = raw.filter(e => info.get(e.area).region === region);
+
+  const table = e => `${e.area}|${e.version}|${e.method}`;
+  const timed = new Set(inRegion.filter(e => e.times > 0).map(table));
+  const merged = new Map();
+  for (const e of inRegion) {
+    const chance = e.chance * (timed.has(table(e)) ? e.times || TIMES.length : 1);
+    const key = `${table(e)}|${e.speciesId}|${e.minLevel}|${e.maxLevel}`;
+    const found = merged.get(key);
+    if (found) found.chance += chance;
+    else merged.set(key, { area: e.area, version: e.version, method: e.method, speciesId: e.speciesId, minLevel: e.minLevel, maxLevel: e.maxLevel, chance });
+  }
+  const order = (a, b) =>
+    a.area.localeCompare(b.area) ||
+    a.version.localeCompare(b.version) ||
+    HUNT_METHODS.indexOf(a.method) - HUNT_METHODS.indexOf(b.method) ||
+    a.speciesId - b.speciesId ||
+    a.minLevel - b.minLevel ||
+    a.maxLevel - b.maxLevel;
+  return [...merged.values()].sort(order);
+}
+
+// --- One generation ---
+
+async function build(gen) {
   const source = SOURCES[gen];
   if (!source) throw new Error(`No sources configured for generation ${gen}`);
   const generation = await get(`generation/${gen}`);
+  const region = generation.main_region?.name ?? '';
   const ids = generation.pokemon_species.map(s => idFromUrl(s.url)).sort((a, b) => a - b);
-  console.log(`Generation ${gen} (${generation.main_region?.name}): ${ids.length} species`);
+  console.log(`Generation ${gen} (${region}): ${ids.length} species`);
+
+  // Gen 2 on: the region's tables, for every species up to this generation (Johto's routes have Pidgey too).
+  const dropped = new Map();
+  const wild = gen === 1 ? null : await regionEncounters(ids[ids.length - 1], source, region, dropped);
+  if (wild) {
+    console.log(`Region encounters: ${wild.length} (left out: ${[...dropped].map(([c, n]) => `${c} ×${n}`).join(', ') || 'none'})`);
+  }
 
   const chains = new Map();
   const moveNames = new Set();
@@ -120,34 +220,40 @@ async function build() {
     for (const s of pokemon.stats) stats[STAT_KEYS[s.stat.name]] = s.base_stat;
 
     // Level-up moves in the source games, in learning order.
-    const learnset = pokemon.moves
-      .flatMap(m =>
-        m.version_group_details
-          .filter(d => d.version_group.name === source.versionGroup && d.move_learn_method.name === 'level-up')
-          .map(d => ({ level: d.level_learned_at, move: m.move.name })),
-      )
-      .sort((a, b) => a.level - b.level || a.move.localeCompare(b.move));
+    const levelUp = versionGroup =>
+      pokemon.moves
+        .flatMap(m =>
+          m.version_group_details
+            .filter(d => d.version_group.name === versionGroup && d.move_learn_method.name === 'level-up')
+            .map(d => ({ level: d.level_learned_at, move: m.move.name })),
+        )
+        .sort((a, b) => a.level - b.level || a.move.localeCompare(b.move));
+    // Deoxys has no Emerald learnset (Emerald's Deoxys is another form): the generation's other games fill in.
+    const learnset = [source.versionGroup, ...generation.version_groups.map(v => v.name)].map(levelUp).find(l => l.length > 0) ?? [];
     for (const entry of learnset) moveNames.add(entry.move);
 
-    // Wild encounters in the source games: where, how (walking, surfing, fishing…), levels, chance.
-    const wild = encounters.flatMap(area =>
-      area.version_details
-        .filter(v => source.versions.includes(v.version.name))
-        .flatMap(v =>
-          v.encounter_details.map(e => ({
-            area: area.location_area.name,
-            version: v.version.name,
-            method: e.method.name,
-            minLevel: e.min_level,
-            maxLevel: e.max_level,
-            chance: e.chance,
-          })),
-        ),
-    );
+    // Wild encounters in the source games. Gen 1: where, how (walking, surfing, fishing…), levels, chance. Gen 2 on:
+    // this species' entries of the region's tables (the game reads the tables themselves).
+    const ownWild = wild
+      ? wild.filter(e => e.speciesId === id).map(({ speciesId, ...e }) => e)
+      : encounters.flatMap(area =>
+          area.version_details
+            .filter(v => source.versions.includes(v.version.name))
+            .flatMap(v =>
+              v.encounter_details.map(e => ({
+                area: area.location_area.name,
+                version: v.version.name,
+                method: e.method.name,
+                minLevel: e.min_level,
+                maxLevel: e.max_level,
+                chance: e.chance,
+              })),
+            ),
+        );
 
-    // The Pokédex entry from the region's own games (Red's), as one line of plain text ("POKéMON" → "Pokémon").
-    const entry = info.flavor_text_entries.find(f => f.language.name === 'en' && f.version.name === source.versions[0])
-      ?? info.flavor_text_entries.find(f => f.language.name === 'en');
+    // The Pokédex entry from the region's own games, as one line of plain text ("POKéMON" → "Pokémon").
+    const flavor = version => info.flavor_text_entries.find(f => f.language.name === 'en' && f.version.name === version);
+    const entry = source.dexVersions.map(flavor).find(Boolean) ?? info.flavor_text_entries.find(f => f.language.name === 'en');
 
     process.stdout.write('.');
     return {
@@ -164,13 +270,13 @@ async function build() {
       evolvesFrom: evolution.from,
       evolutions: evolution.evolutions,
       learnset,
-      encounters: wild,
+      encounters: ownWild,
       dex: {
         genus: english(info.genera)?.genus ?? '',
         // PokeAPI: decimetres and hectograms.
         heightM: pokemon.height / 10,
         weightKg: pokemon.weight / 10,
-        entry: (entry?.flavor_text ?? '').replace(/[\n\f\u00ad]+/g, ' ').replace(/\s+/g, ' ').replace(/POKéMON/g, 'Pokémon').trim(),
+        entry: (entry?.flavor_text ?? '').replace(/[\n\f­]+/g, ' ').replace(/\s+/g, ' ').replace(/POKéMON/g, 'Pokémon').trim(),
       },
     };
   });
@@ -190,20 +296,26 @@ async function build() {
     };
   });
 
-  const types = await buildTypes();
-
   const dir = join(root, 'src', 'data', 'generated');
   await mkdir(dir, { recursive: true });
   const file = join(dir, `gen${gen}.json`);
-  await writeFile(
-    file,
-    JSON.stringify({ generation: gen, region: generation.main_region?.name ?? '', versionGroup: source.versionGroup, species, moves: sortedKeys(moves) }, null, 1) + '\n',
-  );
-  await writeFile(join(dir, 'types.json'), JSON.stringify(types, null, 1) + '\n');
-  console.log(`Wrote ${file} and types.json`);
+  const data = { generation: gen, region, versionGroup: source.versionGroup, species, moves: sortedKeys(moves) };
+  if (wild) data.encounters = wild;
+  let json = JSON.stringify(data, null, 1);
+  // Gen 2 on: one encounter per line (there are thousands); Gen 1's file keeps its layout.
+  if (wild) json = json.replace(/\{\n\s*"area":[^{}]*\}/g, entry => JSON.stringify(JSON.parse(entry)));
+  await writeFile(file, json + '\n');
+  console.log(`Wrote ${file}`);
 }
 
-build().catch(error => {
+async function main() {
+  for (const gen of gens) await build(gen);
+  const types = await buildTypes();
+  await writeFile(join(root, 'src', 'data', 'generated', 'types.json'), JSON.stringify(types, null, 1) + '\n');
+  console.log('Wrote types.json');
+}
+
+main().catch(error => {
   console.error(error);
   process.exit(1);
 });

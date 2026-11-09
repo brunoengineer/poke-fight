@@ -55,16 +55,18 @@ export function levelEvolution(pokemon: Pokemon): Evolution | null {
 }
 
 /**
- * An evolution this item starts: a stone for stone evolutions, the Link Cable for trade evolutions (decided default:
- * trading becomes an item). Fainted Pokémon can't evolve.
+ * An evolution this item starts: a stone for stone evolutions, the Link Cable for every trade evolution (holding an
+ * item or not), the Soothe Bell for friendship evolutions (decided: trading and friendship become items). Fainted
+ * Pokémon can't evolve.
  */
 export function itemEvolution(pokemon: Pokemon, item: EvolutionItemId): Evolution | null {
   if (pokemon.hp === 0) return null;
-  return (
-    species(pokemon.speciesId).evolutions.find(e =>
-      item === 'link-cable' ? e.kind === 'trade' && !e.item : e.kind === 'item' && e.item === item,
-    ) ?? null
-  );
+  const starts = (e: Evolution) => {
+    if (item === 'link-cable') return e.kind === 'trade';
+    if (item === 'soothe-bell') return e.kind === 'friendship';
+    return e.kind === 'item' && e.item === item;
+  };
+  return species(pokemon.speciesId).evolutions.find(starts) ?? null;
 }
 
 export interface EvolveResult {

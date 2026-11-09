@@ -10,10 +10,11 @@ import type { BigShape, ElementalShape } from '../fight/frame-data';
 export const STRUGGLE = 'struggle';
 
 /**
- * Moves that make no sense as a special in a fighter: they knock out the user (Self-Destruct, Explosion) or only work
- * on a sleeping target (Dream Eater).
+ * Moves that make no sense as a special in a fighter: they knock out the user (Self-Destruct, Explosion; Memento,
+ * Healing Wish and Lunar Dance are status moves anyway, listed so they stay out) or only work while someone sleeps
+ * (Dream Eater, Snore).
  */
-export const NOT_SPECIALS = new Set(['self-destruct', 'explosion', 'dream-eater']);
+export const NOT_SPECIALS = new Set(['self-destruct', 'explosion', 'memento', 'healing-wish', 'lunar-dance', 'dream-eater', 'snore']);
 
 /** A move that can be a special: it does damage with a fixed power (and has no game-breaking drawback). */
 export const isDamaging = (slug: string) => {

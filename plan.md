@@ -483,8 +483,18 @@ World map (cities unlocked by badges)
   so both versions' exclusives appear). Without badges: Pallet, Viridian, Pewter.
 - **Hunting**: grass and caves (walking tables); water = fishing with the **best rod owned** (Old, Good, Super Rod:
   each its own Red/Blue table). **Rare bites** (decided after milestone 11): in Red/Blue the Old Rod only ever
-  catches Magikarp; here each rod also hooks the next rod's Pokémon 30% of the time, at its own levels (Old Rod:
-  Magikarp, mostly; sometimes a Poliwag or a Goldeen). Rods are **bought** (decided): Old Rod in Viridian (₽1000), Good Rod in Pewter
+  catches Magikarp and the Good Rod the same Poliwag and Goldeen everywhere; here each rod also hooks the better
+  rods' Pokémon of that water 30% of the time, at its own levels (Cerulean's Old Rod: Psyduck and Krabby too).
+- **Variety** (decided after milestone 11, `huntTable` in `game/encounters.ts`): the Red/Blue tables put Pidgey,
+  Rattata and Spearow on nearly every route and make each city's own Pokémon rare (Lavender's Vulpix 3%). What you
+  actually meet is weighted so every new city feels new; the levels stay the games':
+  - rates are **flattened** (the square root of each species' share);
+  - a species that already lived in an earlier city (story order) is an **old face**: a quarter as often;
+  - a species you **haven't caught** yet comes twice as often.
+  Result: a city's own Pokémon are 60–100% of its grass and caves (Cerulean: Abra, Oddish, Bellsprout, Ekans,
+  Sandshrew ≈ 71%; Pidgey + Rattata + Spearow < 20%), Lavender's Vulpix ≈ 10%. Saffron has no grass of its own (Route
+  9's four were all met before): it hunts in the Power Plant. The Pokédex's "where to find it" still lists the
+  games' places. Rods are **bought** (decided): Old Rod in Viridian (₽1000), Good Rod in Pewter
   (₽3000), Super Rod at the Saffron mall (₽10000). Surfing: later.
 - **Wild battles**: the party against one wild Pokémon (an easy CPU), "A wild X appeared!". Esc runs away.
   Wild Pokémon roll their own **IVs** (0–31), kept when caught.
@@ -799,7 +809,8 @@ sprites won't save it.
 | Party order | Reorder in the party screen (pick up, then swap); the first Pokémon leads. The two slots glide into each other's places; a screen redrawn after a change doesn't play its entrance again |
 | Switching | Once mid-round (Tab / View), again only after a faint; after every faint the player picks the next fighter. A mid-round switch continues the same round from where everyone stood |
 | CPU per Pokémon | Skill from who controls it (wild clumsy, trainers at their difficulty) plus its evolution stage and level; style from its stats; a new seed every fight |
-| Fishing | Each rod also hooks the next rod's Pokémon 30% of the time (the Old Rod isn't only Magikarp) |
+| Fishing | Each rod also hooks the better rods' Pokémon of that water 30% of the time (the Old Rod isn't only Magikarp, and each town's fishing has its locals) |
+| Encounter variety | Rates flattened (square root), species met in an earlier city a quarter as often, uncaught ones twice as often: each city is mostly its own Pokémon |
 | Towns and map | Top-down pixel art painted by code (original drawings), not pictures |
 | Results | XP cards per Pokémon (level, XP bar filling from where it was, level ups, new moves); "Hunt again" after wild and Safari battles |
 | Options | One screen for sound, language (also kept on the device, without a save) and keys; New game asks in-game before erasing |

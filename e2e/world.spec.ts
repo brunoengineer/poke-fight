@@ -126,7 +126,7 @@ test.describe('hunting and catching', () => {
 });
 
 test.describe('the shop and fishing', () => {
-  test('buying Poké Balls and the Old Rod in Viridian; then fishing gives a Magikarp', async ({ page }) => {
+  test("buying Poké Balls and the Old Rod in Viridian; then fishing hooks one of that water's Pokémon", async ({ page }) => {
     await openGame(page, { scene: 'city' }, { save: { ...start(), location: 'viridian' } });
     await page.getByTestId('city-shop').click();
     await page.getByTestId('buy-poke-ball').click();
@@ -143,8 +143,8 @@ test.describe('the shop and fishing', () => {
     await page.getByTestId('back').click();
     await expect(page.getByTestId('hunt-water')).toContainText('With the Old Rod');
     await page.getByTestId('hunt-water').click();
-    // Viridian's Old Rod table only has Magikarp (as in Red/Blue).
-    expect((await snapshot(page)).fighters[1].name).toBe('Magikarp');
+    // The Old Rod: Magikarp, or now and then what the better rods catch in Viridian's water.
+    expect(['Magikarp', 'Poliwag', 'Goldeen', 'Tentacool']).toContain((await snapshot(page)).fighters[1].name);
   });
 
   test('not enough money: nothing is bought', async ({ page }) => {

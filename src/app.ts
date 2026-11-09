@@ -37,7 +37,7 @@ import {
   type FoundAt,
 } from './game/pokedex';
 import { dexText } from './data/dex-text';
-import { bestRod, encounterTable, rollEncounter, tableForAreas, wildPokemon } from './game/encounters';
+import { bestRod, chances, encounterTable, huntTable, rollEncounter, tableForAreas, wildPokemon } from './game/encounters';
 import { canChallenge, gymTeam, leaderPrize } from './game/gym';
 import { canEnterLeague, LEAGUE_SIZE, leagueOpponent, leaguePrize, type LeagueOpponent } from './game/league';
 import { bigShape, elementalShape } from './game/moves';
@@ -469,8 +469,9 @@ export function startApp(elements: AppElements, options: TestOptions) {
       .filter(kind => here.hunts[kind])
       .map(kind => {
         // Water shows what the best rod could catch; without a rod, what an Old Rod would.
-        const table = encounterTable(here, kind, kind === 'water' ? (rod ?? 'old-rod') : null);
-        const ids = [...new Set([...table].sort((a, b) => b.weight - a.weight).map(e => e.speciesId))];
+        // What you'd meet here (the variety rules: locals first), the most likely first.
+        const table = huntTable(here, encounterTable(here, kind, kind === 'water' ? (rod ?? 'old-rod') : null), s.dex.caught);
+        const ids = chances(table).map(c => c.speciesId);
         const min = Math.min(...table.map(e => e.minLevel));
         const max = Math.max(...table.map(e => e.maxLevel));
         const noRod = kind === 'water' && !rod;
@@ -1251,7 +1252,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
     if (!save) return;
     lastHunt = kind;
     const s = save;
-    const table = encounterTable(city(s.location), kind, kind === 'water' ? ownsRod(s) : null);
+    const here = city(s.location);
+    const table = huntTable(here, encounterTable(here, kind, kind === 'water' ? ownsRod(s) : null), s.dex.caught);
     if (table.length === 0) return;
     const party = readyParty();
     wild = wildPokemon(rollEncounter(table, rng), rng);
@@ -1319,7 +1321,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
 
   function searchSafari() {
     if (!save || !safari) return;
-    const table = tableForAreas(city(save.location).safari ?? [], 'walk');
+    const here = city(save.location);
+    const table = huntTable(here, tableForAreas(here.safari ?? [], 'walk'), save.dex.caught);
     if (table.length === 0) return;
     const found = wildPokemon(rollEncounter(table, rng), rng);
     gym = null;

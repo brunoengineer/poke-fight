@@ -1,7 +1,7 @@
 // The world: region data, encounters, catching, money and items, the box.
 
 import { describe, expect, it } from 'vitest';
-import { ITEMS, RODS } from '../data/items';
+import { ITEMS, RODS, type RodId } from '../data/items';
 import { species, speciesBySlug } from '../data/pokedex';
 import { city, isUnlocked, KANTO, type HuntKind } from '../data/regions/kanto';
 import { createRng } from '../engine/rng';
@@ -9,7 +9,7 @@ import { HP_UNITS } from '../fight/constants';
 import { addCaught, canSendToBox, canTakeFromBox, sendToBox, swapInParty, takeFromBox } from './box';
 import { catchChance, catchValue, DIFFICULTY_PENALTY, throwBall, WILD_SPIRIT } from './capture';
 import { addItem, buy, countOf, moneyAfterLoss, prizeMoney, removeItem, START_BAG, START_MONEY, usePotion } from './economy';
-import { bestRod, encounterTable, hasEncounters, RARE_BITE, rollEncounter, rollIvs, wildPokemon } from './encounters';
+import { bestRod, chances, encounterTable, hasEncounters, huntTable, oldFaces, RARE_BITE, rollEncounter, rollIvs, wildPokemon } from './encounters';
 import { createPokemon, maxHpOf } from './pokemon';
 
 const id = (slug: string) => speciesBySlug(slug).id;
@@ -67,7 +67,8 @@ describe('encounters', () => {
     expect(encounterTable(viridian, 'water', null)).toEqual([]);
     const old = new Set(encounterTable(viridian, 'water', 'old-rod').map(e => species(e.speciesId).slug));
     const good = new Set(encounterTable(viridian, 'water', 'good-rod').map(e => species(e.speciesId).slug));
-    expect(old).toEqual(new Set(['magikarp', 'poliwag', 'goldeen']));
+    // Magikarp, plus the better rods' catches of that water now and then (Viridian's Super Rod has Tentacool).
+    expect(old).toEqual(new Set(['magikarp', 'poliwag', 'goldeen', 'tentacool']));
     expect(good).toContain('poliwag');
     expect(good).toContain('tentacool');
   });
@@ -205,5 +206,46 @@ describe('PC box', () => {
     expect(swapInParty(party, 2, 0).map(x => x.speciesId)).toEqual([id('rattata'), id('pidgey'), id('charmander')]);
     expect(party[0].speciesId).toBe(id('charmander'));
     expect(() => swapInParty(party, 0, 3)).toThrow();
+  });
+});
+
+describe('variety: each city feels new', () => {
+  const share = (cityId: string, kind: HuntKind, rod: RodId | null, caught: number[] = []) => {
+    const here = city(cityId);
+    const all = chances(huntTable(here, encounterTable(here, kind, rod), caught));
+    const old = oldFaces(cityId);
+    return { all, of: (slug: string) => all.find(c => c.speciesId === id(slug))?.chance ?? 0, locals: all.filter(c => !old.has(c.speciesId)).reduce((sum, c) => sum + c.chance, 0) };
+  };
+
+  it("a city's own Pokémon are most of what you meet; Pidgey, Rattata and Spearow are no longer everywhere", () => {
+    for (const [cityId, kind] of [['viridian', 'grass'], ['pewter', 'grass'], ['cerulean', 'grass'], ['vermilion', 'grass'], ['lavender', 'grass']] as const) {
+      expect(share(cityId, kind, null).locals, cityId).toBeGreaterThan(0.6);
+    }
+    const cerulean = share('cerulean', 'grass', null);
+    expect(cerulean.of('pidgey') + cerulean.of('rattata') + cerulean.of('spearow')).toBeLessThan(0.2);
+  });
+
+  it("rare ones aren't 1 in 30 anymore: Lavender's Vulpix about 1 in 10, more while you haven't caught one", () => {
+    const vulpix = id('vulpix');
+    expect(share('lavender', 'grass', null, [vulpix]).of('vulpix')).toBeGreaterThan(0.05);
+    expect(share('lavender', 'grass', null).of('vulpix')).toBeGreaterThan(0.08);
+    expect(share('lavender', 'grass', null).of('vulpix')).toBeGreaterThan(share('lavender', 'grass', null, [vulpix]).of('vulpix'));
+  });
+
+  it("every town's fishing has its locals: Cerulean's Old Rod sometimes hooks Psyduck or Krabby", () => {
+    const old = share('cerulean', 'water', 'old-rod');
+    expect(old.of('psyduck') + old.of('krabby')).toBeGreaterThan(0.3);
+    expect(old.of('magikarp')).toBeGreaterThan(0);
+  });
+
+  it('the first city is all new: Pallet is still Pidgey and Rattata', () => {
+    const pallet = share('pallet', 'grass', null);
+    expect(pallet.of('pidgey')).toBeCloseTo(0.5);
+    expect(oldFaces('pallet').size).toBe(0);
+  });
+
+  it("Saffron hunts in the Power Plant (no grass of its own: Route 9's Pokémon were all met before)", () => {
+    expect(city('saffron').hunts.grass).toBeUndefined();
+    expect(share('saffron', 'cave', null).of('magnemite')).toBeGreaterThan(0.2);
   });
 });

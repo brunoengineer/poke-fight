@@ -3,7 +3,7 @@
 
 import { allSpecies } from '../data/pokedex';
 import { RODS, type RodId } from '../data/items';
-import type { City, HuntKind } from '../data/regions/kanto';
+import { KANTO, type City, type HuntKind } from '../data/regions/kanto';
 import type { Rng } from '../engine/rng';
 import { createPokemon, type Pokemon } from './pokemon';
 import type { Stats } from './stats';
@@ -46,9 +46,10 @@ export const tableForAreas = (areas: readonly string[], method: Method): Encount
   areas.flatMap(area => INDEX.get(area)?.get(method) ?? []);
 
 /**
- * How often a rod hooks what the next rod catches (decided after milestone 11): in Red/Blue the Old Rod only ever
- * catches Magikarp, which makes fishing dull. Here each rod also hooks, now and then, the next rod's Pokémon, at its
- * own (lower) levels. The Super Rod is the best: nothing above it.
+ * How often a rod hooks what the better rods catch here (decided after milestone 11): in Red/Blue the Old Rod only
+ * ever catches Magikarp, and the Good Rod the same Poliwag and Goldeen in every town, which makes fishing dull. Here
+ * each rod also hooks, now and then, the better rods' Pokémon of that water (so each town's fishing has its own
+ * locals), at its own (lower) levels. The Super Rod is the best: nothing above it.
  */
 export const RARE_BITE = 0.3;
 
@@ -58,12 +59,12 @@ export function encounterTable(city: City, kind: HuntKind, rod: RodId | null): E
   if (!method) return [];
   const areas = city.hunts[kind] ?? [];
   const table = tableForAreas(areas, method);
-  return method === 'walk' ? table : withRareBites(table, tableForAreas(areas, nextRod(method)));
+  if (method === 'walk') return table;
+  const better = RODS.slice(RODS.indexOf(method) + 1).flatMap(r => tableForAreas(areas, r));
+  return withRareBites(table, better);
 }
 
-const nextRod = (rod: RodId): RodId => RODS[Math.min(RODS.indexOf(rod) + 1, RODS.length - 1)];
-
-/** The rod's own table, plus the next rod's Pokémon as RARE_BITE of the weight, at this rod's levels. */
+/** The rod's own table, plus the better rods' Pokémon as RARE_BITE of the weight, at this rod's levels. */
 function withRareBites(own: EncounterEntry[], better: EncounterEntry[]): EncounterEntry[] {
   const extra = better.filter(b => !own.some(o => o.speciesId === b.speciesId));
   if (own.length === 0 || extra.length === 0) return own;
@@ -96,4 +97,72 @@ export function rollIvs(rng: Rng): Stats {
 
 export function wildPokemon(roll: WildRoll, rng: Rng): Pokemon {
   return createPokemon(roll.speciesId, roll.level, { ivs: rollIvs(rng) });
+}
+
+// ── Variety: what you actually meet ─────────────────────────────────────────────────────────────────────────────────
+// The Red/Blue tables put Pidgey, Rattata and Spearow on nearly every route, and make a city's own Pokémon rare (a
+// Vulpix 1 time in 30). Decided after milestone 11, so each new city feels new:
+//   - rates are flattened (the square root of each species' share): rare ones stay rarer, but not 1 in 30;
+//   - a species that already lived in an earlier city (story order) is an "old face": a quarter as often;
+//   - a species the player hasn't caught yet comes twice as often.
+// The levels stay the games'.
+
+/** The rates' exponent (0.5: the square root). */
+export const FLATTEN = 0.5;
+/** A species already met in an earlier city appears this much as often. */
+export const OLD_FACE = 0.25;
+/** A species not caught yet appears this much more often. */
+export const FRESH = 2;
+
+/** Every species in a city's hunting grounds (every kind, every rod, the Safari Zone). */
+function citySpecies(city: City): number[] {
+  const kinds: HuntKind[] = ['grass', 'cave'];
+  const tables = [
+    ...kinds.flatMap(kind => encounterTable(city, kind, null)),
+    ...RODS.flatMap(rod => encounterTable(city, 'water', rod)),
+    ...tableForAreas(city.safari ?? [], 'walk'),
+  ];
+  return [...new Set(tables.map(e => e.speciesId))];
+}
+
+const OLD_FACES = new Map<string, Set<number>>();
+
+/** The species that already lived in a city before this one, in story order. */
+export function oldFaces(cityId: string): Set<number> {
+  let faces = OLD_FACES.get(cityId);
+  if (!faces) {
+    faces = new Set(KANTO.slice(0, Math.max(0, KANTO.findIndex(c => c.id === cityId))).flatMap(citySpecies));
+    OLD_FACES.set(cityId, faces);
+  }
+  return faces;
+}
+
+/**
+ * What you meet hunting here: one entry per species (with its level range), weighted for variety (see above). The
+ * raw tables (encounterTable) stay the games'; the Pokédex shows those.
+ */
+export function huntTable(city: City, raw: readonly EncounterEntry[], caught: readonly number[]): EncounterEntry[] {
+  const total = raw.reduce((sum, e) => sum + e.weight, 0);
+  if (total === 0) return [];
+  const old = oldFaces(city.id);
+  const bySpecies = new Map<number, EncounterEntry>();
+  for (const e of raw) {
+    const entry = bySpecies.get(e.speciesId) ?? { speciesId: e.speciesId, minLevel: e.minLevel, maxLevel: e.maxLevel, weight: 0 };
+    entry.minLevel = Math.min(entry.minLevel, e.minLevel);
+    entry.maxLevel = Math.max(entry.maxLevel, e.maxLevel);
+    entry.weight += e.weight / total;
+    bySpecies.set(e.speciesId, entry);
+  }
+  return [...bySpecies.values()].map(e => ({
+    ...e,
+    weight: e.weight ** FLATTEN * (old.has(e.speciesId) ? OLD_FACE : 1) * (caught.includes(e.speciesId) ? 1 : FRESH),
+  }));
+}
+
+/** Each species' chance in a table (0–1), most likely first. */
+export function chances(table: readonly EncounterEntry[]): { speciesId: number; chance: number }[] {
+  const total = table.reduce((sum, e) => sum + e.weight, 0);
+  const by = new Map<number, number>();
+  for (const e of table) by.set(e.speciesId, (by.get(e.speciesId) ?? 0) + e.weight / total);
+  return [...by.entries()].map(([speciesId, chance]) => ({ speciesId, chance })).sort((a, b) => b.chance - a.chance);
 }

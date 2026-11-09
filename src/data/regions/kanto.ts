@@ -108,7 +108,8 @@ export const KANTO: readonly City[] = [
     id: 'saffron',
     badges: 5,
     shop: [...MART, 'ultra-ball', 'hyper-potion', 'super-rod', 'fire-stone', 'water-stone', 'thunder-stone', 'leaf-stone', 'moon-stone', 'link-cable'],
-    hunts: { grass: ['kanto-route-9-area'], cave: ['kanto-power-plant-area'] },
+    // No grass of its own (Route 9 only had Pokémon met before, decided after milestone 11): the Power Plant.
+    hunts: { cave: ['kanto-power-plant-area'] },
   },
   {
     id: 'cinnabar',

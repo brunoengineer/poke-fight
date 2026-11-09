@@ -1,11 +1,16 @@
 name: Pages
 
-# A temporary study deploy (decided 2026-11-09): every push to main builds the game and publishes it on GitHub Pages.
+# A temporary study deploy (decided 2026-11-09): every push to main that passes CI is built and published on GitHub Pages.
 # The link is not shared. To take it down: Settings → Pages → Unpublish site, then delete this file (or the next push
 # to main publishes it again).
 
+# It deploys only after CI (ci.yml: typecheck, unit tests and the browser tests) has passed for a push to main: a push
+# that fails any test is never published. (It used to run on the push itself, in parallel with CI, so a push whose
+# browser tests failed was published anyway.)
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -16,16 +21,21 @@ concurrency:
 
 jobs:
   build:
+    # A CI run that failed or was cancelled (a newer push replaced it) deploys nothing.
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The commit CI tested (not whatever main is by now).
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      # The same checks as CI before anything is published (the browser tests run in ci.yml).
+      # CI already passed for this commit; these are cheap and also guard a manual run.
       - run: npm run typecheck
       - run: npm test
       - run: npm run build

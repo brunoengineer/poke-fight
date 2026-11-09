@@ -11,6 +11,8 @@ export const px = (pixels: number) => Math.round(pixels * SUB);
 
 /** The arena is as wide as the screen (no camera yet). */
 export const STAGE_WIDTH = px(480);
+/** From the floor to the top of the screen (a strike's column is this tall). */
+export const STAGE_HEIGHT = px(270);
 
 /** Placeholder body: the push box and the hurt box for now. */
 export const BODY_HALF_WIDTH = px(16);

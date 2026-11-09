@@ -43,6 +43,31 @@ export interface ProjectileData {
   y2: number;
   /** Where it appears, in front of the fighter's center. */
   spawnX: number;
+  /** One goes each way (the quake's ground waves). */
+  bothWays?: boolean;
+}
+
+/**
+ * Several projectiles thrown in arcs (rocks, meteors), each landing `distances` in front of the attacker after `flight`
+ * frames. Each one hits with `hit` and a `share` of the move's power; it is gone once it sinks into the floor.
+ */
+export interface BarrageData {
+  distances: readonly number[];
+  flight: number;
+  /** Height they are thrown from, above the attacker's feet. */
+  fromY: number;
+  halfWidth: number;
+  height: number;
+  gravity: number;
+  share: number;
+  hit: HitData;
+}
+
+/** A strike on the opponent's spot (lightning from the sky, a shadow from the ground): it locks on during the charge. */
+export interface StrikeData {
+  /** The charge frame the spot is locked on (the opponent's position then). */
+  lockAt: number;
+  halfWidth: number;
 }
 
 export interface MoveData {
@@ -60,6 +85,10 @@ export interface MoveData {
   rush?: { speed: number };
   /** Fired on the first active frame. */
   projectile?: ProjectileData;
+  /** Thrown on the first active frame. */
+  barrage?: BarrageData;
+  /** Hits the locked spot on its active frames (instead of a hitbox). */
+  strike?: StrikeData;
 }
 
 export const moveLength = (move: MoveData) => move.startup + move.active + move.recovery;
@@ -95,7 +124,8 @@ export const AIR_PHYSICAL: MoveData = {
 // ── Specials ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
 export type ElementalShape = 'projectile' | 'beam';
-export type BigShape = 'projectile' | 'beam' | 'rush';
+/** The big special's forms (plan.md §4.9): each type has one (game/moves.ts), and each hits the way it looks. */
+export type BigShape = 'projectile' | 'beam' | 'rush' | 'quake' | 'surf' | 'tornado' | 'solar' | 'blizzard' | 'burst' | 'strike' | 'barrage';
 export type SpecialSlot = 'elemental' | 'big';
 
 const BIG_LAUNCH = { vy: px(5), push: px(3) };
@@ -118,8 +148,11 @@ export const ELEMENTAL: Record<ElementalShape, MoveData> = {
   },
 };
 
+const BIG_HIT: HitData = { hitstun: 30, blockstun: 24, knockback: px(4), hitstop: 14, ppGain: 0, chip: true, launch: BIG_LAUNCH, big: true };
+
 /** I: needs and spends the full PP bar. Long charge, knocks down. Ground only. Uses the move's own power (strong moves
- * are already 90–120; doubling it made a super-effective big special a one-hit KO). */
+ * are already 90–120; doubling it made a super-effective big special a one-hit KO). Every form has the same 40-frame
+ * charge and 30 frames of recovery: the charge is the risk, the form is how to survive it. */
 export const BIG: Record<BigShape, MoveData> = {
   projectile: {
     startup: 40,
@@ -143,6 +176,79 @@ export const BIG: Record<BigShape, MoveData> = {
     hit: { hitstun: 30, blockstun: 24, knockback: px(4), hitstop: 14, ppGain: 0, chip: true, launch: BIG_LAUNCH, big: true },
     hitbox: box(-8, 30, 4, 44),
     rush: { speed: px(9) },
+  },
+  /** Ground: a wave along the floor each way, to both edges. Jump it. */
+  quake: {
+    startup: 40,
+    active: 1,
+    recovery: 30,
+    hit: BIG_HIT,
+    projectile: { speed: px(5), halfWidth: px(10), y1: 0, y2: px(16), spawnX: px(20), bothWays: true },
+  },
+  /** Water (Surf), Poison (Sludge Wave): a wide, tall, slow wave. Guard it (a jump clears it only at its very top). */
+  surf: {
+    startup: 40,
+    active: 1,
+    recovery: 30,
+    hit: BIG_HIT,
+    projectile: { speed: px(3.5), halfWidth: px(22), y1: 0, y2: px(72), spawnX: px(30) },
+  },
+  /** Fire (Fire Spin), Flying (Hurricane): a column taller than any jump, crossing slowly. Guard it. */
+  tornado: {
+    startup: 40,
+    active: 1,
+    recovery: 30,
+    hit: BIG_HIT,
+    projectile: { speed: px(2.5), halfWidth: px(14), y1: 0, y2: px(150), spawnX: px(36) },
+  },
+  /** Grass (Solar Beam): a huge beam across the screen, from the floor up. Only a jump's top clears it. */
+  solar: {
+    startup: 40,
+    active: 12,
+    recovery: 30,
+    hit: { ...BIG_HIT, knockback: px(3) },
+    hitbox: box(16, 480, 0, 64),
+  },
+  /** Ice: a storm over a big area in front. Back off, or guard. */
+  blizzard: {
+    startup: 40,
+    active: 18,
+    recovery: 30,
+    hit: BIG_HIT,
+    hitbox: box(0, 170, 0, 80),
+  },
+  /** Psychic, Dark, Fairy: a sphere all around the attacker, behind it too. Stay away, or guard. */
+  burst: {
+    startup: 40,
+    active: 8,
+    recovery: 30,
+    hit: BIG_HIT,
+    hitbox: box(-95, 95, 0, 95),
+  },
+  /** Electric (Thunder, from the sky), Ghost (from the ground): on the opponent's spot, locked 12 frames before. Move. */
+  strike: {
+    startup: 40,
+    active: 6,
+    recovery: 30,
+    hit: BIG_HIT,
+    strike: { lockAt: 28, halfWidth: px(18) },
+  },
+  /** Rock (Rock Slide), Dragon (Draco Meteor): three in arcs, landing 70, 130 and 190 px ahead. Stand between them. */
+  barrage: {
+    startup: 40,
+    active: 1,
+    recovery: 30,
+    hit: BIG_HIT,
+    barrage: {
+      distances: [px(70), px(130), px(190)],
+      flight: 30,
+      fromY: px(30),
+      halfWidth: px(9),
+      height: px(18),
+      gravity: px(0.5),
+      share: 0.5,
+      hit: { hitstun: 24, blockstun: 18, knockback: px(3), hitstop: 10, ppGain: 0, chip: true, launch: BIG_LAUNCH, big: true },
+    },
   },
 };
 

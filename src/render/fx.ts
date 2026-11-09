@@ -4,7 +4,8 @@
 import { BOSS_ATTACK, VORTEX } from '../fight/boss';
 import { activeHitbox } from '../fight/boxes';
 import { BODY_HEIGHT, SUB } from '../fight/constants';
-import type { ActionKind, FightEvent, FightState, Fighter } from '../fight/state';
+import { BIG, type BigShape } from '../fight/frame-data';
+import type { ActionKind, FightEvent, FightState, Fighter, Projectile } from '../fight/state';
 import { TYPE_COLORS } from './colors';
 import { elementLook } from './elements';
 import { FLOOR_Y } from './stage';
@@ -53,6 +54,8 @@ export function createFx(): Fx {
   const trails: [number | null, number | null] = [null, null];
   const trailDelay = [0, 0];
   const lastActions: (ActionKind | null)[] = [null, null];
+  /** Last frame's barrage pieces (rocks, meteors): one that is gone without a hit has landed. */
+  let flying = new Map<number, Projectile>();
 
   const burst = (x: number, y: number, count: number, colors: string[], speed: number, kind: Particle['kind'] = 'spark') => {
     for (let i = 0; i < count; i++) {
@@ -152,6 +155,49 @@ export function createFx(): Fx {
       }
     } else if (a.id === 'meteor' && a.frame <= t + 12 && a.frame % 2 === 0) {
       glowAt(x + (random() - 0.5) * 20, BOSS_MID - 20, (random() - 0.5) * 0.5, -6 - random() * 3, 20, 3, color);
+    }
+  };
+
+  /** A big special's form, as it comes out and while it lasts: shakes, impacts, snow, sparks on a dome's rim… */
+  const SHAKE: Record<BigShape, [number, number]> = {
+    projectile: [2, 6],
+    beam: [3, 12],
+    rush: [2, 8],
+    quake: [5, 14],
+    surf: [2, 10],
+    tornado: [2, 10],
+    solar: [4, 16],
+    blizzard: [2, 18],
+    burst: [5, 14],
+    strike: [6, 16],
+    barrage: [2, 6],
+  };
+  const bigEffects = (f: Fighter) => {
+    if (f.action !== 'big') return;
+    const { shape, type } = f.loadout.big;
+    const move = BIG[shape];
+    const into = f.actionFrame - move.startup;
+    if (into < 1 || into > move.active) return;
+    const look = elementLook(type);
+    const x = sx(f.x);
+    if (into === 1) quake(...SHAKE[shape]);
+    if (shape === 'strike' && f.target !== null && into === 1) {
+      const at = f.target / SUB;
+      burst(at, FLOOR_Y - 4, 24, ['#ffffff', look.energy, look.colors[0]], 3.6);
+      ring(at, FLOOR_Y - 6, look.energy, 18, 18);
+      dust(at, FLOOR_Y, -1);
+      dust(at, FLOOR_Y, 1);
+    } else if (shape === 'burst' && into === 1) {
+      ring(x, FLOOR_Y - 20, look.energy, 30, 20);
+    } else if (shape === 'burst') {
+      const angle = Math.PI + random() * Math.PI;
+      const radius = (move.hitbox!.x2 / SUB) * Math.min(1, into / 4);
+      glowAt(x + Math.cos(angle) * radius, FLOOR_Y + Math.sin(angle) * radius, Math.cos(angle) * 0.8, Math.sin(angle) * 0.8, 14, 2.5, look.energy);
+    } else if (shape === 'blizzard') {
+      const reach = (move.hitbox!.x2 - move.hitbox!.x1) / SUB;
+      for (let k = 0; k < 3; k++) trailOf(type, x + f.facing * random() * reach, FLOOR_Y - random() * 80, -f.facing, true);
+    } else if (shape === 'solar' && into % 2 === 0) {
+      trailOf(type, x + f.facing * (20 + random() * 440), FLOOR_Y - random() * 64, -f.facing, true);
     }
   };
 
@@ -271,8 +317,23 @@ export function createFx(): Fx {
 
       // Projectiles leave a trail of their type: embers, drops, sparks, leaves, smoke…
       for (const p of round.projectiles) {
-        trailOf(p.attack.type, p.x / SUB, FLOOR_Y - (p.y1 + p.y2) / 2 / SUB, Math.sign(p.vx), p.slot === 'big');
+        // A tall one (a wave, a tornado) sheds all along its height.
+        const tall = p.y2 - p.y1 > 30 * SUB;
+        const y = tall ? p.y1 + random() * (p.y2 - p.y1) : (p.y1 + p.y2) / 2;
+        for (let k = 0; k < (tall ? 2 : 1); k++) trailOf(p.attack.type, p.x / SUB, FLOOR_Y - y / SUB, Math.sign(p.vx), p.slot === 'big');
       }
+      // A barrage's rock (or meteor) that sank into the floor: debris and a thud.
+      const hitNow = new Set(events.flatMap(e => (e.type === 'hit' || e.type === 'block' ? [e.attacker] : [])));
+      for (const [id, p] of flying) {
+        if (round.projectiles.some(q => q.id === id) || hitNow.has(p.owner)) continue;
+        const x = p.x / SUB;
+        dust(x, FLOOR_Y, -1);
+        dust(x, FLOOR_Y, 1);
+        for (let k = 0; k < 8; k++) trailOf(p.attack.type, x + (random() - 0.5) * 10, FLOOR_Y - 3, (random() - 0.5) * 2, true);
+        quake(2, 6);
+      }
+      flying = new Map(round.projectiles.filter(p => p.vy !== undefined).map(p => [p.id, p]));
+      for (const f of round.fighters) bigEffects(f);
       // Beams shed some along their length.
       for (const f of round.fighters) {
         const slot = f.action === 'big' ? 'big' : f.action === 'elemental' ? 'elemental' : null;
@@ -370,6 +431,7 @@ export function createFx(): Fx {
       shake = { amplitude: 0, frames: 0 };
       trails[0] = trails[1] = null;
       lastActions[0] = lastActions[1] = null;
+      flying = new Map();
     },
   };
 }

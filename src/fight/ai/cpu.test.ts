@@ -123,6 +123,18 @@ describe('the CPU answers threats', () => {
     expect(contacts(d)[0]).toMatchObject({ type: 'hit', attacker: 1, air: true });
   });
 
+  it('never tries to jump a tornado (taller than any jump): it guards it, or takes it', () => {
+    const tornado: Loadout = { ...RUSH, big: { name: 'Fire Spin', type: 'fire', power: 110, category: 'special', shape: 'tornado' } };
+    const start = () => withLoadout(fightAt(200, { pp: [PP_MAX, 50] }), tornado);
+    // A CPU that always jumps projectiles and never guards (its first plan, waiting, lasts the whole test, so it only
+    // reacts): it stays on the ground.
+    const jumper = vsCpu(200, on(Button.Big, 1), reactive({ guard: 0, jump: 1, planFrames: [400, 400] }), start());
+    expect(jumper.cpuInputs.some(input => has(input, Button.Up))).toBe(false);
+    // One that guards: it blocks it.
+    const guard = vsCpu(200, on(Button.Big, 1), reactive({ guard: 1, jump: 1 }), start());
+    expect(contacts(guard).map(e => e.type)).toEqual(['block']);
+  });
+
   it('guards a rush, then punishes the long recovery', () => {
     const d = vsCpu(150, on(Button.Big, 1), reactive({ guard: 1, punish: 1 }), withLoadout(fightAt(100, { pp: [PP_MAX, 50] }), RUSH));
     expect(contacts(d).map(e => [e.type, e.type === 'hit' || e.type === 'block' ? e.attacker : -1])).toEqual([

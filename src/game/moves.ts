@@ -2,7 +2,8 @@
 // takes in the fight.
 //   - Elemental slot: always a range attack. Moves with "beam" in their name are beams, everything else (including
 //     contact moves like Scratch) becomes a projectile of its type.
-//   - Big slot: physical moves become a Rush (the "big dash"); special moves keep their shape.
+//   - Big slot: its form comes from the move's type (plan.md §4.9): a Ground move is a quake wave, a Water move a
+//     surf wave, a Fire move a tornado… Normal moves keep the old rule: physical → a Rush, special → a beam.
 
 import { move, type Species } from '../data/pokedex';
 import type { BigShape, ElementalShape } from '../fight/frame-data';
@@ -29,8 +30,30 @@ export function elementalShape(slug: string): ElementalShape {
   return BEAMS.has(slug) || slug.endsWith('-beam') ? 'beam' : 'projectile';
 }
 
+/** The big special's form for each type (Normal: by category, below). */
+export const BIG_SHAPES: Record<string, BigShape> = {
+  fire: 'tornado',
+  water: 'surf',
+  electric: 'strike',
+  grass: 'solar',
+  ice: 'blizzard',
+  fighting: 'rush',
+  poison: 'surf',
+  ground: 'quake',
+  flying: 'tornado',
+  psychic: 'burst',
+  bug: 'projectile',
+  rock: 'barrage',
+  ghost: 'strike',
+  dragon: 'barrage',
+  dark: 'burst',
+  steel: 'beam',
+  fairy: 'burst',
+};
+
 export function bigShape(slug: string): BigShape {
-  return move(slug).category === 'physical' ? 'rush' : elementalShape(slug);
+  const m = move(slug);
+  return BIG_SHAPES[m.type] ?? (m.category === 'physical' ? 'rush' : 'beam');
 }
 
 /** Every move learned by level up to this level, plus gifts (the starters' first type move), in learning order. */

@@ -3,7 +3,8 @@
 import { describe, expect, it } from 'vitest';
 import { speciesBySlug } from '../data/pokedex';
 import { HP_UNITS } from '../fight/constants';
-import { bigShape, defaultSpecials, elementalShape, movesKnownAt, STRUGGLE } from './moves';
+import { TYPES } from '../data/types';
+import { BIG_SHAPES, bigShape, defaultSpecials, elementalShape, movesKnownAt, STRUGGLE } from './moves';
 import { createPokemon, displayHp, loadoutOf, toFighter } from './pokemon';
 import { mobility, statsAt, uniformIvs } from './stats';
 
@@ -41,11 +42,24 @@ describe('moves', () => {
     expect(elementalShape('scratch')).toBe('projectile');
   });
 
-  it('big slot: physical moves become a Rush, special moves keep their shape', () => {
+  it("big slot: the form comes from the move's type (plan.md §4.9); Normal: physical → Rush, special → beam", () => {
+    expect(bigShape('earthquake')).toBe('quake');
+    expect(bigShape('hydro-pump')).toBe('surf');
+    expect(bigShape('sludge-bomb')).toBe('surf');
+    expect(bigShape('flamethrower')).toBe('tornado');
+    expect(bigShape('fire-punch')).toBe('tornado'); // physical or special: the type decides
+    expect(bigShape('solar-beam')).toBe('solar');
+    expect(bigShape('rock-slide')).toBe('barrage');
+    expect(bigShape('thunder')).toBe('strike');
+    expect(bigShape('psychic')).toBe('burst');
+    expect(bigShape('blizzard')).toBe('blizzard');
     expect(bigShape('take-down')).toBe('rush');
     expect(bigShape('body-slam')).toBe('rush');
     expect(bigShape('hyper-beam')).toBe('beam');
-    expect(bigShape('flamethrower')).toBe('projectile');
+  });
+
+  it('every type has a big form', () => {
+    for (const type of TYPES) expect(BIG_SHAPES[type] ?? (type === 'normal' ? 'by category' : undefined), type).toBeDefined();
   });
 
   it('default specials: own type for the elemental, strongest (with the same-type bonus) for the big', () => {

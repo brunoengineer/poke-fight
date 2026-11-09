@@ -109,6 +109,12 @@ function think(f: Fighter, opponentX: number, events: FightEvent[]) {
     else setAction(f, 'idle');
   }
 
+  // A strike locks on the opponent's spot during its charge (where the opponent stands at the start of this frame).
+  if (f.action === 'big') {
+    const strike = currentMove(f)?.strike;
+    if (strike && f.actionFrame === strike.lockAt) f.target = opponentX;
+  }
+
   f.actionable = FREE_ACTIONS.includes(f.action);
   const inJump = f.action === 'jump' && !f.airAttackUsed;
   // A special pressed without enough PP does nothing (the press is used up).
@@ -184,6 +190,7 @@ function startSpecial(f: Fighter, slot: SpecialSlot, events: FightEvent[], free 
   f.buffer[free ? 'motion' : slot === 'elemental' ? 'special' : 'big'] = 0;
   if (!free) f.pp -= slot === 'elemental' ? ELEMENTAL_COST : PP_MAX;
   f.freeSpecial = free;
+  f.target = null;
   f.contact = null;
   // In the air it lasts until landing, like the air attack.
   setAction(f, slot, airborne ? 0 : moveLength(moveOf(slot, f.loadout)!));
@@ -333,21 +340,50 @@ function separate(a: Fighter, b: Fighter) {
 function spawnProjectiles(state: FightState) {
   for (const f of state.fighters) {
     const move = currentMove(f);
-    if (!move?.projectile || f.actionFrame !== move.startup + 1) continue;
+    if (!move || f.actionFrame !== move.startup + 1) continue;
     const slot = f.action === 'big' ? 'big' : 'elemental';
+    // Ids: unique within the fight (several per frame for a barrage or a quake's two waves).
+    let id = (state.frame * 2 + f.id) * 8;
     const p = move.projectile;
-    state.projectiles.push({
-      id: state.frame * 2 + f.id,
-      owner: f.id,
-      slot,
-      attack: specialAttack(f, slot),
-      x: f.x + f.facing * p.spawnX,
-      halfWidth: p.halfWidth,
-      y1: f.y + p.y1,
-      y2: f.y + p.y2,
-      vx: f.facing * p.speed,
-      hit: slot === 'elemental' ? earned(f, move.hit) : move.hit,
-    });
+    if (p) {
+      for (const dir of p.bothWays ? [f.facing, -f.facing] : [f.facing]) {
+        state.projectiles.push({
+          id: id++,
+          owner: f.id,
+          slot,
+          attack: specialAttack(f, slot),
+          x: f.x + dir * p.spawnX,
+          halfWidth: p.halfWidth,
+          y1: f.y + p.y1,
+          y2: f.y + p.y2,
+          vx: dir * p.speed,
+          ...(slot === 'big' ? { form: f.loadout.big.shape } : {}),
+          hit: slot === 'elemental' ? earned(f, move.hit) : move.hit,
+        });
+      }
+    }
+    const b = move.barrage;
+    if (b) {
+      // Each one is thrown so it lands its distance ahead after `flight` frames (whole sub-pixels: it lands near it).
+      const attack = specialAttack(f, slot);
+      for (const distance of b.distances) {
+        state.projectiles.push({
+          id: id++,
+          owner: f.id,
+          slot,
+          attack: { ...attack, power: Math.max(1, Math.round(attack.power * b.share)) },
+          x: f.x,
+          halfWidth: b.halfWidth,
+          y1: f.y + b.fromY,
+          y2: f.y + b.fromY + b.height,
+          vx: f.facing * Math.round(distance / b.flight),
+          vy: Math.round((b.gravity * b.flight) / 2 - b.fromY / b.flight),
+          gravity: b.gravity,
+          form: f.loadout.big.shape,
+          hit: b.hit,
+        });
+      }
+    }
   }
 }
 
@@ -366,8 +402,16 @@ function meleeAttack(f: Fighter): AttackInfo {
 }
 
 function moveProjectiles(state: FightState) {
-  for (const p of state.projectiles) p.x += p.vx;
-  const onStage = state.projectiles.filter(p => p.x + p.halfWidth > 0 && p.x - p.halfWidth < STAGE_WIDTH);
+  for (const p of state.projectiles) {
+    p.x += p.vx;
+    if (p.vy !== undefined) {
+      p.y1 += p.vy;
+      p.y2 += p.vy;
+      p.vy -= p.gravity ?? 0;
+    }
+  }
+  // Gone once off the stage, or sunk into the floor (a barrage's rocks).
+  const onStage = state.projectiles.filter(p => p.x + p.halfWidth > 0 && p.x - p.halfWidth < STAGE_WIDTH && p.y2 > 0);
 
   // Opposite projectiles that touch cancel out; a big one goes through a small one.
   const gone = new Set<number>();

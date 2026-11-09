@@ -4,7 +4,7 @@
 //   - Push box: what keeps two fighters from overlapping (the body too, for now).
 //   - Projectiles carry their own box.
 
-import { BODY_HALF_WIDTH, BODY_HEIGHT } from './constants';
+import { BODY_HALF_WIDTH, BODY_HEIGHT, STAGE_HEIGHT } from './constants';
 import { AIR_PHYSICAL, BACKDASH, BIG, ELEMENTAL, PHYSICAL, type Box, type MoveData } from './frame-data';
 import type { ActionKind, Fighter, Loadout, Projectile } from './state';
 
@@ -54,12 +54,16 @@ export function movePhase(move: MoveData, frame: number): MovePhase {
   return 'recovery';
 }
 
-/** The hit box of the fighter's move, if it is on an active frame. */
+/** The hit box of the fighter's move, if it is on an active frame (a strike's is a column on its locked spot). */
 export function activeHitbox(f: Fighter): WorldBox | null {
   const move = currentMove(f);
-  if (!move?.hitbox || movePhase(move, f.actionFrame) !== 'active') return null;
-  return toWorld(f, move.hitbox);
+  if (!move || movePhase(move, f.actionFrame) !== 'active') return null;
+  if (move.strike) return f.target === null ? null : strikeBox(f.target, move.strike.halfWidth);
+  return move.hitbox ? toWorld(f, move.hitbox) : null;
 }
+
+/** A strike's column: the whole height of the stage, on its spot. */
+export const strikeBox = (x: number, halfWidth: number): WorldBox => ({ x1: x - halfWidth, x2: x + halfWidth, y1: 0, y2: STAGE_HEIGHT });
 
 export function isInvincible(f: Fighter): boolean {
   return f.action === 'ko' || (f.action === 'backdash' && f.actionFrame <= BACKDASH.invincibleUntil);

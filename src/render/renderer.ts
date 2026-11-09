@@ -20,6 +20,7 @@ import { drawAmbience } from './ambience';
 import { BOSS_BANNER_FRAMES, bossFlash, bossPose, drawBossBack, drawBossFront, skyFallShade } from './boss';
 import { drawBeamLook, drawChargeLook, drawProjectileLook, elementLook } from './elements';
 import { createFx } from './fx';
+import { drawBigAttack, drawBigProjectile, drawBigTelegraph } from './ultimates';
 import { getImage } from './images';
 import { VIEW_H, VIEW_W } from './screen';
 import { getSprite, type Sprite } from './sprites';
@@ -71,7 +72,11 @@ export function createRenderer(ctx: CanvasRenderingContext2D): Renderer {
       fx.drawBack(ctx);
       drawBossBack(ctx, round);
       for (const f of round.fighters) drawShadow(ctx, f, view);
+      // A big special's warning on the floor (landing spots, a strike's mark), then the fighters, then the attack.
+      for (const f of round.fighters) drawBigTelegraph(ctx, f, round, 'floor');
       for (const f of round.fighters) drawFighter(ctx, f, view);
+      for (const f of round.fighters) drawBigAttack(ctx, f);
+      for (const f of round.fighters) drawBigTelegraph(ctx, f, round, 'front');
       drawProjectiles(ctx, round, round.frame);
       drawBossFront(ctx, round);
       // Leaves, snow, embers… passing in front of the fighters, once the place's picture shows.
@@ -375,7 +380,7 @@ function drawMoveEffects(ctx: CanvasRenderingContext2D, f: Fighter, hasSprite: b
 
   if (f.action === 'big' && move?.rush && phase === 'active') {
     ctx.globalAlpha = 0.28;
-    ctx.fillStyle = typeColor(f.loadout.big.type);
+    ctx.fillStyle = elementLook(f.loadout.big.type).energy;
     const body = bodyBox(f);
     for (const back of [30, 18, 8]) fillBox(ctx, { ...body, x1: body.x1 - f.facing * back * SUB, x2: body.x2 - f.facing * back * SUB });
     ctx.globalAlpha = 1;
@@ -425,6 +430,8 @@ function drawMoveEffects(ctx: CanvasRenderingContext2D, f: Fighter, hasSprite: b
 function drawProjectiles(ctx: CanvasRenderingContext2D, round: FightState, frame: number) {
   ctx.save();
   for (const p of round.projectiles) {
+    // A big special's wave, tornado or barrage.
+    if (p.slot === 'big' && drawBigProjectile(ctx, p, frame)) continue;
     const b = projectileBox(p);
     const cx = (sx(b.x1) + sx(b.x2)) / 2;
     const cy = (sy(b.y1) + sy(b.y2)) / 2;

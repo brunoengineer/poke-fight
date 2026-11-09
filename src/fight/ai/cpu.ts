@@ -15,8 +15,8 @@
 
 import { createRng } from '../../engine/rng';
 import { moveOf, movePhase } from '../boxes';
-import { ELEMENTAL_COST, PP_MAX, SUB } from '../constants';
-import { JUMP } from '../frame-data';
+import { ELEMENTAL_COST, PP_MAX, px, SUB } from '../constants';
+import { JUMP, type BigShape } from '../frame-data';
 import { Button, has, type InputMask } from '../input';
 import type { ActionKind, FightState, Fighter, FighterId, Projectile } from '../state';
 import type { AiProfile } from './profiles';
@@ -25,7 +25,7 @@ import type { AiProfile } from './profiles';
 export interface Observation {
   frame: number;
   opponent: Pick<Fighter, 'x' | 'y' | 'vx' | 'vy' | 'action' | 'actionFrame' | 'facing' | 'loadout'>;
-  projectiles: Pick<Projectile, 'id' | 'owner' | 'x' | 'vx'>[];
+  projectiles: Pick<Projectile, 'id' | 'owner' | 'x' | 'vx' | 'y1' | 'y2' | 'vy'>[];
 }
 
 export type PlanKind =
@@ -79,7 +79,7 @@ export function observe(state: FightState, me: FighterId): Observation {
   return {
     frame: state.frame,
     opponent: { x: o.x, y: o.y, vx: o.vx, vy: o.vy, action: o.action, actionFrame: o.actionFrame, facing: o.facing, loadout: o.loadout },
-    projectiles: state.projectiles.filter(p => p.owner !== me).map(p => ({ id: p.id, owner: p.owner, x: p.x, vx: p.vx })),
+    projectiles: state.projectiles.filter(p => p.owner !== me).map(p => ({ id: p.id, owner: p.owner, x: p.x, vx: p.vx, y1: p.y1, y2: p.y2, vy: p.vy })),
   };
 }
 
@@ -179,10 +179,10 @@ function decide(
   for (const p of view.projectiles) {
     const gap = Math.abs(p.x - self.x) / SUB;
     if (!towardsMe(p.vx, p.x) || gap > PROJECTILE_ALERT) continue;
-    const r = respond('projectile', Math.floor(p.id / 2), [
-      ['guard', profile.guard],
-      ['jump', profile.jump],
-    ]);
+    // Too tall to jump (a surf wave, a tornado) or falling from above (a barrage): guard only.
+    const jumpable = p.vy === undefined && p.y2 - p.y1 <= px(48);
+    // Once per throw (ids: 16 per frame, fight/step.ts), so a barrage's rocks share one decision.
+    const r = respond('projectile', Math.floor(p.id / 16), [['guard', profile.guard], ...(jumpable ? [['jump', profile.jump] as [Response, number]] : [])]);
     // Jump when it is close. It sees late, so it estimates where the projectile is now from its speed (people do too).
     const gapNow = gap - (Math.abs(p.vx) / SUB) * profile.reaction;
     if (r === 'jump' && gapNow > JUMP_OVER_AT) continue;
@@ -236,6 +236,21 @@ function decide(
   return follow(cpu, distance);
 }
 
+/** How close the opponent must be for the CPU to use its big special (px): the forms that only reach so far. */
+const BIG_REACH: Record<BigShape, number> = {
+  projectile: Infinity,
+  beam: Infinity,
+  rush: 160,
+  quake: Infinity,
+  surf: Infinity,
+  tornado: Infinity,
+  solar: Infinity,
+  blizzard: 150,
+  burst: 85,
+  strike: Infinity,
+  barrage: 200,
+};
+
 /** Plans that are a single press: once pressed, the CPU thinks again as soon as it can act. */
 const ONE_SHOT: readonly PlanKind[] = ['tackle', 'special', 'big', 'dash', 'backdash'];
 
@@ -260,11 +275,7 @@ function chooseOpening(profile: AiProfile, self: Fighter, roll: (c: number) => b
 
 function choosePlan(profile: AiProfile, self: Fighter, distance: number, roll: (c: number) => boolean): PlanKind {
   const canSpecial = self.pp >= ELEMENTAL_COST;
-  const bigShape = self.loadout.big.shape;
-  if (self.pp >= PP_MAX && roll(profile.big)) {
-    // A rush wants to be fairly close; projectiles and beams work from anywhere.
-    if (bigShape !== 'rush' || distance < 160) return 'big';
-  }
+  if (self.pp >= PP_MAX && roll(profile.big) && distance < BIG_REACH[self.loadout.big.shape]) return 'big';
   const weights: [PlanKind, number][] =
     distance < CLOSE
       ? [

@@ -90,7 +90,7 @@ export function rgba(hex: string, alpha: number): string {
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
 }
 
-function glow(ctx: Ctx, x: number, y: number, r: number, color: string, alpha = 1) {
+export function glow(ctx: Ctx, x: number, y: number, r: number, color: string, alpha = 1) {
   const g = ctx.createRadialGradient(x, y, 0, x, y, r);
   g.addColorStop(0, rgba(color, alpha));
   g.addColorStop(0.45, rgba(color, alpha * 0.45));
@@ -113,7 +113,7 @@ function ball(ctx: Ctx, x: number, y: number, r: number, colors: readonly [strin
 }
 
 /** A flame tongue from (0, 0) back to (-length, offset): the fireball's tail, the shadow ball's wisps. */
-function tongue(ctx: Ctx, length: number, width: number, offset: number, color: string) {
+export function tongue(ctx: Ctx, length: number, width: number, offset: number, color: string) {
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.moveTo(width * 0.4, -width);
@@ -124,7 +124,7 @@ function tongue(ctx: Ctx, length: number, width: number, offset: number, color: 
 }
 
 /** A four-pointed twinkle. */
-function twinkle(ctx: Ctx, x: number, y: number, size: number, color: string) {
+export function twinkle(ctx: Ctx, x: number, y: number, size: number, color: string) {
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.moveTo(x, y - size);
@@ -152,7 +152,7 @@ function blob(ctx: Ctx, points: number, radius: (angle: number, i: number) => nu
 }
 
 /** A jagged line from (x1, y1) to (x2, y2), re-drawn every other frame (lightning). */
-function jagged(ctx: Ctx, x1: number, y1: number, x2: number, y2: number, segments: number, spread: number, seed: number) {
+export function jagged(ctx: Ctx, x1: number, y1: number, x2: number, y2: number, segments: number, spread: number, seed: number) {
   ctx.beginPath();
   ctx.moveTo(x1, y1);
   for (let i = 1; i < segments; i++) {

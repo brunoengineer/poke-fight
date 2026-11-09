@@ -1,8 +1,9 @@
-// The sandbox teams: real Pokémon at Lv. 30–34 with their default specials, chosen to show every special shape and
-// some type matchups:
-//   - Charmeleon (projectiles) vs Butterfree: Fire is super effective on Bug.
-//   - Kadabra (beams) vs Gastly: Psychic is super effective on Poison.
-//   - Machoke (Rush) vs Geodude: Fighting is super effective on Rock; but Karate Chop can't touch Gastly (Ghost).
+// The sandbox teams: real Pokémon at Lv. 30–34 with their default specials, chosen to show both elemental shapes,
+// five big forms (tornado, burst, rush, barrage, strike) and some type matchups:
+//   - Charmeleon (projectile, fire tornado) vs Butterfree: Fire is super effective on Bug.
+//   - Kadabra (beam, psychic burst) vs Gastly (shadow strike): Psychic is super effective on Poison.
+//   - Machoke (Rush) vs Geodude (rock barrage): Fighting is super effective on Rock; but Karate Chop can't touch
+//     Gastly (Ghost).
 
 import { speciesBySlug } from '../data/pokedex';
 import type { TeamMember } from '../fight/battle';

@@ -102,6 +102,8 @@ export interface Fighter {
   buffer: { physical: number; special: number; big: number; dash: number; motion: number };
   /** The current elemental special came from the motion: it cost no PP, and landing it earns none. */
   freeSpecial: boolean;
+  /** A strike's spot (x, sub-pixels), locked during its charge (fight/frame-data.ts StrikeData); null otherwise. */
+  target: number | null;
   /** Legendary bosses only (the key is absent on everyone else): the attack schedule and the attack in progress. */
   boss?: BossState;
 }
@@ -117,6 +119,11 @@ export interface Projectile {
   y1: number;
   y2: number;
   vx: number;
+  /** Thrown in an arc (a barrage): vertical speed and gravity, in sub-pixels per frame. */
+  vy?: number;
+  gravity?: number;
+  /** A big special's form (how it is drawn: a quake wave, a surf wave, a tornado, a barrage's rock…). */
+  form?: BigShape;
   hit: HitData;
 }
 
@@ -223,6 +230,7 @@ function createFighter(id: FighterId, x: number, setup: FighterSetup): Fighter {
     directions: [],
     buffer: { physical: 0, special: 0, big: 0, dash: 0, motion: 0 },
     freeSpecial: false,
+    target: null,
     // Only bosses get the key, so every other fighter stays exactly as it was.
     ...(setup.boss ? { boss: createBossState(setup.boss, bossSeed(setup)) } : {}),
   };

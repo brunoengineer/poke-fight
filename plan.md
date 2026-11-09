@@ -249,11 +249,12 @@ The move's **type and power** come from the data; its **shape in the fight** com
 | Projectile | Travels across the screen | Elemental or big (bigger, faster) | Ember, Water Gun, Thunder Shock, Razor Leaf |
 | Beam | Instant long-range hit after the charge | Elemental or big | Psybeam, Aurora Beam; big: Hyper Beam, Solar Beam |
 | **Rush** (decided: the "big dash") | The Pokémon charges across the screen, passing through and hitting hard: **physical damage** | **Big only** | Take Down, Body Slam, Double-Edge, Skull Bash |
-| Area | Burst around the user | Big only | Earthquake, Thunder, Surf (wave) |
+| Quake, Surf, Tornado, Solar, Blizzard, Burst, Strike, Barrage | By the move's type (milestone 13, §4.9) | Big only | Earthquake, Hydro Pump, Flamethrower, Solar Beam… |
 
 - In the **elemental slot every move becomes a range attack**: physical contact moves (Scratch, Karate Chop, Vine
   Whip) turn into a short projectile or shockwave of their type.
-- In the **big slot**, physical moves become a **Rush** and special moves keep their own shape, bigger.
+- In the **big slot**, the form comes from the move's type (§4.9: a Ground move is a quake wave, a Fire move a
+  tornado…); Normal moves keep the old rule: physical → **Rush**, special → beam.
 
 More archetypes can come later (status effects: paralysis = slower, burn = damage over time, etc.).
 
@@ -434,10 +435,27 @@ own, and a legendary on your team gets its boss attack. Four steps, each reviewe
    The projectile forms in the charge's glow, so the player sees what is coming. Dark energy is painted over the
    scene (adding a dark color shows nothing); bright cores too, or they wash out to white on a bright stage. A
    projectile is drawn 20% bigger than its hitbox.
-2. **The big special by type, with real hits** (the hit follows the animation; new frame data and balance pinned in
-   tests). Ideas: Ground, a quake wave along the floor to both edges (jump it); Grass, a solar beam; Fire, a fire
-   tornado that also hits jumpers; Rock, rocks falling in arcs; Water, a tall surf wave; Electric, a thunderbolt
-   from the sky on the opponent; Ice, a blizzard; and so on for every type.
+2. ✅ **The big special by type, with real hits** (`fight/frame-data.ts` BIG, `game/moves.ts` BIG_SHAPES, drawn by
+   `render/ultimates.ts`). The move's type picks the form; the hit is what is drawn (drawings are at full size from
+   their first active frame: a hit there freezes the game, and one still growing in would freeze smaller). Every
+   form keeps the 40-frame charge and 30 frames of recovery; the form is how to survive it:
+
+   | Form | Types | What hits | How to survive |
+   |---|---|---|---|
+   | Quake | Ground | a wave along the floor each way, to both edges (0–16 px high, 5 px/f) | jump it |
+   | Surf | Water, Poison (Sludge Wave) | a wide wave (44 px), 72 px tall, 3.5 px/f | guard (a jump clears it only at its top) |
+   | Tornado | Fire, Flying | a column 150 px tall (no jump clears it), 2.5 px/f | guard |
+   | Solar | Grass | a beam across the screen, from the floor to 64 px, 12 frames | guard, or be at a jump's top |
+   | Blizzard | Ice | a storm 170 px in front, 80 px high, 18 frames | back off, or guard |
+   | Burst | Psychic, Dark, Fairy | a dome 95 px all around (behind too), 8 frames | stay away, or guard |
+   | Strike | Electric (from the sky), Ghost (from the ground) | a column on the opponent's spot, locked 12 frames before (36 px wide) | move once it locks (a dash) |
+   | Barrage | Rock (Rock Slide), Dragon (Draco Meteor) | three in arcs, landing 70 / 130 / 190 px ahead, half the power each | stand between them, or guard |
+   | Projectile, Beam, Rush | Bug; Steel; Fighting | as before | as before |
+
+   Normal moves keep the old rule (physical → Rush, special → beam). The warnings: a barrage marks its landing spots
+   on the floor during the charge; a strike puts a reticle on the opponent that follows it, then locks (and flashes)
+   12 frames before. The CPU guards what it can't jump (anything taller than a body, or falling from above), and
+   uses the short-reach forms only close (burst < 85 px, blizzard < 150, barrage < 200, rush < 160).
 3. **Signature moves**: back, down, forward + attack (today's free elemental) becomes a move of their own for
    Pikachu, Charizard, Blaziken, Lucario, Gengar, Gardevoir, Kingler, Dragonite, Lapras, Flygon and Garchomp.
    Greninja and Zoroark were asked for, but the game covers generations 1–4: Blaziken and Garchomp replace them.
@@ -883,7 +901,7 @@ Each milestone ends with something playable, tests, and green CI.
 | 10 | ✅ **Juice & polish** | Stages per place, trainers' Poké Ball entrance, new HUD, particles and screen shake, sound effects, original music, cries, mute, rebinding UI, menu navigation by keys and controller, modern menus. **Balance pass deferred**: it needs playtest data |
 | 11 | ✅ **Design overhaul** | A console-style 16:9 frame, the places' art behind the menus and as fight stages, trainer and character sprites, every screen redesigned (city hub of cards, Center with Nurse Joy, Mart, box grid, illustrated map, party with HP bars and reordering, results, League hall), controller-first spatial navigation with glyph hints |
 | 12 | ✅ **Regions** | Johto, Hoenn and Sinnoh (their cities, gyms, Leagues, starters, towns and maps; generations 2–4 data), a journey per region, the plane, regions opened by Leagues, the Legends' Sanctuary with boss legendaries (Master Ball only, XP for the whole party) |
-| 13 | **Moves by type** | Elemental specials drawn by type (✅), big specials by type with real hits, signature moves for 11 famous Pokémon, legendary moves (§4.9) |
+| 13 | **Moves by type** | Elemental specials drawn by type (✅), big specials by type with real hits (✅), signature moves for 11 famous Pokémon, legendary moves (§4.9) |
 
 Milestones 1–3 come **before** any Pokémon content on purpose: if the fight doesn't feel good with rectangles, the
 sprites won't save it.

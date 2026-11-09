@@ -19,6 +19,7 @@ npm test           # Vitest: rules and simulation (src/**/*.test.ts), through sc
 npm run e2e        # Playwright: the real game in Chromium (e2e/)
 npm run typecheck  # src + e2e
 npm run build      # dist/, linked under /poke-fight/ (GitHub Pages); npm run preview serves it there
+npm run endgame    # a local build from the endgame save (every League won; state/endgame.ts), opened in the browser
 npm run data       # rebuild src/data/generated/ (generations 1–4) from PokeAPI (committed; the game never calls PokeAPI)
 ```
 

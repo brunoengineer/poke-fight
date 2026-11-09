@@ -113,6 +113,7 @@ Our own light narrative on top of the canonical Kanto structure (cities, gym ord
 | Jump | ↑ (or W) | D-pad up / A | Neutral, forward and back jump arcs |
 | Physical attack | J | X / □ | Lunge at the opponent ("tackle"); also in the air |
 | Elemental special | K | Y / △ | Short charge, then the move; also in the air |
+| Free elemental special | back, down, forward + J | the same motion + X | The motion input: the elemental special **without PP** (§4.3) |
 | Big special | I | B / ○ | Needs a **full PP bar** + a long charge; ground only |
 | Guard | L (hold) | R1 / RB (hold) | **Dedicated button**, ground only (no air guard); can't move while guarding |
 | Pause | Esc | Start | |
@@ -122,8 +123,10 @@ move, the game's keys (Enter, Esc, P, R, M, F1–F4) can't be taken, and picking
 Saved in `poke-fight.settings` (not the save: a new game keeps them). Texts that name keys follow the bindings
 (`{keyPhysical}`… in i18n). Controllers use the browser Gamepad API (polled every frame).
 **Menus** work without a mouse: arrow keys / d-pad move between buttons, Enter / A presses, B goes back, Start presses
-the main button. **M** turns the sound off and on.
-**No crouch** for now (so there are no high/low attacks): ↓ is unused and reserved for later.
+the main button. **M** turns the sound off and on. **Select / View** (Tab) opens the world map from the city, and
+closes it again (after milestone 12: changing cities quickly).
+**No crouch** for now (so there are no high/low attacks): ↓ (S, the arrow, d-pad or stick) only counts in the motion
+below; on its own it does nothing in a fight (and moves the cursor on the battle's menus).
 
 ### 4.3 Moves and frame data
 
@@ -141,6 +144,20 @@ with the debug overlay:
 | Dash (fwd / back) | 2 | ~14 moving | 4 | — | **Back dash: invincible on frames 1–6**, then hittable until it ends (so it can be punished) |
 
 - **Input buffer**: a press is remembered for 6 frames, so it fires as soon as the current action ends.
+- **Motion input** (decided 2026-11-09, pinned by `motion.test.ts`): **back, down, forward, then the physical attack**
+  (← ↓ → J facing right, → ↓ ← J facing left, as in fighting games) performs the **elemental special for free**: the
+  same move, charge, shape and damage as K, but it **spends no PP** (it works with an empty bar) and **earns none**
+  when it lands (otherwise it could farm the bar for the big special). Rules:
+  - Back, down and forward must fit in **20 frames** (from the first back frame to the first forward frame, both
+    counted), and the attack must be pressed **0–8 frames** after forward is reached (holding forward and pressing
+    later is a tackle).
+  - Diagonals count as both of their directions: ↙ is "back, down", ↘ is "down, forward" (so ← ↘ J and ↙ → J work).
+  - The motion is checked on the frame the attack is pressed, with the facing of that frame, then buffered like any
+    press (6 frames). A plain attack, a wrong order, or walking back then forward without ↓ is a tackle.
+  - **Also in the air**, like the K special: it uses the jump's one air move, and landing before the charge ends
+    loses it.
+  - The directions of the last 28 frames live in the fighter's state (`Fighter.directions`, `fight/motion.ts`), so
+    replays stay exact. The CPU doesn't use it.
 - **Hitstop**: both fighters freeze for 4–8 frames on hit (bigger for super effective hits). This is the "impact"
   feel, and it costs no input precision.
 - **Hitboxes / hurtboxes**: rectangles per move frame, shown by the debug overlay (F1).
@@ -177,7 +194,7 @@ with the debug overlay:
 - **Chip damage**: specials do ¼ of their damage through a guard, and chip can finish a Pokémon.
 - **PP bar**: 100, starts at 50. Elemental special −25, big special −100 (needs a full bar), paid when the charge
   starts (lost if hit during the charge). Landing: tackle / air attack +15, elemental +5, big +0. A press without
-  enough PP does nothing.
+  enough PP does nothing. The motion input's free elemental special (above) costs 0 and earns 0.
 - **Elemental special**: 14-frame charge. Projectile: fired on frame 15 at 4 px/frame, 33 frames in total.
   Beam: hits on frames 15–20, up to ~230 px. Also in the air (shares the one air move per jump); landing before the
   charge ends loses it.
@@ -392,8 +409,9 @@ under 4 ms a frame on average for the busiest attack (enraged meteor rain), at 1
   "Link Cable", like in poke-gacha). Evolving can be cancelled (B).
 - **Capture** (wild battles only): after you win, the defeated Pokémon is worn out and you can throw a ball from the
   bag. **No performance bonus**: only the ball, the species and the levels count, using the shape of the **official
-  modern formula** (Sword/Shield, Gen 8), made harder after milestone 11 (decided: with the games' values every early
-  Pokémon was caught on the first throw; a common one should take **3–4 fights**):
+  modern formula** (Sword/Shield, Gen 8). Tuned twice: after milestone 11 it was made harder (with the games' values
+  every early Pokémon was caught on the first throw), then after milestone 12 easier again (decided: a typical Pokémon
+  took ~9 Great Balls, each after its own fight; it should take **3–5**):
 
   ```
   X = HPterm × catchRate × ball × difficulty × status
@@ -401,18 +419,19 @@ under 4 ms a frame on average for the busiest attack (enraged meteor rain), at 1
 
   | Term | Value |
   |------|-------|
-  | `HPterm` | Fixed at **0.2** (`WILD_SPIRIT`): a beaten wild Pokémon still has fight in it. It does not depend on how you won. (It was 1, the games' 1-HP value.) |
+  | `HPterm` | Fixed at **0.6** (`WILD_SPIRIT`): a beaten wild Pokémon still has fight in it. It does not depend on how you won. (It was 1, the games' 1-HP value, then 0.2 after milestone 11: far too hard.) |
   | `catchRate` | Species catch rate from the data (Pidgey 255, Pikachu 190, Snorlax 25, Mewtwo 3) |
-  | `ball` | Poké ×1, Great ×1.5, Ultra ×2, Safari ×1.5, Master = always. Later regions add Nest Ball (`(41 − level)/10` below Lv. 30), Net, Dusk, Level Ball… as data. |
+  | `ball` | Poké ×1, Great ×1.5, Ultra ×2, Safari ×2 (the games' ×1.5 was too weak for the Safari's rare Pokémon), Master = always. Later regions add Nest Ball (`(41 − level)/10` below Lv. 30), Net, Dusk, Level Ball… as data. |
   | `lowLevel` | **Dropped** (it was `(30 − level) / 10` below Lv. 21, ×2.5 at Lv. 5: it made every early Pokémon a sure catch) |
   | `difficulty` | Before the 8th badge, if the wild Pokémon's level is **higher than your Pokémon's** → ×0.1 |
   | `status` | ×1 (no status effects yet; sleep ×2.5, paralysis/poison/burn ×1.5 when they exist) |
 
   - If `X ≥ 255` it is caught. Otherwise there are **4 shake checks**, each passing with
     `Y/65536` where `Y = 65536 / (255/X)^(3/16)`. Overall chance ≈ `(X/255)^0.75`. Each passed check = one wobble.
-  - Examples (Poké / Great / Ultra Ball): a common Pokémon (catch rate 255: Pidgey, Rattata, Geodude) ≈ 30% / 40% /
-    50%, so 3–4 fights with Poké Balls; Pikachu (190) ≈ 24% / 32% / 40%; Snorlax (25) ≈ 5% / 7% / 9%; Mewtwo (3) +
-    Ultra ≈ 2%. The Master Ball always catches.
+  - Examples (Poké / Great / Ultra Ball): a common Pokémon (catch rate 255: Pidgey, Rattata, Geodude) ≈ 68% / 92% /
+    100%; Pikachu (190) ≈ 55%; a typical one (45: Kangaskhan, Scyther, most evolved Pokémon) ≈ 19% / 25% / 31%, so
+    3–5 Great Balls; Snorlax (25) ≈ 12% / 16% / 20%. In the Safari: Kangaskhan ≈ 31%, Chansey ≈ 23%. Legendaries
+    can only be caught with a Master Ball, which always catches.
   - Level now only matters through `difficulty`: a Pokémon stronger than yours is much harder.
   - Gen 8 "critical capture" is left out (simpler).
   - **One throw per win**: if the Pokémon breaks free, it **flees**. You still keep the battle's XP. The ball is used up either way.
@@ -420,6 +439,10 @@ under 4 ms a frame on average for the busiest attack (enraged meteor rain), at 1
 - **Party and PC**: 6 in the party, the rest in a box (simple list screen). **Releasing** (after milestone 11):
   from the box screen (X / Delete), after a "Keep it / Release" question with Keep it focused; any boxed Pokémon,
   or a party one as long as one stays in the party. The Pokédex still counts a released Pokémon as caught.
+  **Moving** (after milestone 12, `game/box.ts` `place`): A (Enter, a click) picks a Pokémon up and A puts it down:
+  on another Pokémon they swap places (party, box, or between them: the party keeps its size), on the empty place
+  after the party or the box it moves there (the party keeps 1 to 6); A on itself or B puts it back. **Y** (S) sends
+  the focused one straight across (party → box, box → party), or says why not.
 - **Money**: from trainer, gym and League wins. Wild battles give little or none.
 - **Bag** (after milestone 11; `game/bag.ts`, `ui/screens/bag.ts`): every item by pocket (medicine, Poké Balls,
   evolution items, key items), opened from the city's bottom bar (RB / B). The focused item says what it does; potions,
@@ -605,8 +628,9 @@ World map (cities unlocked by badges)
   the fight in **Canvas 2D**.
 - **Vitest** for all game rules and the fight simulation.
 - **Playwright** for end-to-end flows, running in **GitHub Actions** (`ci.yml`).
-- **A temporary study deploy** (decided 2026-11-09): `pages.yml` builds on every push to `main` (type check, unit
-  tests, `vite build` with the base `/poke-fight/`) and publishes `dist/` to GitHub Pages. The link is never shared
+- **A temporary study deploy** (decided 2026-11-09): `pages.yml` runs when CI (`ci.yml`: type check, unit tests,
+  browser tests) has **passed** for a push to `main` (not in parallel with it: a push whose tests fail is never
+  published); it builds that commit (`vite build` with the base `/poke-fight/`) and publishes `dist/` to GitHub Pages. The link is never shared
   and the page asks search engines not to list it (`noindex`). To take it down: Settings → Pages → Unpublish site,
   and delete `pages.yml` (else the next push publishes it again).
 - **Data**: `scripts/build-data.mjs` downloads from PokeAPI once and writes JSON into `src/data/generated/`, which is
@@ -837,8 +861,9 @@ sprites won't save it.
 | Air control | Jumps can be steered left/right in the air |
 | Team battles | Up to 6 vs 6, one at a time, like the real games |
 | Type chart | Modern 18-type chart and modern typings for every region (scales best) |
-| Capture | No performance bonus; the Gen 8 formula's shape (catch rate, ball, difficulty) with a fixed HP term of 0.2 and no low-level bonus: a common Pokémon takes 3–4 fights |
+| Capture | No performance bonus; the Gen 8 formula's shape (catch rate, ball, difficulty) with a fixed HP term of 0.6 (0.2 was far too hard) and no low-level bonus: a typical Pokémon takes 3–5 Great Balls; Safari Balls ×2 |
 | Specials | Two slots: elemental (K, always a range attack, ¼ PP) and big (I, full PP bar + long charge) |
+| Motion input | Back, down, forward + J: the elemental special with no PP spent and none earned (20-frame motion, attack within 8 frames), also in the air |
 | PP bar | Replaces the Power gauge. One per Pokémon, starts half full, fills only when your hits land |
 | Big dash | A shape of the big special: physical moves become a Rush that passes through the opponent |
 | Dash through | The dash passes through the opponent (no push box), to attack from behind |
@@ -858,7 +883,7 @@ sprites won't save it.
 | Look | Console style (milestone 11): a 16:9 frame, the place's art behind glass menus and bright cards, Barlow Condensed + Inter |
 | Art | Trainers, characters and backgrounds from Pokémon Showdown; items and badges from PokeAPI; all by URL, painted stand-ins until they load |
 | Menus and controller | Spatial navigation (by direction), focus kept on redraw, hint glyphs for the device in use, Y opens the party |
-| Pokédex | A list with filters (owned, type, legendary, mythical, number) and a page per species that reveals more as you see and catch, scrolls with the d-pad, and walks the filtered list with LB / RB; Portuguese texts are the game's own translation; releasing is in the box, the dex keeps "caught"; wild fights show a Poké Ball (color: you have it) by the name |
+| Pokédex | Opened from the city, the focus starts on the first filter (Owned); back from a species' page, on that species. A list with filters (owned, type, legendary, mythical, number) and a page per species that reveals more as you see and catch, scrolls with the d-pad, and walks the filtered list with LB / RB; Portuguese texts are the game's own translation; releasing is in the box, the dex keeps "caught"; wild fights show a Poké Ball (color: you have it) by the name |
 | Bag | A bag screen by pocket; potions and evolution items are used on a party Pokémon from it; the Pokédex and the Bag are picture buttons (drawn by the game) beside the party at the bottom of the city |
 | Hunting cards | Each city's hunting card shows every species of its ground (4 to 22), smaller when there are many; unseen ones as silhouettes, the most common first |
 | City cards | The town behind the cards is dimmed and softly blurred (the band of buildings at the top stays clear); cards have a deeper shadow, a dark outer edge and a bright rim |
@@ -875,7 +900,8 @@ sprites won't save it.
 | Music | Original loops only (no copied themes); cries are the games' recordings by URL |
 | Settings | Sound, volumes and keys live apart from the save (`poke-fight.settings`), one custom key per action, arrows always move |
 | Balance pass | Deferred until there is playtest data (numbers stay pinned in tests) |
-| Deploy | A temporary GitHub Pages deploy to study how it's done (link never shared, `noindex`, removed after a day or two) |
+| Deploy | A temporary GitHub Pages deploy to study how it's done (link never shared, `noindex`, removed after a day or two); it runs only after CI passes |
+| Endgame build | `npm run endgame`: a local build (`dist-endgame/`, never deployed) that starts from an endgame save (every League won, a Lv. 70 team in each region, a full bag; `state/endgame.ts`) under its own storage key; the page opens with `?fresh`, which starts it over |
 
 ### Still open
 

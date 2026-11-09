@@ -33,13 +33,14 @@ export interface BattleReport {
 }
 
 /** The battle's player team must be the party, in the same order (that's how battles are built from it). */
-export function afterBattle(party: readonly Pokemon[], battle: BattleState, trainer: boolean): { party: Pokemon[]; report: BattleReport } {
+export function afterBattle(party: readonly Pokemon[], battle: BattleState, trainer: boolean, legendary = false): { party: Pokemon[]; report: BattleReport } {
   let next = party.map((p, i) => ({ ...p, hp: battle.teams[0][i]?.hp ?? p.hp }));
   const lines: ReportLine[] = [];
   const gains: XpGain[] = [];
-  for (const [index, amount] of battleXp(battle, trainer)) {
+  for (const [index, amount] of battleXp(battle, trainer, legendary)) {
     const before = next[index];
-    const result = gainXp(before, amount);
+    // A legendary's XP also goes to fainted Pokémon (they still level up, but stay fainted until healed).
+    const result = legendary && before.hp === 0 ? stillFainted(gainXp({ ...before, hp: 1 }, amount)) : gainXp(before, amount);
     next = next.map((p, i) => (i === index ? result.pokemon : p));
     lines.push({ kind: 'xp', index, amount });
     for (const up of result.levelUps) {
@@ -62,6 +63,10 @@ export function afterBattle(party: readonly Pokemon[], battle: BattleState, trai
   });
   const outcome = battle.winner === 0 ? 'win' : battle.winner === 1 ? 'loss' : 'draw';
   return { party: next, report: { outcome, lines, gains, evolutions } };
+}
+
+function stillFainted(result: ReturnType<typeof gainXp>): ReturnType<typeof gainXp> {
+  return { ...result, pokemon: { ...result.pokemon, hp: 0 } };
 }
 
 /** How far a Pokémon is into its level (0–1; a Pokémon at the last level is full). */

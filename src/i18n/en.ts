@@ -1,7 +1,9 @@
 // English texts. Every key here must exist in pt.ts (a test checks it, placeholders included).
 // Pokémon and move names are not translated: they come from the data, in English (as Brazilian players know them).
 
-export const en = {
+import { partsEn } from './parts';
+
+const base = {
   'controls.fight': '{keyUp}{keyLeft}{keyDown}{keyRight} move · {keyPhysical} tackle · {keySpecial} special · {keyBig} big · {keyGuard} guard · {keyDash} dash · Tab switch',
   'controls.sandbox': 'F1 debug · F2 opponent · F3 infinite PP · F4 CPU style · P party · R reset',
   'hud.dummy': 'dummy: {mode}',
@@ -336,10 +338,6 @@ export const en = {
   'credits.study': 'Poké Fight is a study project, built from zero, one milestone at a time, with Claude.',
   'credits.data': 'Pokémon data and sprites: PokeAPI.',
   'credits.rights': 'Pokémon belongs to Nintendo, Creatures and GAME FREAK. A fan project, never distributed.',
-  'next.title': 'A new region awaits…',
-  'next.text': 'Your team, money and Pokédex will travel with you; badges and the League start over. The next region comes in a future update.',
-  'next.go': 'Next region (coming soon)',
-  'next.stay': 'Stay in Kanto',
 
   'save.problem': 'Your saved game could not be read, so a new game was started. (A copy was kept.)',
   'city.badgesLabel': 'Badges: {count} of 8',
@@ -435,7 +433,7 @@ export const en = {
   'item.thunder-stone.text': 'Makes some Pokémon evolve (Pikachu, Eevee).',
   'item.leaf-stone.text': 'Makes some Pokémon evolve (Gloom, Weepinbell, Exeggcute).',
   'item.moon-stone.text': 'Makes some Pokémon evolve (Nidorina, Nidorino, Clefairy, Jigglypuff).',
-  'item.link-cable.text': 'Evolves the Pokémon that evolve by trading (Kadabra, Machoke, Graveler, Haunter).',
+  'item.link-cable.text': 'Evolves the Pokémon that evolve by trading (Kadabra, Machoke, Graveler, Haunter, Onix, Scyther…).',
   'shop.buyHint': 'Buy',
   'box.keepOne': 'Your party needs at least one Pokémon',
   'box.partyFull': 'Your party is full (6)',
@@ -480,4 +478,8 @@ export const en = {
   'evolution.move': '{name} learned {move}!',
 } as const;
 
+/** The base texts, plus each part's (src/i18n/parts/). */
+export const en = { ...base, ...partsEn };
+
 export type MessageKey = keyof typeof en;
+export type BaseKey = keyof typeof base;

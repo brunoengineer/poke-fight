@@ -1,0 +1,72 @@
+// Regions: their names, travelling between them, a new region's start, the Legendary Sanctuary.
+// English in `en`, Portuguese in `pt` (the same keys and {placeholders}; a test checks it).
+
+export const en = {
+  'region.kanto': 'Kanto',
+  'region.johto': 'Johto',
+  'region.hoenn': 'Hoenn',
+  'region.sinnoh': 'Sinnoh',
+  'city.kanto-sanctuary': 'Legends’ Sanctuary',
+  'city.kanto-sanctuary.tagline': 'Where Kanto’s legends wait for a worthy trainer',
+
+  'travel.title': 'Travel',
+  'travel.detail': '{count} region(s) open',
+  'travel.info': 'Each region is its own journey: its own team, badges and Pokédex. Win a League to open the next region.',
+  'travel.here': 'You are here',
+  'travel.journey': 'Your journey: {badges} badge(s) · {caught} caught',
+  'travel.new': 'A new journey awaits',
+  'travel.locked': 'Win the {region} League first',
+  'travel.soon': 'Coming soon',
+  'travel.flying': 'Flying to {region}…',
+
+  'next.title': '{region} is open!',
+  'next.text': 'A new region awaits: a new journey with its own starter, gyms, League and Pokédex. Fly there any time with the plane, and come back whenever you like: each journey is kept.',
+  'next.lastTitle': 'You have won every League!',
+  'next.lastText': 'There is no region left to open. You can still travel between them with the plane.',
+  'next.sanctuary': 'The Legends’ Sanctuary of {region} is open too: its legendary Pokémon are waiting.',
+  'next.go': 'Fly to {region}',
+  'next.stay': 'Stay in {region}',
+
+  'map.sanctuaryLocked': 'Win this region’s League',
+  'legend.card': 'Lv. {level} · Legendary',
+  'legend.cardMythical': 'Lv. {level} · Mythical',
+  'legend.caught': 'Caught',
+  'legend.appeared': 'The legendary {name} appears! It is far stronger than any Pokémon you have faced.',
+  'legend.capturePrompt': '{name} is worn out! Only a Master Ball can catch it.',
+  'legend.needMaster': '{name} is worn out… but only a Master Ball can catch it, and you have none.',
+} as const;
+
+export const pt: Record<keyof typeof en, string> = {
+  'region.kanto': 'Kanto',
+  'region.johto': 'Johto',
+  'region.hoenn': 'Hoenn',
+  'region.sinnoh': 'Sinnoh',
+  'city.kanto-sanctuary': 'Santuário das Lendas',
+  'city.kanto-sanctuary.tagline': 'Onde as lendas de Kanto esperam um treinador à altura',
+
+  'travel.title': 'Viajar',
+  'travel.detail': '{count} região(ões) aberta(s)',
+  'travel.info': 'Cada região é uma jornada própria: equipe, insígnias e Pokédex próprias. Vença uma Liga para abrir a próxima região.',
+  'travel.here': 'Você está aqui',
+  'travel.journey': 'Sua jornada: {badges} insígnia(s) · {caught} capturados',
+  'travel.new': 'Uma nova jornada espera por você',
+  'travel.locked': 'Vença a Liga de {region} primeiro',
+  'travel.soon': 'Em breve',
+  'travel.flying': 'Voando para {region}…',
+
+  'next.title': '{region} está aberta!',
+  'next.text': 'Uma nova região espera por você: uma nova jornada, com inicial, ginásios, Liga e Pokédex próprios. Voe para lá quando quiser com o avião, e volte quando quiser: cada jornada fica guardada.',
+  'next.lastTitle': 'Você venceu todas as Ligas!',
+  'next.lastText': 'Não há mais regiões para abrir. Você ainda pode viajar entre elas com o avião.',
+  'next.sanctuary': 'O Santuário das Lendas de {region} também está aberto: seus Pokémon lendários estão esperando.',
+  'next.go': 'Voar para {region}',
+  'next.stay': 'Ficar em {region}',
+
+  'map.sanctuaryLocked': 'Vença a Liga desta região',
+  'legend.card': 'Nv. {level} · Lendário',
+  'legend.cardMythical': 'Nv. {level} · Mítico',
+  'legend.caught': 'Capturado',
+  'legend.appeared': 'O lendário {name} aparece! Ele é muito mais forte do que qualquer Pokémon que você já enfrentou.',
+  'legend.capturePrompt': '{name} está exausto! Só uma Master Ball pode capturá-lo.',
+  'legend.needMaster': '{name} está exausto… mas só uma Master Ball pode capturá-lo, e você não tem nenhuma.',
+};

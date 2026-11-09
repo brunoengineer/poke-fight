@@ -2,10 +2,9 @@
 // its menus) and the menus over fights (results, party), tied together. A fight only runs while no menu is open over it.
 
 import { BALLS, EVOLUTION_ITEMS, ITEMS, type BallId, type EvolutionItemId, type ItemId, type PotionId } from './data/items';
-import { move, species } from './data/pokedex';
-import { nextRegion } from './data/regions';
-import { backdropUrl, badgeArt, BADGE_ORDER, CHANSEY, cityArt, HUNT_BACKDROPS, trainerClassFor, KANTO_MAP, KANTO_ROUTES, ELITE_SPRITES, itemUrl, LEADER_SPRITES, PEOPLE, trainerUrl, typeBackdrop } from './data/art';
-import { city, ELITE_FOUR, gymIn, isUnlocked, KANTO, LEAGUE_CITY, type Gym, type HuntKind } from './data/regions/kanto';
+import { move, species, speciesBySlug } from './data/pokedex';
+import { city, gymByBadge, gymIn, hasRegion, isSanctuary, isUnlocked, nextRegion, placeArt, region, regionOpen, REGION_IDS, type Gym, type HuntKind, type Legendary, type Region, type RegionId } from './data/regions';
+import { backdropUrl, badgeUrl, CHANSEY, HUNT_BACKDROPS, trainerClassFor, itemUrl, PEOPLE, trainerUrl, typeBackdrop } from './data/art';
 import { createSilentAudio, createWebAudio } from './audio/audio';
 import { fightCues, freshCues, type SoundId } from './audio/cues';
 import type { SongId } from './audio/music';
@@ -22,8 +21,8 @@ import { catchValue, throwBall } from './game/capture';
 import { buy, canUsePotion, countOf, MAX_MONEY, moneyAfterLoss, prizeMoney, removeItem, usePotion } from './game/economy';
 import { cpuProfile, type Controller } from './game/ai';
 import {
-  DEX_RANGES,
   dexNumbers,
+  dexRanges,
   dexStatus,
   dexTypes,
   evolutionChain,
@@ -44,7 +43,7 @@ import { bigShape, elementalShape } from './game/moves';
 import { displayHp, maxHpOf, statsOf, toFighter, type Pokemon } from './game/pokemon';
 import { evolve, heal, itemEvolution, setSpecial, specialOptions } from './game/progress';
 import { SAFARI_BALLS, SAFARI_ENTRANCE, SAFARI_SECONDS } from './game/safari';
-import { cleanName, createStarter, DEFAULT_NAMES, MAX_NAME_LENGTH, RIVAL_PICK, STARTERS, STARTER_GIFTS, trainingOpponents } from './game/story';
+import { cleanName, createStarter, DEFAULT_NAMES, MAX_NAME_LENGTH, trainingOpponents } from './game/story';
 import { MAX_LEVEL, xpForLevel } from './game/xp';
 import { detectLanguage, language, LANGUAGE_NAMES, LANGUAGES, setKeyNames, setLanguage, t, type Language, type MessageKey } from './i18n';
 import { createRenderer } from './render/renderer';
@@ -57,7 +56,7 @@ import { preloadSprites, spriteUrl } from './render/sprites';
 import { createSandbox, isOpponent, type Banner, type Director, type Opponent, type Sandbox } from './screens/sandbox';
 import { OPPONENT_TEAM, PLAYER_TEAM } from './screens/sandbox-teams';
 import { createTutorialDirector, type TutorialDirector } from './screens/tutorial-director';
-import { newSave, type Save } from './state/save';
+import { newSave, startRegion, switchRegion, type Save } from './state/save';
 import { ACTIONS, bindingsOf, createSettingsStore, DEFAULT_KEYS, keyLabel, keyNames, MAX_VOLUME, rebind, stepVolume, VOLUME_KINDS, type Action, type Settings } from './state/settings';
 import { createSaveStore } from './state/store';
 import { installTestHooks, type TestOptions } from './test/hooks';
@@ -73,6 +72,9 @@ import { renderStarter } from './ui/screens/starter';
 import { renderDialog } from './ui/screens/dialog';
 import { renderCapture } from './ui/screens/capture';
 import { renderBag, type BagTarget } from './ui/screens/bag';
+import { renderFlight, renderTravel } from './ui/screens/travel';
+import { regionPicture } from './render/region-map';
+import { canThrowAt, legendaryFighter, legendaryPokemon } from './game/legendary';
 import { gearPicture } from './render/gear';
 import { bagContents, checkUse, usableFromBag, type Pocket } from './game/bag';
 import { renderDexEntry, renderDexList } from './ui/screens/pokedex';
@@ -94,14 +96,14 @@ type Said = Line & { speaker: string; /** The speaker's sprite (Showdown name). 
  * money), a gym leader (a badge), a wild Pokémon (hunting: XP and a chance to catch it), a Safari Zone Pokémon
  * (30 seconds, Safari Balls), and the rival tutorial.
  */
-type FightMode = 'demo' | 'trainer' | 'gym' | 'wild' | 'safari' | 'league' | 'tutorial';
+type FightMode = 'demo' | 'trainer' | 'gym' | 'wild' | 'safari' | 'league' | 'tutorial' | 'legendary';
 type Scene = 'title' | 'story' | 'starter' | 'fight' | 'city' | 'menu';
 
 interface ResultsState {
   outcome: 'win' | 'loss' | 'draw';
   lines: Line[];
-  /** A defeated wild Pokémon, waiting for a ball (asked first). */
-  capture: { pokemon: Pokemon; playerLevel: number } | null;
+  /** A defeated wild Pokémon, waiting for a ball (asked first). A legendary only takes a Master Ball. */
+  capture: { pokemon: Pokemon; playerLevel: number; legendary?: boolean } | null;
   /** Party indexes ready to evolve, asked one at a time. */
   evolutions: { index: number; to: number }[];
   /** The Pokémon that gained XP, for the cards (made when the battle ends, before any evolution). */
@@ -323,7 +325,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     show();
     renderDialog(overlayRoot, {
       speaker: t('speaker.professor'),
-      portrait: trainerUrl(PEOPLE.professor),
+      portrait: trainerUrl(regionNow().people.professor),
       text: t(key),
       input: { label: t('dialog.name'), value: fallback, maxLength: MAX_NAME_LENGTH },
       buttons: [{ label: t('dialog.ok'), testid: 'dialog-ok', onClick: typed => then(cleanName(typed, fallback)) }],
@@ -349,19 +351,20 @@ export function startApp(elements: AppElements, options: TestOptions) {
 
   const professor = (key: MessageKey, values: Line['params'] = {}): Said => ({
     speaker: t('speaker.professor'),
-    portrait: PEOPLE.professor,
+    portrait: regionNow().people.professor,
     key,
     params: values,
   });
 
   // ── The prologue ──────────────────────────────────────────────────────────────────────────────────────────────
   function newGame(confirmed = false) {
-    if (save && !confirmed) return confirm(t('speaker.professor'), PEOPLE.professor, 'title.confirmNew', () => newGame(true), goTitle);
+    const kanto = region('kanto');
+    if (save && !confirmed) return confirm(t('speaker.professor'), kanto.people.professor, 'title.confirmNew', () => newGame(true), goTitle);
     notice = null;
-    const pallet = cityArt('pallet');
+    const pallet = placeArt('pallet');
     backdrop.set({ image: pallet.backdrop, town: 'pallet', theme: pallet.color, mode: 'scene' });
     // The starters' sprites load while the Professor talks.
-    preloadSprites([...STARTERS]);
+    preloadSprites([...kanto.starters]);
     tell([professor('story.welcome'), professor('story.live')], () =>
       ask('story.askName', DEFAULT_NAMES.player, player =>
         ask('story.askRival', DEFAULT_NAMES.rival, rival => chooseStarter(player, rival)),
@@ -370,15 +373,20 @@ export function startApp(elements: AppElements, options: TestOptions) {
   }
 
   function chooseStarter(player: string, rival: string) {
-    tell([professor('story.choose', { player })], () => {
+    tell([professor('story.choose', { player })], () => showStarters(region('kanto'), id => pickStarter(id, player, rival)));
+  }
+
+  /** The three starters of a region, side by side; `pick` gets the chosen one. */
+  function showStarters(r: Region, pick: (id: number) => void) {
+    {
       scene = 'starter';
       show();
       const stats = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'] as const;
       renderStarter(overlayRoot, {
         title: t('starter.title'),
         subtitle: t('starter.subtitle'),
-        professor: trainerUrl(PEOPLE.professor),
-        starters: STARTERS.map(id => {
+        professor: trainerUrl(r.people.professor),
+        starters: r.starters.map(id => {
           const sp = species(id);
           return {
             name: sp.name,
@@ -387,24 +395,25 @@ export function startApp(elements: AppElements, options: TestOptions) {
             types: sp.types.map(type => ({ type, label: t(`type.${type}` as MessageKey) })),
             stats: stats.map(stat => ({ label: t(`stat.${stat}`), value: sp.stats[stat] })),
             testid: `starter-${sp.slug}`,
-            onClick: () => pickStarter(id, player, rival),
+            onClick: () => pick(id),
           };
         }),
         hints: [hints.select],
       });
-    });
+    }
   }
 
-  function pickStarter(id: (typeof STARTERS)[number], player: string, rival: string) {
-    const starter = createStarter(id);
-    const rivalId = RIVAL_PICK[id];
+  function pickStarter(id: number, player: string, rival: string) {
+    const kanto = region('kanto');
+    const starter = createStarter(kanto, id);
+    const rivalId = kanto.rivalPick[id];
     save = newSave({ playerName: player, rivalName: rival, starterId: id, rivalStarterId: rivalId, party: [starter] }, Date.now(), language());
     persist();
-    const gift = move(STARTER_GIFTS[id]);
+    const gift = move(kanto.starterGifts[id]);
     tell(
       [
         professor('story.gift', { pokemon: species(id).name, move: gift.name, type: t(`type.${gift.type}` as MessageKey) }),
-        { speaker: rival, portrait: PEOPLE.rival, key: 'story.rivalPick', params: { pokemon: species(rivalId).name, player } },
+        { speaker: rival, portrait: kanto.people.rival, key: 'story.rivalPick', params: { pokemon: species(rivalId).name, player } },
         professor('story.tutorial'),
       ],
       startTutorial,
@@ -420,7 +429,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
 
   function startTutorial() {
     if (!save) return;
-    const rival = createStarter(save.rival.starterId as (typeof STARTERS)[number]);
+    const rival = createStarter(region('kanto'), save.rival.starterId);
     tutorial = createTutorialDirector(seed, save.rival.name, move(save.party[0].specials.elemental).name);
     enterFight('tutorial', save.party.map(toFighter), [toFighter(rival)], {
       director: tutorial,
@@ -438,7 +447,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     update(current => ({ ...current, prologue: 'done', location: 'pallet', party: current.party.map(heal) }));
     tell(
       [
-        { speaker: s.rival.name, portrait: PEOPLE.rival, key: lost ? 'story.rivalWon' : 'story.rivalLost', params: { player: s.player.name } },
+        { speaker: s.rival.name, portrait: regionNow().people.rival, key: lost ? 'story.rivalWon' : 'story.rivalLost', params: { player: s.player.name } },
         ...(lost ? [professor('story.rested')] : []),
         professor('story.depart'),
       ],
@@ -447,6 +456,11 @@ export function startApp(elements: AppElements, options: TestOptions) {
   }
 
   // ── The city and its menus ────────────────────────────────────────────────────────────────────────────────────
+/** The region the player is in (Kanto before a journey starts). */
+  const regionNow = (): Region => region(save?.region ?? 'kanto');
+  /** A badge's picture (each region's gyms number theirs). */
+  const badgeArt = (badge: string) => badgeUrl(gymByBadge(badge)?.badgeSprite ?? 1);
+
   const ownsRod = (s: Save) => bestRod(rod => countOf(s.bag, rod) > 0);
 
   function goCity() {
@@ -456,7 +470,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     show();
     const s = save;
     const here = city(s.location);
-    const art = cityArt(here.id);
+    const art = placeArt(here.id);
     backdrop.set({ image: art.backdrop, town: here.id, theme: art.color, mode: 'scene' });
     // Everything that can appear here (and the party) starts loading now, so a hunt starts with its sprites ready.
     const rod = ownsRod(s);
@@ -504,11 +518,11 @@ export function startApp(elements: AppElements, options: TestOptions) {
           : open
             ? undefined
             : { text: t('place.badgesNeeded', { badges: g.badges }), icon: 'lock', tone: 'lock' },
-        art: { people: [trainerUrl(LEADER_SPRITES[g.badge])], badge: beaten ? badgeArt(g.badge) : undefined },
+        art: { people: [trainerUrl(g.sprite)], badge: beaten ? badgeArt(g.badge) : undefined },
         onClick: () => startGym(g),
       });
     }
-    if (here.id === LEAGUE_CITY) {
+    if (here.id === regionNow().league.city) {
       const open = canEnterLeague(s.badges);
       adventure.push({
         testid: 'city-league',
@@ -518,7 +532,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
         icon: 'crown',
         locked: !open,
         chip: open ? undefined : { text: t('place.badgesNeeded', { badges: 8 }), icon: 'lock', tone: 'lock' },
-        art: { people: [trainerUrl(ELITE_SPRITES.lance), trainerUrl(ELITE_SPRITES.agatha)] },
+        art: { people: regionNow().league.eliteFour.slice(-2).reverse().map(member => trainerUrl(member.sprite)) },
         onClick: startLeague,
       });
     }
@@ -534,7 +548,24 @@ export function startApp(elements: AppElements, options: TestOptions) {
         onClick: enterSafari,
       });
     }
-    adventure.push({
+    // The sanctuary: a card for each legendary instead of the battle field.
+    const sanctuary = isSanctuary(here.id) ? regionNow().sanctuary : null;
+    for (const l of sanctuary?.legendaries ?? []) {
+      const id = speciesBySlug(l.species).id;
+      const caught = s.dex.caught.includes(id);
+      adventure.push({
+        testid: `legend-${l.species}`,
+        title: species(id).name,
+        subtitle: t(species(id).mythical ? 'legend.cardMythical' : 'legend.card', { level: l.level }),
+        color: typeColor(species(id).types[0]),
+        icon: 'star',
+        locked: caught,
+        chip: caught ? { text: t('legend.caught'), icon: 'check', tone: 'ok' } : undefined,
+        art: { pokemon: [{ url: spriteUrl(id), seen: s.dex.seen.includes(id) }] },
+        onClick: () => startLegendary(l),
+      });
+    }
+    if (!sanctuary) adventure.push({
       testid: 'city-training',
       title: t('place.training'),
       subtitle: t('place.trainingText'),
@@ -575,7 +606,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     ];
 
     renderCity(overlayRoot, {
-      region: 'Kanto',
+      region: t(`region.${regionNow().id}`),
       name: t(cityKey(s.location)),
       tagline: t(`city.${s.location}.tagline` as MessageKey),
       theme: art.color,
@@ -599,8 +630,17 @@ export function startApp(elements: AppElements, options: TestOptions) {
           key: 'KeyB',
           onClick: () => showBag(),
         },
+        {
+          label: t('travel.title'),
+          detail: t('travel.detail', { count: REGION_IDS.filter(id => regionOpen(id, s.champions)).length }),
+          testid: 'city-travel',
+          image: gearPicture('plane'),
+          pad: 'lb',
+          key: 'KeyT',
+          onClick: () => showTravel(),
+        },
       ],
-      badges: BADGE_ORDER.map(badge => ({ url: badgeArt(badge), earned: s.badges.includes(badge), name: t(`badge.${badge}` as MessageKey) })),
+      badges: regionNow().gyms.map(({ badge }) => ({ url: badgeArt(badge), earned: s.badges.includes(badge), name: t(`badge.${badge}` as MessageKey) })),
       badgeCount: t('city.badges', { count: s.badges.length }),
       champion: s.champion ? t('city.champion') : null,
       adventure,
@@ -612,7 +652,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
         { label: t('city.options'), testid: 'city-options', icon: 'gear', onClick: () => showOptions(goCity) },
         { label: t('city.title'), testid: 'to-title', icon: 'exit', onClick: goTitle },
       ],
-      hints: [hints.select, hints.party, { pad: 'x', key: 'X', label: t('dex.title') }, { pad: 'rb', key: 'B', label: t('bag.title') }],
+      hints: [hints.select, hints.party, { pad: 'x', key: 'X', label: t('dex.title') }, { pad: 'rb', key: 'B', label: t('bag.title') }, { pad: 'lb', key: 'T', label: t('travel.title') }],
     });
   }
 
@@ -627,7 +667,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     const contents = bagContents(s.bag);
     const ELSEWHERE: Partial<Record<Pocket, MessageKey>> = { balls: 'bag.ballsUse', key: 'bag.rodsUse' };
     const target = (id: ItemId, p: Pokemon, index: number): BagTarget => {
-      const check = checkUse(id, p);
+      const check = checkUse(id, p, regionNow().lastSpecies);
       const item = ITEMS[id];
       const note = check.ok
         ? item.kind === 'potion'
@@ -674,7 +714,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
   function useFromBag(id: ItemId, index: number) {
     if (!save) return;
     const p = save.party[index];
-    if (!p || !checkUse(id, p).ok) return;
+    if (!p || !checkUse(id, p, regionNow().lastSpecies).ok) return;
     const item = ITEMS[id];
     if (item.kind === 'potion') {
       const healed = usePotion(p, id);
@@ -704,7 +744,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
   const decimal = (n: number) => n.toLocaleString(language() === 'pt' ? 'pt-BR' : 'en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
   /** The species in the list, with the filters on ("Owned", as in the games' Pokédex: caught at some point). */
-  const dexList = (s: Save) => filterDex(dexNumbers(), dexFilter, id => s.dex.caught.includes(id));
+  const dexList = (s: Save) => filterDex(dexNumbers(regionNow().lastSpecies), dexFilter, id => s.dex.caught.includes(id));
 
   function showPokedex(focusId?: number) {
     if (!save) return;
@@ -724,7 +764,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     const start = focusId ?? [...s.dex.seen].filter(id => ids.includes(id)).sort((a, b) => b - a)[0] ?? ids[0] ?? null;
     renderDexList(overlayRoot, {
       title: t('dex.title'),
-      counts: t('dex.counts', { seen: s.dex.seen.length, caught: s.dex.caught.length, total: dexNumbers().length }),
+      counts: t('dex.counts', { seen: s.dex.seen.length, caught: s.dex.caught.length, total: dexNumbers(regionNow().lastSpecies).length }),
       filters: [
         { kind: 'toggle', label: t('dex.filterOwned'), testid: 'filter-owned', on: dexFilter.owned, onToggle: () => setFilter({ owned: !dexFilter.owned }) },
         {
@@ -736,7 +776,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
           title: t('dex.filterType'),
           choices: [
             { label: t('dex.all'), testid: 'type-all', selected: dexFilter.type === null, onPick: () => setFilter({ type: null }) },
-            ...dexTypes()
+            ...dexTypes(regionNow().lastSpecies)
               .map(type => ({ type, label: typeName(type) }))
               .sort((a, b) => a.label.localeCompare(b.label, language()))
               .map(({ type, label }) => ({ label, testid: `type-${type}`, selected: dexFilter.type === type, onPick: () => setFilter({ type }) })),
@@ -753,7 +793,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
           title: t('dex.filterNumber'),
           choices: [
             { label: t('dex.all'), testid: 'range-all', selected: dexFilter.range === null, onPick: () => setFilter({ range: null }) },
-            ...DEX_RANGES.map((range, i) => ({
+            ...dexRanges(regionNow().lastSpecies).map((range, i) => ({
               label: rangeLabel(range),
               testid: `range-${i}`,
               selected: dexFilter.range?.[0] === range[0],
@@ -826,7 +866,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
             )
           : [],
         where: known
-          ? whereToFind(id).map(f => {
+          ? whereToFind(id, regionNow()).map(f => {
               const params = { city: t(cityKey(f.cityId)), place: placeName(f), min: f.minLevel, max: f.maxLevel };
               return f.rod ? t('dex.whereRod', { ...params, rod: itemName(f.rod) }) : t('dex.where', params);
             })
@@ -951,7 +991,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
   /** An indoor screen: the city's picture, blurred, in the room's color. */
   const indoors = (color: string) => {
     const location = save?.location ?? 'pallet';
-    backdrop.set({ image: cityArt(location).backdrop, town: location, theme: color, mode: 'interior' });
+    backdrop.set({ image: placeArt(location).backdrop, town: location, theme: color, mode: 'interior' });
   };
 
   function showCenter(message: MessageKey | null) {
@@ -1107,25 +1147,27 @@ export function startApp(elements: AppElements, options: TestOptions) {
     show();
     backdrop.set({ image: 'beach', theme: '#4fa3ff', mode: 'interior' });
     renderMap(overlayRoot, {
-      title: 'Kanto',
-      routes: KANTO_ROUTES,
-      cities: KANTO.map(c => {
+      title: t(`region.${regionNow().id}`),
+      region: regionNow(),
+      routes: regionNow().map.routes,
+      cities: [...regionNow().cities, city(regionNow().sanctuary.id)].map(c => {
         const here = c.id === s.location;
-        const open = isUnlocked(c, badges);
+        const holy = isSanctuary(c.id);
+        const open = holy ? s.champion : isUnlocked(c, badges);
         const g = gymIn(c.id);
         return {
           id: c.id,
           name: t(cityKey(c.id)),
           tagline: t(`city.${c.id}.tagline` as MessageKey),
-          ...KANTO_MAP[c.id],
+          ...regionNow().map.places[c.id],
           here,
           open,
-          status: here ? t('map.here') : open ? t('map.open') : t('map.locked', { badges: c.badges }),
+          status: here ? t('map.here') : open ? t('map.open') : holy ? t('map.sanctuaryLocked') : t('map.locked', { badges: c.badges }),
           gym: g
             ? {
                 label: t('place.gym'),
                 leader: g.leader,
-                sprite: trainerUrl(LEADER_SPRITES[g.badge]),
+                sprite: trainerUrl(g.sprite),
                 type: g.type,
                 typeLabel: t(`type.${g.type}` as MessageKey),
                 beaten: s.badges.includes(g.badge),
@@ -1214,17 +1256,17 @@ export function startApp(elements: AppElements, options: TestOptions) {
     enterFight('demo', PLAYER_TEAM, OPPONENT_TEAM, { stage: { id: 'stadium', backdrop: 'spl' } });
   }
 
-  /** The battle field: trainers with your party's level (XP and prize money). */
+  /** The battle field: a trainer with three of this city's Pokémon at your party's level (XP and prize money). */
   function startTrainer() {
     if (!save) return;
     const party = readyParty();
-    const opponents = trainingOpponents(party);
+    const opponents = trainingOpponents(regionNow(), city(save.location), party, rng);
     wild = null;
     gym = null;
     update(s => ({ ...s, dex: register(s, opponents.map(p => p.speciesId)) }));
     enterFight('trainer', party.map(toFighter), opponents.map(toFighter), {
       cpu: { kind: 'trainer', difficulty: 'normal' },
-      stage: { id: 'stadium', backdrop: cityArt(save.location).backdrop },
+      stage: { id: 'stadium', backdrop: placeArt(save.location).backdrop },
       rivalLook: { ...LOOKS.trainer, sprite: trainerClassFor(opponents.map(p => p.speciesId)) },
       intro: { step: null, key: 'trainer.challenge', params: {} },
     });
@@ -1274,7 +1316,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
   function startGym(g: Gym) {
     if (!save || !canChallenge(g, save.badges)) return;
     backdrop.set({ image: typeBackdrop(g.type), theme: typeColor(g.type), mode: 'scene' });
-    tell([{ speaker: g.leader, portrait: LEADER_SPRITES[g.badge], key: `leader.${g.badge}.intro` as MessageKey, params: {} }], () => {
+    tell([{ speaker: g.leader, portrait: g.sprite, key: `leader.${g.badge}.intro` as MessageKey, params: {} }], () => {
       const party = readyParty();
       const team = gymTeam(g);
       gym = g;
@@ -1285,7 +1327,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
         style: g.ai.style,
         cpu: { kind: 'trainer', ...g.ai },
         stage: { id: 'gym', tint: typeColor(g.type), backdrop: typeBackdrop(g.type) },
-        rivalLook: leaderLook(typeColor(g.type), false, LEADER_SPRITES[g.badge]),
+        rivalLook: leaderLook(typeColor(g.type), false, g.sprite),
         intro: { step: null, key: 'gym.challenge', params: { leader: g.leader } },
       });
     });
@@ -1351,8 +1393,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
       : t('league.champion', { name: opponent.name });
   const leagueLine = (opponent: LeagueOpponent, moment: 'intro' | 'beaten'): Said => ({
     speaker: opponent.name,
-    portrait: opponent.kind === 'champion' ? PEOPLE.champion : ELITE_SPRITES[opponent.id],
-    key: (opponent.kind === 'champion' ? `champion.${moment}` : `elite.${opponent.id}.${moment}`) as MessageKey,
+    portrait: opponent.sprite,
+    key: (opponent.id === 'champion' ? `champion.${moment}` : `elite.${opponent.id}.${moment}`) as MessageKey,
     params: { player: save?.player.name ?? '' },
   });
 
@@ -1368,26 +1410,26 @@ export function startApp(elements: AppElements, options: TestOptions) {
     leaveFight();
     scene = 'menu';
     show();
-    const next = leagueOpponent(league.stage, save.rival);
+    const next = leagueOpponent(regionNow(), league.stage, save.rival);
     const stage = league.stage;
     backdrop.set({ image: 'spl', theme: '#8f7bff', mode: 'scene' });
-    const champion = leagueOpponent(LEAGUE_SIZE - 1, save.rival);
+    const champion = leagueOpponent(regionNow(), LEAGUE_SIZE - 1, save.rival);
     renderLeague(overlayRoot, {
       title: t('league.title'),
       info: [t('league.progress', { n: stage + 1, total: LEAGUE_SIZE }), t('league.next', { who: whoIs(next) }), t('league.hint')],
       seats: [
-        ...ELITE_FOUR.map((member, i) => ({
+        ...regionNow().league.eliteFour.map((member, i) => ({
           name: member.name,
           title: t('league.eliteTitle'),
-          sprite: trainerUrl(ELITE_SPRITES[member.id]),
-          type: { type: member.type, label: t(`type.${member.type}` as MessageKey) },
+          sprite: trainerUrl(member.sprite),
+          type: member.type ? { type: member.type, label: t(`type.${member.type}` as MessageKey) } : null,
           state: i < stage ? ('beaten' as const) : i === stage ? ('next' as const) : ('waiting' as const),
         })),
         {
           name: champion.name,
           title: t('league.championTitle'),
-          sprite: trainerUrl(PEOPLE.champion),
-          type: null,
+          sprite: trainerUrl(champion.sprite),
+          type: champion.type ? { type: champion.type, label: t(`type.${champion.type}` as MessageKey) } : null,
           state: stage === LEAGUE_SIZE - 1 ? ('next' as const) : ('waiting' as const),
         },
       ],
@@ -1402,7 +1444,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
 
   function fightLeague() {
     if (!save || !league) return;
-    const opponent = leagueOpponent(league.stage, save.rival);
+    const opponent = leagueOpponent(regionNow(), league.stage, save.rival);
     tell([leagueLine(opponent, 'intro')], () => {
       if (!save) return;
       gym = null;
@@ -1413,7 +1455,10 @@ export function startApp(elements: AppElements, options: TestOptions) {
         style: opponent.ai.style,
         cpu: { kind: 'trainer', ...opponent.ai },
         stage: { id: 'league', tint: opponent.type ? typeColor(opponent.type) : undefined, backdrop: typeBackdrop(opponent.type) },
-        rivalLook: opponent.kind === 'champion' ? LOOKS.champion : leaderLook(typeColor(opponent.type), true, ELITE_SPRITES[opponent.id]),
+        rivalLook:
+          opponent.kind === 'champion'
+            ? { ...LOOKS.champion, sprite: opponent.sprite }
+            : leaderLook(typeColor(opponent.type), true, opponent.sprite),
         intro: { step: null, key: 'league.wants', params: { who: whoIs(opponent) } },
       });
     });
@@ -1429,7 +1474,12 @@ export function startApp(elements: AppElements, options: TestOptions) {
     if (!save) return;
     league = null;
     const team = save.party.map(p => ({ speciesId: p.speciesId, level: p.level }));
-    update(s => ({ ...s, champion: true, hallOfFame: [...s.hallOfFame, { at: Date.now(), team }] }));
+    update(s => ({
+      ...s,
+      champion: true,
+      champions: s.champions.includes(s.region) ? s.champions : [...s.champions, s.region],
+      hallOfFame: [...s.hallOfFame, { at: Date.now(), team, region: s.region }],
+    }));
     tell([professor('story.champion', { player: save.player.name })], showHallOfFame);
   }
 
@@ -1461,21 +1511,135 @@ export function startApp(elements: AppElements, options: TestOptions) {
     });
   }
 
-  /** The hook for the next region: it doesn't exist yet, so the journey stays in Kanto (post-game). */
+  /** After the credits: the next region is open now (fly there, or stay), and so is this region's sanctuary. */
   function showNextRegion() {
     if (!save) return;
     scene = 'menu';
     show();
+    const here = t(`region.${save.region}`);
     const next = nextRegion(save.region);
+    const there = next ? t(`region.${next}`) : '';
     renderPage(overlayRoot, {
       testid: 'next-region',
-      title: t('next.title'),
-      lines: [t('next.text')],
+      title: next ? t('next.title', { region: there }) : t('next.lastTitle'),
+      lines: [next ? t('next.text', { region: there }) : t('next.lastText'), t('next.sanctuary', { region: here })],
       buttons: [
-        { label: t('next.go'), testid: 'next-region-go', icon: 'map', disabled: next === null, onClick: () => {} },
-        { label: t('next.stay'), testid: 'next-region-stay', icon: 'pin', primary: true, onClick: goCity },
+        ...(next ? [{ label: t('next.go', { region: there }), testid: 'next-region-go', icon: 'map' as const, primary: true, onClick: () => flyTo(next) }] : []),
+        { label: t('next.stay', { region: here }), testid: 'next-region-stay', icon: 'pin', primary: !next, onClick: goCity },
       ],
       hints: [hints.select],
+    });
+  }
+
+  // ── Travelling between regions ─────────────────────────────────────────────────────────────────────────────────
+  /** The plane: every region, what the player has there, and which ones are open. */
+  function showTravel() {
+    if (!save) return;
+    const s = save;
+    scene = 'menu';
+    show();
+    backdrop.set({ image: 'space', theme: '#6fb8ff', mode: 'interior' });
+    renderTravel(overlayRoot, {
+      title: t('travel.title'),
+      info: t('travel.info'),
+      regions: REGION_IDS.map((id, i) => {
+        const exists = hasRegion(id);
+        const open = regionOpen(id, s.champions);
+        const journey = id === s.region ? s : s.away[id];
+        const state = !exists ? 'soon' : id === s.region ? 'here' : !open ? 'locked' : journey ? 'open' : 'new';
+        const status =
+          state === 'here'
+            ? t('travel.here')
+            : state === 'open'
+              ? t('travel.journey', { badges: journey!.badges.length, caught: journey!.dex.caught.length })
+              : state === 'new'
+                ? t('travel.new')
+                : state === 'locked'
+                  ? t('travel.locked', { region: t(`region.${REGION_IDS[i - 1]}`) })
+                  : t('travel.soon');
+        return {
+          id,
+          name: t(`region.${id}`),
+          map: exists ? regionPicture(region(id), [], []) : null,
+          color: exists ? region(id).color : '#5d6385',
+          status,
+          state,
+          onFly: () => flyTo(id),
+        };
+      }),
+      back: { label: t('menu.back'), testid: 'back', onClick: goCity },
+      hints: [hints.select, hints.back],
+    });
+  }
+
+  /** The flight, then the journey there: it goes on where it was, or a new one starts. */
+  function flyTo(to: RegionId) {
+    if (!save || !regionOpen(to, save.champions) || to === save.region) return;
+    const from = region(save.region);
+    scene = 'menu';
+    show();
+    audio.play('dash');
+    renderFlight(overlayRoot, {
+      text: t('travel.flying', { region: t(`region.${to}`) }),
+      plane: gearPicture('plane'),
+      from: from.color,
+      to: region(to).color,
+      skip: t('dialog.next'),
+      hints: [{ pad: 'a', key: 'Enter', label: t('dialog.next') }],
+      onArrive: () => arriveIn(to),
+    });
+  }
+
+  function arriveIn(to: RegionId) {
+    if (!save) return;
+    if (save.away[to]) {
+      save = switchRegion(save, to);
+      persist();
+      return goCity();
+    }
+    // A new journey there: its Professor, a starter of its own, a new Pokédex.
+    const r = region(to);
+    const first = placeArt(r.cities[0].id);
+    backdrop.set({ image: first.backdrop, town: r.cities[0].id, theme: first.color, mode: 'scene' });
+    preloadSprites([...r.starters]);
+    const say = (key: MessageKey, params: Line['params'] = {}): Said => ({ speaker: t('speaker.professor'), portrait: r.people.professor, key, params });
+    const player = save.player.name;
+    tell([say(`region.${to}.welcome` as MessageKey, { player })], () =>
+      tell([say(`region.${to}.choose` as MessageKey, { player })], () =>
+        showStarters(r, id => {
+          if (!save) return;
+          const rivalId = r.rivalPick[id];
+          save = startRegion(save, to, { starterId: id, rivalStarterId: rivalId, party: [createStarter(r, id)] });
+          persist();
+          const gift = r.starterGifts[id] ? move(r.starterGifts[id]) : null;
+          tell(
+            [
+              ...(gift ? [say('story.gift', { pokemon: species(id).name, move: gift.name, type: t(`type.${gift.type}` as MessageKey) })] : []),
+              say(`region.${to}.depart` as MessageKey, { player }),
+            ],
+            goCity,
+          );
+        }),
+      ),
+    );
+  }
+
+  // ── The Legendary Sanctuary ────────────────────────────────────────────────────────────────────────────────────
+  /** A legendary battle: the whole party against one legendary with four times the HP and its own attacks. */
+  function startLegendary(l: Legendary) {
+    if (!save) return;
+    const party = readyParty();
+    const boss = legendaryPokemon(l);
+    wild = boss;
+    gym = null;
+    lastHunt = null;
+    update(s => ({ ...s, dex: register(s, [boss.speciesId]) }));
+    enterFight('legendary', party.map(toFighter), [legendaryFighter(l)], {
+      opponent: 'cpu-hard',
+      cpu: { kind: 'trainer', difficulty: 'hard' },
+      stage: { id: 'league', backdrop: l.backdrop },
+      rivalLook: null,
+      intro: { step: null, key: 'legend.appeared', params: { name: nameOf(boss) } },
     });
   }
 
@@ -1543,10 +1707,13 @@ export function startApp(elements: AppElements, options: TestOptions) {
       const target = state.capture.pokemon;
       // In the Safari Zone only Safari Balls can be thrown; elsewhere, the bag's balls.
       const ballsLeft = (ball: BallId) => (ball === 'safari-ball' ? (safari?.balls ?? 0) : countOf(s.bag, ball));
-      const balls = mode === 'safari' ? (['safari-ball'] as BallId[]) : BALLS.filter(ball => ballsLeft(ball) > 0);
+      // A legendary takes a Master Ball, and nothing else can even be tried.
+      const legendary = state.capture.legendary === true;
+      const balls = (mode === 'safari' ? (['safari-ball'] as BallId[]) : BALLS.filter(ball => ballsLeft(ball) > 0)).filter(ball => canThrowAt(ball, legendary));
+      const prompt = !legendary ? t('capture.prompt', { name: nameOf(target) }) : balls.length ? t('legend.capturePrompt', { name: nameOf(target) }) : t('legend.needMaster', { name: nameOf(target) });
       renderResults(overlayRoot, {
         ...base,
-        prompt: { text: t('capture.prompt', { name: nameOf(target) }), sprite: spriteUrl(target.speciesId), evolving: false },
+        prompt: { text: prompt, sprite: spriteUrl(target.speciesId), evolving: false },
         buttons: [
           ...balls.map((ball, i) => ({
             label: t('capture.throw', { ball: itemName(ball), count: ballsLeft(ball) }),
@@ -1714,7 +1881,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     } else if (finished === 'league' && league) {
       // HP carries over to the next battle; a win pays and moves on, anything else ends the run.
       const run = league;
-      const opponent = leagueOpponent(run.stage, save.rival);
+      const opponent = leagueOpponent(regionNow(), run.stage, save.rival);
       const { party, report } = afterBattle(save.party, battle, true);
       const lines = report.lines.map(line => lineFor(line, party));
       let next = { ...save, party };
@@ -1745,6 +1912,30 @@ export function startApp(elements: AppElements, options: TestOptions) {
             if (run.stage >= LEAGUE_SIZE) championEnding();
             else showLeague();
           });
+        },
+      };
+    } else if (finished === 'legendary' && opponent) {
+      // Every party Pokémon gets the full XP (times LEGENDARY_XP), fainted or not; a loss is a loss like any other.
+      const { party, report } = afterBattle(save.party, battle, true, true);
+      const lines = report.lines.map(line => lineFor(line, party));
+      let next = { ...save, party };
+      if (outcome === 'loss') {
+        const kept = moneyAfterLoss(next.money);
+        lines.push({ key: 'results.whiteout', params: { money: next.money - kept } });
+        next = { ...next, money: kept, party: next.party.map(heal) };
+      }
+      save = next;
+      persist();
+      const winner = battle.teams[0][battle.active[0]];
+      results = {
+        outcome,
+        lines,
+        capture: outcome === 'win' ? { pokemon: opponent, playerLevel: winner.level, legendary: true } : null,
+        evolutions: outcome === 'loss' ? [] : report.evolutions,
+        xp: xpCards(report.gains, party),
+        onContinue: () => {
+          closeModal();
+          goCity();
         },
       };
     } else if (finished === 'safari') {
@@ -1809,10 +2000,12 @@ export function startApp(elements: AppElements, options: TestOptions) {
           if (!leader) return goCity();
           // The leader has the last word.
           const key = (outcome === 'win' ? `leader.${leader.badge}.beaten` : 'gym.lost') as MessageKey;
-          tell([{ speaker: leader.leader, portrait: LEADER_SPRITES[leader.badge], key, params: {} }], goCity);
+          tell([{ speaker: leader.leader, portrait: leader.sprite, key, params: {} }], goCity);
         },
       };
     }
+    // Nothing evolves past the region's Pokédex (a Gen 4 evolution doesn't exist in Hoenn).
+    if (results) results.evolutions = results.evolutions.filter(e => e.to <= regionNow().lastSpecies);
     modal = 'results';
     show();
     if (results?.lines.some(line => line.key === 'results.level')) window.setTimeout(() => audio.play('levelUp'), 300);
@@ -1853,7 +2046,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
         showParty(`special-${slot}-${index}`);
       };
       const potions = (['potion', 'super-potion', 'hyper-potion'] as PotionId[]).filter(id => countOf(s.bag, id) > 0 && canUsePotion(p));
-      const evolvers = EVOLUTION_ITEMS.filter(id => countOf(s.bag, id) > 0 && itemEvolution(p, id));
+      // Nothing evolves past the region's Pokédex.
+      const evolvers = EVOLUTION_ITEMS.filter(id => countOf(s.bag, id) > 0 && (itemEvolution(p, id)?.to ?? Infinity) <= regionNow().lastSpecies);
       return {
         name: sp.name,
         sprite: spriteUrl(p.speciesId),
@@ -2092,7 +2286,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     if (scene === 'fight' && sandbox) {
       const { battle } = sandbox.view();
       if (battle.phase === 'over' && battle.winner === 0) return 'victory';
-      return mode === 'gym' ? 'gym' : mode === 'league' ? 'league' : 'battle';
+      return mode === 'gym' ? 'gym' : mode === 'league' || mode === 'legendary' ? 'league' : 'battle';
     }
     return league ? 'league' : 'town';
   };

@@ -5,8 +5,7 @@
 
 import { isItemId } from '../data/items';
 import { hasSpecies, move } from '../data/pokedex';
-import { isRegion, type RegionId } from '../data/regions';
-import { GYMS } from '../data/regions/kanto';
+import { hasCity, hasRegion, isRegion, isSanctuary, region as regionData, regionOf, type RegionId } from '../data/regions';
 import { START_BAG, START_MONEY, type Bag } from '../game/economy';
 import { maxHpOf, type Pokemon } from '../game/pokemon';
 import { specialOptions } from '../game/progress';
@@ -14,7 +13,7 @@ import { DEFAULT_NAMES, MAX_NAME_LENGTH } from '../game/story';
 import { MAX_LEVEL } from '../game/xp';
 import { isLanguage, type Language } from '../i18n';
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 export interface Settings {
   language: Language;
@@ -32,7 +31,7 @@ export interface Save {
   rival: { name: string; starterId: number };
   starterId: number;
   prologue: PrologueStage;
-  /** Where the player is (a city id; the world map comes with milestone 7). */
+  /** Where the player is (a city or the sanctuary of the current region). */
   location: string;
   /** Up to 6 Pokémon that fight, in order. */
   party: Pokemon[];
@@ -44,17 +43,27 @@ export interface Save {
   dex: { seen: number[]; caught: number[] };
   /** Badges won (gym badge ids), in the order they were won. */
   badges: string[];
-  /** The region of the journey (only Kanto so far). */
+  /** The region the player is in now: the fields above are its journey. */
   region: RegionId;
   /** This region's League has been beaten. */
   champion: boolean;
+  /** Every region whose League has been won (each one opens the next). */
+  champions: RegionId[];
+  /** The other regions' journeys, kept while the player is elsewhere (decided after milestone 11: one per region). */
+  away: Partial<Record<RegionId, RegionJourney>>;
   /** Every winning team, newest last. */
   hallOfFame: HallOfFameEntry[];
 }
 
+/** What belongs to one region's journey (the rest of the save is the player's, everywhere). */
+export const JOURNEY_KEYS = ['rival', 'starterId', 'prologue', 'location', 'party', 'box', 'money', 'bag', 'dex', 'badges', 'champion'] as const;
+export type RegionJourney = Pick<Save, (typeof JOURNEY_KEYS)[number]>;
+
 export interface HallOfFameEntry {
   at: number;
   team: { speciesId: number; level: number }[];
+  /** Where (saves from before the regions: Kanto). */
+  region?: RegionId;
 }
 
 export const MAX_PARTY = 6;
@@ -86,8 +95,47 @@ export function newSave(journey: NewJourney, createdAt: number, language: Langua
     badges: [],
     region: 'kanto',
     champion: false,
+    champions: [],
+    away: {},
     hallOfFame: [],
   };
+}
+
+/** The journey of the region the player is in. */
+export const journeyOf = (save: Save): RegionJourney =>
+  Object.fromEntries(JOURNEY_KEYS.map(key => [key, structuredClone(save[key])])) as unknown as RegionJourney;
+
+/** Travels to a region the player has a journey in: this region's journey is kept aside, that one comes back. */
+export function switchRegion(save: Save, to: RegionId): Save {
+  if (to === save.region) return save;
+  const back = save.away[to];
+  if (!back) throw new Error(`No journey in ${to} yet`);
+  const away = { ...save.away, [save.region]: journeyOf(save) };
+  delete away[to];
+  return { ...save, ...structuredClone(back), region: to, away };
+}
+
+/**
+ * A new journey in another region (decided after milestone 11): a new starter from that region, the starting money
+ * and balls, no badges, and a new Pokédex; it starts in the region's first city. The current journey is kept aside.
+ */
+export function startRegion(save: Save, to: RegionId, start: { starterId: number; rivalStarterId: number; party: Pokemon[] }): Save {
+  const away = { ...save.away, [save.region]: journeyOf(save) };
+  delete away[to];
+  const journey: RegionJourney = {
+    rival: { name: save.rival.name, starterId: start.rivalStarterId },
+    starterId: start.starterId,
+    prologue: 'done',
+    location: regionData(to).cities[0].id,
+    party: structuredClone(start.party),
+    box: [],
+    money: START_MONEY,
+    bag: { ...START_BAG },
+    dex: { seen: [...new Set([start.starterId, start.rivalStarterId])], caught: [start.starterId] },
+    badges: [],
+    champion: false,
+  };
+  return { ...save, ...journey, region: to, away };
 }
 
 /** Migrations from version N to N + 1. */
@@ -119,6 +167,14 @@ const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string
   3: old => ({ ...old, version: 4, badges: [] }),
   // Version 4 saves (before the League): in Kanto, not Champion yet.
   4: old => ({ ...old, version: 5, region: 'kanto', champion: false, hallOfFame: [] }),
+  // Version 5 saves (before the other regions): the Kanto journey; a Kanto Champion has opened the next region.
+  5: old => ({
+    ...old,
+    version: 6,
+    champions: old.champion === true ? ['kanto'] : [],
+    away: {},
+    hallOfFame: (old.hallOfFame as HallOfFameEntry[]).map(entry => ({ ...entry, region: 'kanto' })),
+  }),
 };
 
 export type LoadResult =
@@ -150,19 +206,44 @@ export function parseSave(raw: string | null): LoadResult {
 
 /** What is wrong with a save, or null if nothing is. */
 export function findProblem(data: Record<string, unknown>): string | null {
+  if (!isRegion(data.region) || !hasRegion(data.region)) return 'bad region';
+  const settings = data.settings as Settings | undefined;
+  if (!settings || !isLanguage(settings.language)) return 'settings missing';
+  const player = data.player as Save['player'] | undefined;
+  if (!player || !validName(player.name)) return 'bad player name';
+  const champions = data.champions;
+  if (!Array.isArray(champions) || !champions.every(isRegion)) return 'bad champions';
+  const fame = data.hallOfFame as HallOfFameEntry[] | undefined;
+  const validEntry = (e: HallOfFameEntry) =>
+    Number.isFinite(e?.at) && Array.isArray(e.team) && e.team.length > 0 && e.team.every(m => hasSpecies(m.speciesId) && Number.isInteger(m.level));
+  if (!Array.isArray(fame) || !fame.every(validEntry)) return 'bad Hall of Fame';
+  const here = journeyProblem(data, data.region);
+  if (here) return here;
+  const away = data.away as Record<string, unknown> | undefined;
+  if (typeof away !== 'object' || away === null) return 'away missing';
+  for (const [id, journey] of Object.entries(away)) {
+    if (!isRegion(id) || !hasRegion(id) || id === data.region) return `bad away region ${id}`;
+    const problem = journeyProblem(journey as Record<string, unknown>, id);
+    if (problem) return `${id}: ${problem}`;
+  }
+  return null;
+}
+
+const validName = (name: unknown) => typeof name === 'string' && name.trim().length > 0 && name.length <= MAX_NAME_LENGTH;
+
+/** What is wrong with one region's journey, or null. */
+function journeyProblem(data: Record<string, unknown>, regionId: RegionId): string | null {
+  if (typeof data !== 'object' || data === null) return 'journey missing';
   const party = data.party;
   if (!Array.isArray(party) || party.length === 0 || party.length > MAX_PARTY) return 'party must have 1 to 6 Pokémon';
   if (!Array.isArray(data.box)) return 'box missing';
-  const settings = data.settings as Settings | undefined;
-  if (!settings || !isLanguage(settings.language)) return 'settings missing';
-  const validName = (name: unknown) => typeof name === 'string' && name.trim().length > 0 && name.length <= MAX_NAME_LENGTH;
-  const player = data.player as Save['player'] | undefined;
   const rival = data.rival as Save['rival'] | undefined;
-  if (!player || !validName(player.name)) return 'bad player name';
   if (!rival || !validName(rival.name) || !hasSpecies(rival.starterId)) return 'bad rival';
   if (typeof data.starterId !== 'number' || !hasSpecies(data.starterId)) return 'bad starter';
   if (!PROLOGUE_STAGES.includes(data.prologue as PrologueStage)) return 'bad prologue stage';
-  if (typeof data.location !== 'string' || data.location.length === 0) return 'bad location';
+  // A city or the sanctuary of this region (regions not written yet can't be checked: they can't be saved in either).
+  const location = data.location;
+  if (typeof location !== 'string' || !(hasCity(location) || isSanctuary(location)) || regionOf(location).id !== regionId) return 'bad location';
   if (!Number.isInteger(data.money) || (data.money as number) < 0) return 'bad money';
   const bag = data.bag as Record<string, unknown> | undefined;
   if (typeof bag !== 'object' || bag === null) return 'bag missing';
@@ -173,15 +254,10 @@ export function findProblem(data: Record<string, unknown>): string | null {
   const speciesList = (list: unknown) => Array.isArray(list) && list.every(id => Number.isInteger(id) && hasSpecies(id));
   if (!dex || !speciesList(dex.seen) || !speciesList(dex.caught)) return 'bad Pokédex';
   const badges = data.badges;
-  const known = GYMS.map(g => g.badge);
+  const known = regionData(regionId).gyms.map(g => g.badge);
   if (!Array.isArray(badges) || badges.some(b => !known.includes(b)) || new Set(badges).size !== badges.length) return 'bad badges';
-  if (typeof data.region !== 'string' || !isRegion(data.region)) return 'bad region';
   if (typeof data.champion !== 'boolean') return 'bad champion flag';
-  const fame = data.hallOfFame as HallOfFameEntry[] | undefined;
-  const validEntry = (e: HallOfFameEntry) =>
-    Number.isFinite(e?.at) && Array.isArray(e.team) && e.team.length > 0 && e.team.every(m => hasSpecies(m.speciesId) && Number.isInteger(m.level));
-  if (!Array.isArray(fame) || !fame.every(validEntry)) return 'bad Hall of Fame';
-  for (const [i, p] of [...party, ...data.box].entries()) {
+  for (const [i, p] of [...party, ...(data.box as Pokemon[])].entries()) {
     const problem = pokemonProblem(p as Pokemon);
     if (problem) return `Pokémon ${i}: ${problem}`;
   }

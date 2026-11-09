@@ -41,12 +41,15 @@ test.describe('Pokémon League', () => {
     await page.getByTestId('hof-next').click();
     await expect(page.getByTestId('credits')).toContainText('Thanks for playing!');
     await page.getByTestId('credits-next').click();
-    await expect(page.getByTestId('next-region-go')).toBeDisabled();
+    // Winning Kanto's League opens Johto (fly now, or stay) and Kanto's sanctuary.
+    await expect(page.getByTestId('next-region')).toContainText('Johto is open!');
+    await expect(page.getByTestId('next-region-go')).toBeEnabled();
     await page.getByTestId('next-region-stay').click();
 
     await expect(page.getByTestId('city-champion')).toHaveText('Champion');
     const after = await save(page);
     expect(after.champion).toBe(true);
+    expect((after as unknown as { champions: string[] }).champions).toEqual(['kanto']);
     expect(after.hallOfFame).toHaveLength(1);
     expect(after.hallOfFame[0].team.map(m => m.speciesId)).toEqual([150, 6]);
     // The League can be challenged again.

@@ -1,8 +1,9 @@
 // Textos em português (Brasil). Mesmas chaves e mesmos marcadores {assim} que en.ts.
 
-import type { MessageKey } from './en';
+import type { BaseKey, MessageKey } from './en';
+import { partsPt } from './parts';
 
-export const pt: Record<MessageKey, string> = {
+const base: Record<BaseKey, string> = {
   'controls.fight': '{keyUp}{keyLeft}{keyDown}{keyRight} mover · {keyPhysical} investida · {keySpecial} especial · {keyBig} especial forte · {keyGuard} defesa · {keyDash} avanço · Tab trocar',
   'controls.sandbox': 'F1 depuração · F2 oponente · F3 PP infinito · F4 estilo da CPU · P equipe · R reiniciar',
   'hud.dummy': 'boneco: {mode}',
@@ -337,10 +338,6 @@ export const pt: Record<MessageKey, string> = {
   'credits.study': 'Poké Fight é um projeto de estudo, feito do zero, um marco de cada vez, com o Claude.',
   'credits.data': 'Dados e sprites dos Pokémon: PokeAPI.',
   'credits.rights': 'Pokémon pertence à Nintendo, Creatures e GAME FREAK. Um projeto de fã, nunca distribuído.',
-  'next.title': 'Uma nova região espera por você…',
-  'next.text': 'Sua equipe, seu dinheiro e sua Pokédex vão junto; as insígnias e a Liga recomeçam. A próxima região chega em uma atualização futura.',
-  'next.go': 'Próxima região (em breve)',
-  'next.stay': 'Ficar em Kanto',
 
   'save.problem': 'Não foi possível ler o jogo salvo, então um novo jogo foi iniciado. (Uma cópia foi guardada.)',
   'city.badgesLabel': 'Insígnias: {count} de 8',
@@ -436,7 +433,7 @@ export const pt: Record<MessageKey, string> = {
   'item.thunder-stone.text': 'Faz alguns Pokémon evoluírem (Pikachu, Eevee).',
   'item.leaf-stone.text': 'Faz alguns Pokémon evoluírem (Gloom, Weepinbell, Exeggcute).',
   'item.moon-stone.text': 'Faz alguns Pokémon evoluírem (Nidorina, Nidorino, Clefairy, Jigglypuff).',
-  'item.link-cable.text': 'Evolui os Pokémon que evoluem por troca (Kadabra, Machoke, Graveler, Haunter).',
+  'item.link-cable.text': 'Evolui os Pokémon que evoluem por troca (Kadabra, Machoke, Graveler, Haunter, Onix, Scyther…).',
   'shop.buyHint': 'Comprar',
   'box.keepOne': 'Sua equipe precisa de pelo menos um Pokémon',
   'box.partyFull': 'Sua equipe está cheia (6)',
@@ -480,3 +477,5 @@ export const pt: Record<MessageKey, string> = {
   'evolution.done': 'Parabéns! {name} evoluiu para {species}!',
   'evolution.move': '{name} aprendeu {move}!',
 };
+
+export const pt: Record<MessageKey, string> = { ...base, ...partsPt };

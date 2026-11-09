@@ -4,7 +4,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { speciesBySlug } from '../data/pokedex';
 import { createPokemon } from '../game/pokemon';
-import { newSave, parseSave, SAVE_VERSION, serializeSave, type Save } from './save';
+import { journeyOf, newSave, parseSave, SAVE_VERSION, serializeSave, switchRegion, type Save } from './save';
 import { BROKEN_SAVE_KEY, createSaveStore, SAVE_KEY } from './store';
 
 const party = () => [createPokemon(speciesBySlug('charmeleon').id, 30), createPokemon(speciesBySlug('kadabra').id, 30)];
@@ -111,7 +111,7 @@ describe('save version 5', () => {
     expect(save()).toMatchObject({ region: 'kanto', champion: false, hallOfFame: [] });
   });
 
-  it('every older fixture reaches version 5', () => {
+  it('every older fixture reaches the current version', () => {
     const v4 = readFileSync(new URL('./fixtures/save-v4-team.json', import.meta.url), 'utf8');
     expect(parseSave(v4)).toMatchObject({ status: 'ok', save: { version: SAVE_VERSION, region: 'kanto', champion: false, hallOfFame: [] } });
   });
@@ -156,6 +156,37 @@ describe('save store', () => {
     expect(store.load()).toEqual({ status: 'none' });
     expect(() => store.write(save())).not.toThrow();
     expect(createSaveStore(null).load()).toEqual({ status: 'none' });
+  });
+});
+
+describe('journeys in several regions (version 6)', () => {
+  it('a Kanto Champion from version 5 has opened the next region; the Hall of Fame says where', () => {
+    const v5 = readFileSync(new URL('./fixtures/save-v5-victory-road.json', import.meta.url), 'utf8');
+    const result = parseSave(v5);
+    if (result.status !== 'ok') throw new Error(JSON.stringify(result));
+    const champion = JSON.parse(v5).champion === true;
+    expect(result.save).toMatchObject({ version: 6, region: 'kanto', champions: champion ? ['kanto'] : [], away: {} });
+  });
+
+  it('switching swaps whole journeys, and the player keeps their name, settings and champions', () => {
+    const kanto: Save = { ...save(), prologue: 'done', location: 'pewter', badges: ['boulder'], money: 4321, champions: ['kanto'] };
+    // A journey "in Johto" built by hand (no Johto data needed for the swap itself).
+    const johtoJourney = { ...journeyOf(kanto), money: 99, badges: [], location: 'pallet' };
+    const withAway: Save = { ...kanto, away: { johto: johtoJourney } };
+    const there = switchRegion(withAway, 'johto');
+    expect(there).toMatchObject({ region: 'johto', money: 99, badges: [], player: kanto.player, champions: ['kanto'] });
+    expect(there.away.kanto).toMatchObject({ money: 4321, badges: ['boulder'], location: 'pewter' });
+    expect(there.away.johto).toBeUndefined();
+    const back = switchRegion(there, 'kanto');
+    expect(back).toMatchObject({ region: 'kanto', money: 4321, badges: ['boulder'] });
+    expect(back.away.johto).toMatchObject({ money: 99 });
+    expect(() => switchRegion(kanto, 'hoenn')).toThrow();
+  });
+
+  it("refuses a journey whose badges or place belong to another region", () => {
+    expect(broken(save(), s => (s.badges = ['zephyr']))).toMatchObject({ status: 'broken' });
+    expect(broken(save(), s => (s.location = 'nowhere'))).toMatchObject({ status: 'broken' });
+    expect(broken(save(), s => ((s as unknown as { champions: unknown }).champions = ['atlantis']))).toMatchObject({ status: 'broken' });
   });
 });
 

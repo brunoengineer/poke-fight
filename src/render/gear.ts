@@ -3,13 +3,14 @@
 //   - the bag: a yellow backpack (two rolled-up lobes on top, a cream flap with a grey buckle, side pockets with a
 //     strap and a red tag, a front panel between two seams, a grey base), navy outlines;
 //   - the Pokédex, opened: the left half with its big blue lens, three lights, a screen, a d-pad; the hinge; the right
-//     half with a small screen, a blue keypad and two buttons; a darker band below for its thickness.
+//     half with a small screen, a blue keypad and two buttons; a darker band below for its thickness;
+//   - the plane (travelling between regions): a small white propeller plane with a red stripe, wing and fin.
 // Drawn for this game (the art was made from scratch, after reference pictures the player liked). The city's bottom
 // bar shows them.
 
 import { Pixels, rgb } from './pixel';
 
-export type Gear = 'pokedex' | 'bag';
+export type Gear = 'pokedex' | 'bag' | 'plane';
 
 interface Sprite {
   rows: readonly string[];
@@ -117,6 +118,51 @@ const SPRITES: Record<Gear, Sprite> = {
     '...OOOOOOOOOOOOOO.ODDDO.OOOOOOOOOOOOO...',
     '...................OOO..................',
     '........................................',
+    ],
+  },
+  plane: {
+    palette: {
+      O: '#2a2240', // outline
+      W: '#f6f6fa', // the body
+      H: '#ffffff', // its lit top
+      w: '#d4d8e4', // its shaded underside
+      g: '#9aa0b4',
+      R: '#e8403a', // red (the stripe, the wing, the fin, the nose)
+      r: '#a82a2a',
+      L: '#ff8a7a',
+      B: '#4f9ae8', // windows
+      b: '#bfe3ff',
+      Y: '#ffd84a', // the propeller's hub
+      P: '#e8ecf6', // the propeller's blur
+      p: '#a8b0c4',
+    },
+    rows: [
+      '........................................',
+      '........................................',
+      '....OO..................................',
+      '...ORRO.................................',
+      '...ORLO.................................',
+      '...ORLRO................................',
+      '...ORLRRO..............................P',
+      '...ORLRRRO.............................p',
+      '...ORLRRRRO............................p',
+      '...ORLRRRRROOOOOOOOOOOOOOOOOOOOO.......P',
+      '...ORLRWWWWWWWWWWWWWWWWWWWWObBBOO..O...p',
+      '..OORRWWWHHHHHHHHHHHHHHHHHHBBBBBWOORO..p',
+      '.OrrrWWWWWWWBBWWBBWWBBWWBBWWWWWWWWRRROOP',
+      '.OrrWWWWWWWWbBWWbBWWbBWWbBWWWWWWWRRRRRYO',
+      '..OOWWRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRYO',
+      '...OWWrrrrrrrrrrrrrrrrrrrrrrrrrrrRRRRRYO',
+      '....OwwwwwwwRLRRRRRRRRRRRRRRwwwwwwRRROOp',
+      '.....OgggggggRLRRRRRRRRRRRRRRggggOORO..p',
+      '......OwwwwwwwrrrrrrrrrrrrrrrrwwO..O...P',
+      '.......OOOOOOOOrrrrrrrrrrrrrrrrO.......p',
+      '...............OrrrrrrrrrrrrrrrrO......p',
+      '................OrrrrrrrrrrrrrrrrO.....P',
+      '.................OOOOOOOOOOOOOOOO......p',
+      '........................................',
+      '........................................',
+      '........................................',
     ],
   },
 };

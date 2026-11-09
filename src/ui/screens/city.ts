@@ -132,7 +132,12 @@ export function renderCity(root: HTMLElement, view: CityView) {
           h('nav', { class: 'system' }, view.system.map(spec => button({ ...spec, class: `icon-only ${spec.class ?? ''}` }))),
         ]),
         h('main', { class: 'places' }, [
-          h('div', { class: 'adventure', style: { '--n': view.adventure.length } }, view.adventure.map((p, i) => placeCard(p, 'hero', i))),
+          // More than 5 cards (a sanctuary with many legendaries): two rows.
+          h(
+            'div',
+            { class: `adventure${view.adventure.length > 5 ? ' two-rows' : ''}`, style: { '--n': Math.min(5, Math.ceil(view.adventure.length / (view.adventure.length > 5 ? 2 : 1))) } },
+            view.adventure.map((p, i) => placeCard(p, 'hero', i)),
+          ),
           h('div', { class: 'services', style: { '--n': view.services.length } }, view.services.map((p, i) => placeCard(p, 'tile', i + view.adventure.length))),
         ]),
         h('footer', { class: 'city-footer' }, [

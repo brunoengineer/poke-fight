@@ -812,12 +812,14 @@ kbd,
 }
 
 .place-mon {
-  width: 12.5cqh;
-  height: 12.5cqh;
-  margin: -2.2cqh -1.6cqh;
+  /* --mon: smaller when the ground has many species (city.ts monSize), so all of them fit. The sprites have empty
+     space around the Pokémon, so they overlap a little. */
+  width: var(--mon, 12.5cqh);
+  height: var(--mon, 12.5cqh);
+  margin: calc(var(--mon, 12.5cqh) * -0.17) calc(var(--mon, 12.5cqh) * -0.13);
   filter: drop-shadow(0 0.5cqh 0.4cqh rgba(0, 0, 0, 0.35));
   animation: pop 420ms var(--ease-pop) both;
-  animation-delay: calc(120ms + var(--i) * 50ms);
+  animation-delay: calc(120ms + var(--i) * 30ms);
 }
 
 .place-mon.silhouette {

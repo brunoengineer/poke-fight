@@ -45,13 +45,25 @@ export interface CityView {
   hints: Hint[];
 }
 
+/**
+ * A hunting card shows every species of its ground (4 to 22). The more there are, the smaller each one, so all of
+ * them fit in the card (cqh: the frame's height).
+ */
+export function monSize(count: number): number {
+  if (count <= 5) return 12.5;
+  if (count <= 8) return 11.5;
+  if (count <= 12) return 10;
+  if (count <= 16) return 9;
+  return 8;
+}
+
 function placeArt(art: PlaceArt | undefined) {
   if (!art) return undefined;
   return h('span', { class: 'place-art' }, [
     art.pokemon?.length
       ? h(
           'span',
-          { class: 'place-pokemon' },
+          { class: 'place-pokemon', testid: 'place-pokemon', style: { '--mon': `${monSize(art.pokemon.length)}cqh` } },
           art.pokemon.map((p, i) => {
             const image = pokemonSprite(p.url, 'sprite place-mon', { silhouette: !p.seen });
             image.style.setProperty('--i', String(i));

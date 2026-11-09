@@ -35,6 +35,14 @@ test.describe('the city', () => {
   });
 });
 
+test('every hunting card shows all the species of its ground, as many as it says', async ({ page }) => {
+  await openGame(page, { scene: 'city' }, { save: fixture('save-v4-team.json') });
+  for (const card of ['hunt-grass', 'hunt-cave']) {
+    const kinds = Number((await page.getByTestId(card).innerText()).match(/(\d+) kinds/)![1]);
+    await expect(page.getByTestId(card).locator('.place-mon')).toHaveCount(kinds);
+  }
+});
+
 test.describe('hunting and catching', () => {
   test('a wild Pokémon in the grass: beat it, throw a Poké Ball; it may break free, so hunt again until one is caught', async ({ page }) => {
     // A common Pokémon is caught about 30% of the time with a Poké Ball: 3–4 fights on average.

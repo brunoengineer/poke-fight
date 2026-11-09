@@ -482,7 +482,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
           icon: huntIcons[kind],
           locked: noRod,
           chip: noRod ? { text: t('place.needsRod'), icon: 'lock', tone: 'lock' } : undefined,
-          art: { pokemon: ids.slice(0, 5).map(id => ({ url: spriteUrl(id), seen: s.dex.seen.includes(id) })) },
+          // Every species of this ground, the most common first (unseen ones as silhouettes).
+          art: { pokemon: ids.map(id => ({ url: spriteUrl(id), seen: s.dex.seen.includes(id) })) },
           onClick: () => startHunt(kind),
         } satisfies PlaceCard;
       });

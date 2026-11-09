@@ -19,7 +19,7 @@ npm test           # Vitest: rules and simulation (src/**/*.test.ts), through sc
 npm run e2e        # Playwright: the real game in Chromium (e2e/)
 npm run typecheck  # src + e2e
 npm run build      # dist/, linked under /poke-fight/ (GitHub Pages); npm run preview serves it there
-npm run data       # rebuild src/data/generated/ from PokeAPI (committed; the game never calls PokeAPI)
+npm run data       # rebuild src/data/generated/ (generations 1–4) from PokeAPI (committed; the game never calls PokeAPI)
 ```
 
 Run all three before saying a task is done. CI (`.github/workflows/ci.yml`) runs the same on every push.
@@ -42,7 +42,9 @@ Run all three before saying a task is done. CI (`.github/workflows/ci.yml`) runs
 - Which picture goes where (backgrounds, trainers, items, badges, the map) is data in `src/data/art.ts`. The towns and
   the world map are pixel art painted by code (`render/town.ts`, `render/kanto-map.ts`, on `render/pixel.ts`). Showdown's
   images have no CORS: draw or show them, never read their pixels.
-- Content (regions, cities, gyms, shops, encounters) is data, not code. Pokémon data comes from
+- Content (regions, cities, gyms, shops, encounters) is data, not code. A region is one file in `src/data/regions/`
+  (the `Region` type in `types.ts`, registered in `index.ts`, checked by `regions.test.ts`); ids are unique across
+  regions. Each region is its own journey in the save (the current one in the save's fields, the others in `away`). Pokémon data comes from
   `scripts/build-data.mjs` into `src/data/generated/`; read it through `src/data/pokedex.ts` and `src/data/types.ts`.
 - Layers: `data/` (generated + typed access) → `game/` (Pokémon, stats, moves: owned Pokémon → fighters) →
   `fight/` (the fight, which only knows `FighterSetup`, never species). `fight/` may read `data/types.ts` (the chart).
@@ -51,7 +53,8 @@ Run all three before saying a task is done. CI (`.github/workflows/ci.yml`) runs
 ## Texts and saves
 
 - Texts that name a key use `{keyPhysical}`, `{keyGuard}`… (filled from the player's bindings), never a fixed letter.
-- **Every text a player sees goes through `t()`** (`src/i18n/`), in English (`en.ts`) and Portuguese (`pt.ts`). A test
+- **Every text a player sees goes through `t()`** (`src/i18n/`), in English (`en.ts`) and Portuguese (`pt.ts`); a region's
+  (or another part's) texts live in their own file in `src/i18n/parts/`. A test
   fails if a text is missing in either language or their `{placeholders}` differ. Pokémon and move names come from
   the data (English) and are not translated. The debug overlay may stay in English.
 - **Changing the save format**: bump `SAVE_VERSION` in `src/state/save.ts`, add a migration from the old version, and

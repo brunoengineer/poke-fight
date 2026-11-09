@@ -63,8 +63,9 @@ Our own light narrative on top of the canonical Kanto structure (cities, gym ord
   the starter rests (full HP) and the journey starts at home in **Pallet Town** (decided after milestone 11; it
   used to drop the player in Viridian City), with Route 1's grass right outside.
 - **City screen** (milestone 7 fills it in): Battle field (training), Party, Title.
-- **Training**: with a journey, your party against Rattata, Pidgey and Geodude at your party's average level (XP
-  counts, Continue goes back to the city); without one, the Lv. 30 demo teams (no XP). Esc leaves Training. The
+- **Training**: with a journey, your party against a trainer with three different Pokémon picked at random from the
+  city's own hunting grounds (grass, caves, water, Safari; the region's common ones fill in where a place has fewer),
+  at your party's average level (XP counts, Continue goes back to the city); without one, the Lv. 30 demo teams (no XP). Esc leaves Training. The
   training tools (F1–F4, R) are off in the tutorial.
 - **Save version 2**: player and rival names, starter, prologue stage, location. Version 1 saves migrate to a
   journey already at Viridian.
@@ -357,6 +358,31 @@ More archetypes can come later (status effects: paralysis = slower, burn = damag
   in, a special, jump in, back off, dash, guard). Before this, every fight used the session's seed, so the CPU
   opened the same way every time. The balance pins above still hold.
 
+### 4.8 Legendary bosses (milestone 12)
+
+A legendary in its sanctuary is a **boss** (`fight/boss.ts`, drawn by `render/boss.ts`): four times its HP
+(`BOSS_HP_MULTIPLIER`), its own CPU, and a list of **boss attacks** (`FighterSetup.boss`) it goes through in order.
+
+- **Rhythm**: the first attack after 4–6 s, then 5–7 s after each one ends; **enraged** below 30% HP (2.5–4 s).
+  An attack starts only when the boss is free on the ground; between them it fights like any CPU.
+- **Telegraph → active → recovery**: every attack warns first (a banner with its name and a hint, red marks on the
+  floor). While locked in an attack the boss has **super armor** (it takes damage but is never stunned or pushed),
+  or tackling would cancel every warning; not during the meteor rain, where it keeps fighting.
+- **Damage**: the real formula with the boss's stats and first type, each part hitting once; against an immune type
+  it hits typeless (an unavoidable attack is never cancelled by type).
+
+| Attack | Warning | What happens | Power | Guard keeps | How to survive |
+|---|---|---|---|---|---|
+| Slash | 48 f | a crescent wave crosses the whole screen | 90 phys. | 25% | can't be dodged: guard |
+| Nova | 54 f | a sphere grows to a 200 px radius (240 filled the screen) | 100 spec. | 25% | leave the circle, or guard |
+| Meteor | 36 f | 5 s of meteors (15, or 22 enraged), each marked 36 f ahead, half aimed at the player | 50 spec. | 50% | stay off the marks while fighting |
+| Quake | 42 f | two slams, a ground wave each way | 65 phys. | 50% | jump each wave |
+| Rampage | 48 f | charges to the wall and back | 80 phys. | 25% | jump over it, or guard |
+| Vortex | 36 f | pulls the player in for 2 s, then bursts (72 px) | 90 spec. | 25% | walk away, or guard |
+
+The boss HUD: a gold frame, a crown, an HP bar in four segments (×4), LEGENDARY / ENRAGED!. Measured drawing cost:
+under 4 ms a frame on average for the busiest attack (enraged meteor rain), at 1440×810.
+
 ## 5. Progression systems
 
 - **XP**: official formula (`base_experience · level / 7`, ×1.5 for trainer battles), growth rates from the data
@@ -540,13 +566,36 @@ World map (cities unlocked by badges)
 - **A run** is the five battles in a row. Between them, only a menu: who's next, the party (potions), Challenge or
   Give up. HP carries over; a loss anywhere costs half the money and ends the run. No running away. Each win pays
   99 × the opponent's strongest level.
-- **The ending**: the rival's and the Professor's last words, the **Hall of Fame** (saved, one entry per win), the
-  credits, and the **next-region hook**. Only Kanto exists, so the journey stays in Kanto as Champion (★ in the
-  city), and the League can be challenged again.
-- **Next region (decided default, the question had no answer)**: the party, box, money and Pokédex travel along;
-  badges and the League start over. `src/data/regions/index.ts` lists the regions in order; a new region is a new
-  data file plus its generated Pokémon data.
+- **The ending**: the Champion's and the Professor's last words, the **Hall of Fame** (saved, one entry per win, with
+  its region), the credits, and the **next region**: winning a region's League opens the next region and that
+  region's Legends' Sanctuary (milestone 12). The League can be challenged again.
 - **Save version 5**: region, champion, Hall of Fame.
+
+**Milestone 12: regions** (decided; replaces the earlier default where the party travelled along):
+
+- **Four regions**: Kanto, Johto, Hoenn, Sinnoh (`src/data/regions/<id>.ts`, the shape in `types.ts`, checked by
+  `regions.test.ts`). Each has its cities and hunting grounds (the location areas of its own games: HGSS, RSE,
+  DPPt), its 8 gyms and League (the games' leaders, teams and Champions), its starters, Professor and rival, its art,
+  pixel-art towns and world map, and its Legends' Sanctuary. Every id is unique across regions.
+- **Each region is its own journey**: its own party, box, bag, money, badges and **Pokédex** (every species up to its
+  generation's last: 151, 251, 386, 493). The first visit starts a new journey: the region's Professor, a starter of
+  its own, the starting money and balls, its first city. Journeys are kept while the player is elsewhere (save
+  version 6: the current journey in the save's fields, the others in `away`; `switchRegion` / `startRegion`).
+- **Opening regions**: Kanto is open; each next region opens when the one before's League is won (`champions`).
+- **The plane** (beside the bag, LB / T): every region with what the player has there, or why it's closed; A on an
+  open one flies there (a short flight, A skips).
+- **Legends' Sanctuary**: a place in the center of each region, open once its League is won. Instead of hunting
+  grounds, a card for each legendary (and mythical) of the region; a Center, a Mart (the only one that sells Master
+  Balls, ₽30000), the box and the map. A legendary fights with **four times its HP** and **boss attacks** of its own
+  (§4.8); it takes the whole team. Beaten, **only a Master Ball** can be thrown (no other ball is offered); with none,
+  it can only be let go and fought again. It gives **every party Pokémon** the full XP twice over, fainted or not,
+  whether it fought or not (`LEGENDARY_XP`). A caught legendary's card says so and can't be fought again.
+- **Data**: `npm run data` builds generations 1–4 (species, moves, learnsets from the region's games, Pokédex pages)
+  and, for generations 2–4, each region's own encounter tables (every species found there, only its own areas, so
+  Kanto's tables are untouched). New evolution items: Sun, Dusk, Shiny and Dawn Stones, and the **Soothe Bell**
+  (friendship evolutions); the Link Cable starts every trade evolution. Evolutions that need what the game doesn't
+  have (time of day, gender, a place, a held item while leveling) are left out. The Portuguese Pokédex texts are
+  the game's own translation, one file per generation.
 
 ## 7. Architecture
 
@@ -699,11 +748,16 @@ docs/           design notes as we decide (frame data table, balance, AI profile
 **Rule**: `fight/` and `game/` never import from `render/`, `screens/`, `state/` or the DOM. That keeps them pure
 and fast to test.
 
-### 7.5 Region scalability
+### 7.5 Regions (milestone 12)
 
-- A region is `{ id, typeChart, speciesRange, cities[], gyms[], league, starters, rival, shops, story }`.
-- Generated data per generation (`gen1.json`, `gen2.json`…) like poke-gacha.
-- The save stores `currentRegion` and per-region progress (badges, unlocks), plus global data (Pokédex, box).
+- A region is a data file (`src/data/regions/<id>.ts`, the `Region` type in `types.ts`): cities, gyms, League,
+  starters, people, art, towns, map, sanctuary. `index.ts` registers them in journey order and finds a city, gym,
+  look or town plan by id in any region. `regions.test.ts` checks every region the same way (unique ids, 8 gyms in
+  order, a League, real species and moves, art and towns for every place, a connected map, hunting areas with
+  Pokémon, legendaries, every text in both languages).
+- Generated data per generation (`gen1.json` … `gen4.json`); generations 2–4 carry their region's encounter tables.
+- Texts are split by part (`src/i18n/parts/`: each region, the bosses, travelling, items), merged into the dictionaries.
+- The save holds the current region's journey in its fields and the others in `away` (version 6).
 
 ## 8. Testing strategy (QA focus)
 
@@ -757,6 +811,7 @@ Each milestone ends with something playable, tests, and green CI.
 | 9 | ✅ **League** | Elite Four + Champion, credits, "next region" hook (scalability check) |
 | 10 | ✅ **Juice & polish** | Stages per place, trainers' Poké Ball entrance, new HUD, particles and screen shake, sound effects, original music, cries, mute, rebinding UI, menu navigation by keys and controller, modern menus. **Balance pass deferred**: it needs playtest data |
 | 11 | ✅ **Design overhaul** | A console-style 16:9 frame, the places' art behind the menus and as fight stages, trainer and character sprites, every screen redesigned (city hub of cards, Center with Nurse Joy, Mart, box grid, illustrated map, party with HP bars and reordering, results, League hall), controller-first spatial navigation with glyph hints |
+| 12 | ✅ **Regions** | Johto, Hoenn and Sinnoh (their cities, gyms, Leagues, starters, towns and maps; generations 2–4 data), a journey per region, the plane, regions opened by Leagues, the Legends' Sanctuary with boss legendaries (Master Ball only, XP for the whole party) |
 
 Milestones 1–3 come **before** any Pokémon content on purpose: if the fight doesn't feel good with rectangles, the
 sprites won't save it.
@@ -797,7 +852,7 @@ sprites won't save it.
 | Trade evolutions | A Link Cable item (default chosen in milestone 8: easy to change) |
 | Gym leaders | The Red/Blue leaders, badges and teams; their lines are original |
 | League | The Red/Blue Elite Four; the Champion is the rival with the matching Red/Blue team |
-| Next region | Party, box, money and Pokédex carry over; badges and League start over (default) |
+| Regions | Each region is its own journey (party, box, money, badges, Pokédex, kept apart); the next opens with the previous League; the plane flies between them |
 | Back dash | Invincible on its first 6 frames, punishable after |
 | Capture failure | One throw per win; if it breaks free, it flees |
 | Look | Console style (milestone 11): a 16:9 frame, the place's art behind glass menus and bright cards, Barlow Condensed + Inter |

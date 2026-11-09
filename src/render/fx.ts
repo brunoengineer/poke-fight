@@ -2,9 +2,11 @@
 // for the eyes: fed by the fight's events and state after each simulated frame, never touching the fight itself.
 
 import { BOSS_ATTACK, VORTEX } from '../fight/boss';
+import { activeHitbox } from '../fight/boxes';
 import { BODY_HEIGHT, SUB } from '../fight/constants';
 import type { ActionKind, FightEvent, FightState, Fighter } from '../fight/state';
 import { TYPE_COLORS } from './colors';
+import { elementLook } from './elements';
 import { FLOOR_Y } from './stage';
 
 interface Particle {
@@ -17,7 +19,8 @@ interface Particle {
   size: number;
   color: string;
   gravity: number;
-  kind: 'spark' | 'dust' | 'ring' | 'glow';
+  /** smoke: dark puffs drawn over the scene (Ghost, Dark); chip: solid bits (leaves, rock); flake: ice twinkles. */
+  kind: 'spark' | 'dust' | 'ring' | 'glow' | 'smoke' | 'chip' | 'flake';
 }
 
 export interface Fx {
@@ -92,6 +95,34 @@ export function createFx(): Fx {
   };
   const glowAt = (x: number, y: number, vx: number, vy: number, life: number, size: number, color: string) =>
     particles.push({ x, y, vx, vy, life, max: life, size, color, gravity: 0, kind: 'glow' });
+  /** What a special of this type leaves behind it at (x, y), moving towards `dir`: embers rise, drops fall… */
+  const trailOf = (type: string | null, x: number, y: number, dir: number, big: boolean) => {
+    const look = elementLook(type);
+    const [light, main, deep] = look.colors;
+    const spread = big ? 10 : 5;
+    const at = { x: x - dir * spread, y: y + (random() - 0.5) * spread * 1.4 };
+    const life = big ? 18 : 12;
+    const push = (kind: Particle['kind'], vx: number, vy: number, size: number, color: string, gravity = 0, length = life) =>
+      particles.push({ ...at, vx, vy, life: length, max: length, size, color, gravity, kind });
+    switch (look.particle) {
+      case 'ember':
+        return push('glow', -dir * 0.3 + (random() - 0.5) * 0.4, -0.4 - random() * 0.6, big ? 3 : 2, random() < 0.5 ? light : main, -0.01);
+      case 'drop':
+        return push('spark', -dir * 0.6, -0.6 + random() * 0.5, big ? 2 : 1.5, random() < 0.5 ? light : main, 0.14);
+      case 'spark':
+        return push('spark', (random() - 0.5) * 2.4, (random() - 0.5) * 2.4, big ? 2 : 1, random() < 0.6 ? light : look.energy, 0, 6 + Math.floor(random() * 4));
+      case 'flake':
+        return push('flake', -dir * 0.2, (random() - 0.5) * 0.3, big ? 2.4 : 1.6, random() < 0.5 ? '#ffffff' : light, 0.01, life + 8);
+      case 'leaf':
+        return push('chip', -dir * 0.5, -0.3 + random() * 0.3, big ? 2.4 : 1.6, random() < 0.5 ? main : deep, 0.03, life + 10);
+      case 'debris':
+        return push('chip', -dir * (0.3 + random() * 0.5), -0.8 - random() * 0.6, big ? 2.4 : 1.5, random() < 0.5 ? main : deep, 0.16);
+      case 'smoke':
+        return push('smoke', -dir * 0.3, -0.15 - random() * 0.2, big ? 4 : 2.5, random() < 0.5 ? main : deep, -0.004, life + 6);
+      default:
+        return push('glow', -dir * 0.4, (random() - 0.5) * 0.3, big ? 4 : 2, random() < 0.3 ? light : look.energy);
+    }
+  };
   /** A boss's attack in progress leaves particles: energy drawn in, sparks off the wave, dust behind a charge. */
   const bossParticles = (boss: Fighter) => {
     const a = boss.boss?.current;
@@ -137,13 +168,18 @@ export function createFx(): Fx {
             e.source === 'boss'
               ? typeColor(attacker.types[0] ?? null)
               : special
-                ? typeColor(e.source === 'big' ? attacker.loadout.big.type : attacker.loadout.elemental.type)
+                ? elementLook(e.source === 'big' ? attacker.loadout.big.type : attacker.loadout.elemental.type).energy
                 : '#ffffff';
           if (e.effectiveness === 0) {
             ring(x, y, 'rgba(200,200,220,0.8)', 10);
             continue;
           }
-          burst(x, y, e.big ? 28 : special ? 16 : 10, ['#ffffff', '#ffe27a', color], e.big ? 4 : 2.6);
+          burst(x, y, e.big ? 28 : special ? 16 : 10, ['#ffffff', special ? color : '#ffe27a', color], e.big ? 4 : 2.6);
+          // A special also bursts in its own matter: embers, drops, leaves, stones, smoke…
+          if (special) {
+            const type = e.source === 'big' ? attacker.loadout.big.type : attacker.loadout.elemental.type;
+            for (let k = 0; k < (e.big ? 14 : 8); k++) trailOf(type, x + (random() - 0.5) * 12, y + (random() - 0.5) * 12, (random() - 0.5) * 2, e.big);
+          }
           ring(x, y, color, e.big ? 34 : 16, e.big ? 22 : 14);
           if (e.effectiveness > 1) ring(x, y, '#ffd25e', 24, 20);
           quake(e.big ? 5 : e.effectiveness > 1 ? 3 : 2, e.big ? 16 : 7);
@@ -217,7 +253,7 @@ export function createFx(): Fx {
             life: 10,
             max: 10,
             size: 2,
-            color: typeColor(big ? f.loadout.big.type : f.loadout.elemental.type),
+            color: elementLook(big ? f.loadout.big.type : f.loadout.elemental.type).energy,
             gravity: 0,
             kind: 'glow',
           });
@@ -233,21 +269,19 @@ export function createFx(): Fx {
         if (events.some(e => e.type === 'hit' && e.defender === f.id)) trailDelay[f.id] = 24;
       }
 
-      // Projectiles leave a trail of their color.
+      // Projectiles leave a trail of their type: embers, drops, sparks, leaves, smoke…
       for (const p of round.projectiles) {
-        const big = p.slot === 'big';
-        particles.push({
-          x: p.x / SUB - Math.sign(p.vx) * (big ? 10 : 5),
-          y: FLOOR_Y - (p.y1 + p.y2) / 2 / SUB + (random() - 0.5) * (big ? 10 : 5),
-          vx: -Math.sign(p.vx) * 0.4,
-          vy: (random() - 0.5) * 0.3,
-          life: big ? 16 : 10,
-          max: big ? 16 : 10,
-          size: big ? 4 : 2,
-          color: typeColor(p.attack.type),
-          gravity: 0,
-          kind: 'glow',
-        });
+        trailOf(p.attack.type, p.x / SUB, FLOOR_Y - (p.y1 + p.y2) / 2 / SUB, Math.sign(p.vx), p.slot === 'big');
+      }
+      // Beams shed some along their length.
+      for (const f of round.fighters) {
+        const slot = f.action === 'big' ? 'big' : f.action === 'elemental' ? 'elemental' : null;
+        const box = slot && f.loadout[slot].shape === 'beam' ? activeHitbox(f) : null;
+        if (!box || !slot) continue;
+        for (let k = 0; k < 2; k++) {
+          const x = box.x1 / SUB + random() * ((box.x2 - box.x1) / SUB);
+          trailOf(f.loadout[slot].type, x, FLOOR_Y - (box.y1 + box.y2) / 2 / SUB, f.facing, slot === 'big');
+        }
       }
 
       particles = particles.filter(p => {
@@ -255,6 +289,7 @@ export function createFx(): Fx {
         p.y += p.vy;
         p.vy += p.gravity;
         if (p.kind === 'ring') p.size += 1.2;
+        if (p.kind === 'smoke') p.size += 0.15;
         return --p.life > 0;
       });
       if (particles.length > 600) particles.splice(0, particles.length - 600);
@@ -274,6 +309,25 @@ export function createFx(): Fx {
     },
     drawFront(ctx) {
       ctx.save();
+      // Solid bits and dark smoke first, over the scene; then the light, added to it.
+      for (const p of particles) {
+        const fade = p.life / p.max;
+        if (p.kind === 'smoke') {
+          ctx.globalAlpha = fade * 0.65;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (p.kind === 'chip') {
+          ctx.globalAlpha = Math.min(1, fade * 1.6);
+          ctx.fillStyle = p.color;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.life * 0.4);
+          ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+          ctx.restore();
+        }
+      }
       ctx.globalCompositeOperation = 'lighter';
       for (const p of particles) {
         const fade = p.life / p.max;
@@ -287,6 +341,11 @@ export function createFx(): Fx {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size * fade + 0.5, 0, Math.PI * 2);
           ctx.fill();
+        } else if (p.kind === 'flake') {
+          ctx.globalAlpha = fade * (0.6 + 0.4 * Math.sin(p.life));
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x - p.size, p.y - 0.4, p.size * 2, 0.8);
+          ctx.fillRect(p.x - 0.4, p.y - p.size, 0.8, p.size * 2);
         } else if (p.kind === 'ring') {
           ctx.globalAlpha = fade * 0.8;
           ctx.strokeStyle = p.color;

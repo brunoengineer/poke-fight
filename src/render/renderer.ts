@@ -18,6 +18,7 @@ import { BODY_FONT, DISPLAY_FONT, TYPE_COLORS, typeColor } from './colors';
 import { backdropUrl } from '../data/art';
 import { drawAmbience } from './ambience';
 import { BOSS_BANNER_FRAMES, bossFlash, bossPose, drawBossBack, drawBossFront, skyFallShade } from './boss';
+import { drawBeamLook, drawChargeLook, drawProjectileLook, elementLook } from './elements';
 import { createFx } from './fx';
 import { getImage } from './images';
 import { VIEW_H, VIEW_W } from './screen';
@@ -71,7 +72,7 @@ export function createRenderer(ctx: CanvasRenderingContext2D): Renderer {
       drawBossBack(ctx, round);
       for (const f of round.fighters) drawShadow(ctx, f, view);
       for (const f of round.fighters) drawFighter(ctx, f, view);
-      drawProjectiles(ctx, round, ambient());
+      drawProjectiles(ctx, round, round.frame);
       drawBossFront(ctx, round);
       // Leaves, snow, embers… passing in front of the fighters, once the place's picture shows.
       if (view.stage.backdrop && getImage(backdropUrl(view.stage.backdrop))) drawAmbience(ctx, view.stage.backdrop, ambient(), 'front');
@@ -381,43 +382,18 @@ function drawMoveEffects(ctx: CanvasRenderingContext2D, f: Fighter, hasSprite: b
   }
 
   if (charging && move) {
+    // The type's glow, with the projectile itself forming in it (a fireball, a bubble, a stone…).
     const slot = f.action === 'big' ? 'big' : 'elemental';
-    const progress = f.actionFrame / move.startup;
-    const radius = (slot === 'big' ? 16 : 8) * progress + 2;
-    const x = sx(f.x) + f.facing * 22;
-    const y = sy(f.y) - 26;
-    ctx.globalCompositeOperation = 'lighter';
-    const glow = ctx.createRadialGradient(x, y, 0, x, y, radius * 2);
-    glow.addColorStop(0, '#ffffff');
-    glow.addColorStop(0.35, typeColor(f.loadout[slot].type));
-    glow.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = glow;
-    ctx.globalAlpha = f.actionFrame % 4 < 2 ? 1 : 0.75;
-    ctx.fillRect(x - radius * 2, y - radius * 2, radius * 4, radius * 4);
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = 1;
+    const { type, shape } = f.loadout[slot];
+    drawChargeLook(ctx, type, sx(f.x) + f.facing * 22, sy(f.y) - 26, f.actionFrame / move.startup, slot === 'big', f.facing, f.actionFrame, shape === 'projectile');
   }
 
   const hitbox = activeHitbox(f);
   const slot = f.action === 'big' ? 'big' : f.action === 'elemental' ? 'elemental' : null;
   if (hitbox && slot && f.loadout[slot].shape === 'beam') {
-    const color = typeColor(f.loadout[slot].type);
-    const top = sy(hitbox.y2);
-    const height = sy(hitbox.y1) - top;
-    const left = sx(hitbox.x1);
-    const width = sx(hitbox.x2) - left;
-    ctx.globalCompositeOperation = 'lighter';
-    const beam = ctx.createLinearGradient(0, top, 0, top + height);
-    beam.addColorStop(0, 'rgba(0,0,0,0)');
-    beam.addColorStop(0.5, color);
-    beam.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = beam;
-    ctx.globalAlpha = 0.85 + 0.15 * Math.sin(f.actionFrame);
-    ctx.fillRect(left, top - 3, width, height + 6);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(left, top + height / 2 - 1, width, 2);
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = 1;
+    // From the attacker's front to the far end, in the type's look (flames, foam, lightning, ice, psychic rings…).
+    const [near, far] = f.facing === 1 ? [sx(hitbox.x1), sx(hitbox.x2)] : [sx(hitbox.x2), sx(hitbox.x1)];
+    drawBeamLook(ctx, f.loadout[slot].type, near, far, sy(hitbox.y2), sy(hitbox.y1), f.actionFrame, 0.88 + 0.12 * Math.sin(f.actionFrame));
   } else if (hitbox && !hasSprite) {
     ctx.fillStyle = slot ? typeColor(f.loadout[slot].type) : '#ffffff';
     ctx.globalAlpha = 0.6;
@@ -453,19 +429,9 @@ function drawProjectiles(ctx: CanvasRenderingContext2D, round: FightState, frame
     const cx = (sx(b.x1) + sx(b.x2)) / 2;
     const cy = (sy(b.y1) + sy(b.y2)) / 2;
     const radius = Math.max(4, (sy(b.y1) - sy(b.y2)) / 2);
-    const color = typeColor(p.attack.type ?? 'normal');
-    ctx.globalCompositeOperation = 'lighter';
-    const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * 2.2);
-    glow.addColorStop(0, '#ffffff');
-    glow.addColorStop(0.3, color);
-    glow.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(cx - radius * 2.2, cy - radius * 2.2, radius * 4.4, radius * 4.4);
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius * 0.45, 0, Math.PI * 2);
-    ctx.fill();
+    const color = elementLook(p.attack.type).energy;
+    // The type's projectile: a fireball, a bubble, purple psychic energy, a spinning stone…
+    drawProjectileLook(ctx, p.attack.type, cx, cy, p.slot === 'big' ? radius * 0.8 : radius * 1.2, Math.sign(p.vx), frame, p.id);
     if (p.slot === 'big') {
       // A big projectile has a spinning ring.
       ctx.strokeStyle = color;

@@ -403,6 +403,49 @@ A legendary in its sanctuary is a **boss** (`fight/boss.ts`, drawn by `render/bo
 The boss HUD: a gold frame, a crown, an HP bar in four segments (×4), LEGENDARY / ENRAGED!. Measured drawing cost:
 under 4 ms a frame on average for the busiest attack (enraged meteor rain), at 1440×810.
 
+### 4.9 Moves by type, signature moves, legendary moves (milestone 13)
+
+Decided after milestone 12: the specials should look like the move's type, the famous Pokémon get a move of their
+own, and a legendary on your team gets its boss attack. Four steps, each reviewed and committed on its own.
+
+1. ✅ **The elemental special looks like its type** (`render/elements.ts`, purely visual: hitboxes and damage are
+   unchanged). Each type has a projectile, a beam texture, a charge and particles:
+
+   | Type | Projectile | Beam | Leaves behind |
+   |---|---|---|---|
+   | Normal | a spinning star (Swift) | twisting strands | glow |
+   | Fire | a fireball with a flame tail | a flame stream | embers rising |
+   | Water | a bubble (and small ones behind) | a jet with foam and spray | drops |
+   | Electric | a crackling ball of bolts | lightning bolts only (no band) | sparks |
+   | Grass | three leaves spinning | strands | leaves |
+   | Ice | an ice shard with twinkles | ice crystals along it | snowflakes |
+   | Fighting | an orange sphere with speed lines | strands | glow |
+   | Poison | a sludge blob | strands | drops |
+   | Ground | a clod of earth | strands | debris |
+   | Flying | an air-slash crescent | strands | glow |
+   | Psychic | **purple** energy with rings (the type's badge pink is for menus) | rings (Psybeam) | glow |
+   | Bug | a swarm around a glowing core | strands | glow |
+   | Rock | a spinning stone | strands | debris |
+   | Ghost | a shadow ball with wisps | a dark band, glowing edge | smoke |
+   | Dragon | a blue-violet flame orb with a spiral | strands | glow |
+   | Dark | a black core in dark rings | a dark band, glowing edge | smoke |
+   | Steel | a spinning gear | strands | sparks |
+
+   The projectile forms in the charge's glow, so the player sees what is coming. Dark energy is painted over the
+   scene (adding a dark color shows nothing); bright cores too, or they wash out to white on a bright stage. A
+   projectile is drawn 20% bigger than its hitbox.
+2. **The big special by type, with real hits** (the hit follows the animation; new frame data and balance pinned in
+   tests). Ideas: Ground, a quake wave along the floor to both edges (jump it); Grass, a solar beam; Fire, a fire
+   tornado that also hits jumpers; Rock, rocks falling in arcs; Water, a tall surf wave; Electric, a thunderbolt
+   from the sky on the opponent; Ice, a blizzard; and so on for every type.
+3. **Signature moves**: back, down, forward + attack (today's free elemental) becomes a move of their own for
+   Pikachu, Charizard, Blaziken, Lucario, Gengar, Gardevoir, Kingler, Dragonite, Lapras, Flygon and Garchomp.
+   Greninja and Zoroark were asked for, but the game covers generations 1–4: Blaziken and Garchomp replace them.
+   Same rule as the free elemental: no PP spent, none earned, about the elemental's power.
+4. **Legendary moves**: a legendary on the player's team gets up, down, back, forward + attack: its boss attack
+   (Quake, Meteor, Nova, Vortex…), cut down to a player's move. It works with any PP above 0, always empties the
+   bar, and hits harder the fuller the bar was (a full bar ≈ a big special).
+
 ## 5. Progression systems
 
 - **XP**: official formula (`base_experience · level / 7`, ×1.5 for trainer battles), growth rates from the data
@@ -840,6 +883,7 @@ Each milestone ends with something playable, tests, and green CI.
 | 10 | ✅ **Juice & polish** | Stages per place, trainers' Poké Ball entrance, new HUD, particles and screen shake, sound effects, original music, cries, mute, rebinding UI, menu navigation by keys and controller, modern menus. **Balance pass deferred**: it needs playtest data |
 | 11 | ✅ **Design overhaul** | A console-style 16:9 frame, the places' art behind the menus and as fight stages, trainer and character sprites, every screen redesigned (city hub of cards, Center with Nurse Joy, Mart, box grid, illustrated map, party with HP bars and reordering, results, League hall), controller-first spatial navigation with glyph hints |
 | 12 | ✅ **Regions** | Johto, Hoenn and Sinnoh (their cities, gyms, Leagues, starters, towns and maps; generations 2–4 data), a journey per region, the plane, regions opened by Leagues, the Legends' Sanctuary with boss legendaries (Master Ball only, XP for the whole party) |
+| 13 | **Moves by type** | Elemental specials drawn by type (✅), big specials by type with real hits, signature moves for 11 famous Pokémon, legendary moves (§4.9) |
 
 Milestones 1–3 come **before** any Pokémon content on purpose: if the fight doesn't feel good with rectangles, the
 sprites won't save it.

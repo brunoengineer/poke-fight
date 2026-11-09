@@ -411,7 +411,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
     const s = save;
     const lost = outcome !== 'win';
     // After the first battle the starter rests at home: full HP, whatever happened.
-    update(current => ({ ...current, prologue: 'done', location: 'viridian', party: current.party.map(heal) }));
+    // The journey starts at home, in Pallet Town (Route 1's grass is right there).
+    update(current => ({ ...current, prologue: 'done', location: 'pallet', party: current.party.map(heal) }));
     tell(
       [
         { speaker: s.rival.name, portrait: PEOPLE.rival, key: lost ? 'story.rivalWon' : 'story.rivalLost', params: { player: s.player.name } },

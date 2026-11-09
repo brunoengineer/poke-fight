@@ -60,7 +60,8 @@ Our own light narrative on top of the canonical Kanto structure (cities, gym ord
   an air attack, guard the rival's attack, dash, land the elemental special. During the guided steps the rival only
   attacks in the guard step, both Pokémon stay at full HP, the clock stops and the special step always has enough
   PP. Then "Now win the battle!" against an easy CPU, with the rival at half HP. Win (XP) or lose, the story goes on;
-  the starter rests (full HP) and the player sets off to **Viridian City**.
+  the starter rests (full HP) and the journey starts at home in **Pallet Town** (decided after milestone 11; it
+  used to drop the player in Viridian City), with Route 1's grass right outside.
 - **City screen** (milestone 7 fills it in): Battle field (training), Party, Title.
 - **Training**: with a journey, your party against Rattata, Pidgey and Geodude at your party's average level (XP
   counts, Continue goes back to the city); without one, the Lv. 30 demo teams (no XP). Esc leaves Training. The
@@ -364,28 +365,29 @@ More archetypes can come later (status effects: paralysis = slower, burn = damag
 - **Evolution**: official methods: level, stone (bought at the mall), trade (❓ replace with an item such as
   "Link Cable", like in poke-gacha). Evolving can be cancelled (B).
 - **Capture** (wild battles only): after you win, the defeated Pokémon is worn out and you can throw a ball from the
-  bag. **No performance bonus**: only the ball, the species and the levels count, using the **official modern
-  formula** (Sword/Shield, Gen 8), the most recent one that uses level:
+  bag. **No performance bonus**: only the ball, the species and the levels count, using the shape of the **official
+  modern formula** (Sword/Shield, Gen 8), made harder after milestone 11 (decided: with the games' values every early
+  Pokémon was caught on the first throw; a common one should take **3–4 fights**):
 
   ```
-  X = HPterm × catchRate × ball × lowLevel × difficulty × status
+  X = HPterm × catchRate × ball × difficulty × status
   ```
 
   | Term | Value |
   |------|-------|
-  | `HPterm` | Fixed at **1**: a defeated Pokémon counts as worn out (like Max Raids). It does not depend on how you won. |
+  | `HPterm` | Fixed at **0.2** (`WILD_SPIRIT`): a beaten wild Pokémon still has fight in it. It does not depend on how you won. (It was 1, the games' 1-HP value.) |
   | `catchRate` | Species catch rate from the data (Pidgey 255, Pikachu 190, Snorlax 25, Mewtwo 3) |
   | `ball` | Poké ×1, Great ×1.5, Ultra ×2, Safari ×1.5, Master = always. Later regions add Nest Ball (`(41 − level)/10` below Lv. 30), Net, Dusk, Level Ball… as data. |
-  | `lowLevel` | Wild level < 21 → `(30 − level) / 10` (Lv. 5 = ×2.5, Lv. 15 = ×1.5), otherwise ×1 |
+  | `lowLevel` | **Dropped** (it was `(30 − level) / 10` below Lv. 21, ×2.5 at Lv. 5: it made every early Pokémon a sure catch) |
   | `difficulty` | Before the 8th badge, if the wild Pokémon's level is **higher than your Pokémon's** → ×0.1 |
   | `status` | ×1 (no status effects yet; sleep ×2.5, paralysis/poison/burn ×1.5 when they exist) |
 
   - If `X ≥ 255` it is caught. Otherwise there are **4 shake checks**, each passing with
     `Y/65536` where `Y = 65536 / (255/X)^(3/16)`. Overall chance ≈ `(X/255)^0.75`. Each passed check = one wobble.
-  - Examples: wild Lv. 30 Snorlax: Poké Ball ≈ 18%, Great ≈ 24%, Ultra ≈ 30%. Lv. 70 Mewtwo + Ultra ≈ 6%.
-    Common Pokémon (catch rate 255) are always caught, as in the games when they're at 1 HP.
-  - Note: the real formula only uses level through `lowLevel`, `difficulty` and some balls, so "level matters"
-    mostly means "low-level Pokémon are easy, and stronger ones than yours are hard".
+  - Examples (Poké / Great / Ultra Ball): a common Pokémon (catch rate 255: Pidgey, Rattata, Geodude) ≈ 30% / 40% /
+    50%, so 3–4 fights with Poké Balls; Pikachu (190) ≈ 24% / 32% / 40%; Snorlax (25) ≈ 5% / 7% / 9%; Mewtwo (3) +
+    Ultra ≈ 2%. The Master Ball always catches.
+  - Level now only matters through `difficulty`: a Pokémon stronger than yours is much harder.
   - Gen 8 "critical capture" is left out (simpler).
   - **One throw per win**: if the Pokémon breaks free, it **flees**. You still keep the battle's XP. The ball is used up either way.
   - So the choice of ball matters: a rare Pokémon is worth an Ultra Ball, because there is no second try.
@@ -680,7 +682,7 @@ and fast to test.
 - **Test mode** (`?test=1`): fixed seed, **manual clock** (the game only advances when the test calls
   `window.__pf.step(n)`), sprites and audio stubbed, read-only `window.__pf.snapshot()` of the fight state, and a
   `window.__pf.load(save)` to start from any point of the game.
-- **Flows**: new game → starter → rival tutorial → Viridian → buy balls → hunt → win → capture → level up → evolve →
+- **Flows**: new game → starter → rival tutorial → Pallet → Viridian → buy balls → hunt → win → capture → level up → evolve →
   gym → badge → new city unlocked → … → Champion (with saves to skip ahead).
 - **Controls**: real `keyboard.down/up` + frame stepping to check precise timing in the real page; a **fake
   gamepad** injected via `addInitScript` (`navigator.getGamepads`) to test the controller path; key rebinding.
@@ -706,7 +708,7 @@ Each milestone ends with something playable, tests, and green CI.
 | 3 | ✅ **CPU** | AI with reaction delay, 3 difficulties × 4 styles; can play a fair fight against it |
 | 4 | ✅ **Pokémon data** | `build-data.mjs` (Gen 1: species, stats, types, moves, learnsets, evolutions, encounters, growth, catch rates); sprites in the fight; stat-based damage; type chart |
 | 5 | ✅ **Progression + save** | Party, XP, level up, move choice, evolution, save/load with versions |
-| 6 | ✅ **Prologue** | Title → starter → interactive rival tutorial → arrive at Viridian |
+| 6 | ✅ **Prologue** | Title → starter → interactive rival tutorial → arrive at Viridian (Pallet since milestone 11's follow-ups) |
 | 7 | ✅ **World loop** | World map, cities, hunt (grass/water/cave), capture with balls, Pokémon Center, first shop, box |
 | 8 | ✅ **Gyms** | KOF-style team battles, trainers, 8 gyms with AI styles, badges unlock cities, mall, Safari Zone |
 | 9 | ✅ **League** | Elite Four + Champion, credits, "next region" hook (scalability check) |
@@ -737,7 +739,7 @@ sprites won't save it.
 | Air control | Jumps can be steered left/right in the air |
 | Team battles | Up to 6 vs 6, one at a time, like the real games |
 | Type chart | Modern 18-type chart and modern typings for every region (scales best) |
-| Capture | No performance bonus; official Gen 8 formula (catch rate, ball, level modifiers), fixed worn-out HP term |
+| Capture | No performance bonus; the Gen 8 formula's shape (catch rate, ball, difficulty) with a fixed HP term of 0.2 and no low-level bonus: a common Pokémon takes 3–4 fights |
 | Specials | Two slots: elemental (K, always a range attack, ¼ PP) and big (I, full PP bar + long charge) |
 | PP bar | Replaces the Power gauge. One per Pokémon, starts half full, fills only when your hits land |
 | Big dash | A shape of the big special: physical moves become a Rush that passes through the opponent |

@@ -7,7 +7,7 @@ import { city, isUnlocked, KANTO, type HuntKind } from '../data/regions/kanto';
 import { createRng } from '../engine/rng';
 import { HP_UNITS } from '../fight/constants';
 import { addCaught, canSendToBox, canTakeFromBox, sendToBox, swapInParty, takeFromBox } from './box';
-import { catchChance, catchValue, DIFFICULTY_PENALTY, lowLevelBonus, throwBall } from './capture';
+import { catchChance, catchValue, DIFFICULTY_PENALTY, throwBall, WILD_SPIRIT } from './capture';
 import { addItem, buy, countOf, moneyAfterLoss, prizeMoney, removeItem, START_BAG, START_MONEY, usePotion } from './economy';
 import { bestRod, encounterTable, hasEncounters, RARE_BITE, rollEncounter, rollIvs, wildPokemon } from './encounters';
 import { createPokemon, maxHpOf } from './pokemon';
@@ -95,34 +95,39 @@ describe('encounters', () => {
   });
 });
 
-describe('catching (Gen 8 formula, no performance bonus)', () => {
+describe('catching (the Gen 8 formula with a wild spirit, no performance bonus)', () => {
   const x = (catchRate: number, ball: number, wildLevel: number, playerLevel = 50, badges = 0) =>
     catchValue({ catchRate, ball, wildLevel, playerLevel, badges });
 
-  it('matches the plan: Lv. 30 Snorlax ≈ 18% / 24% / 30%; Lv. 70 Mewtwo + Ultra ≈ 6%', () => {
-    expect(catchChance(x(25, 1, 30))).toBeCloseTo(0.18, 1);
-    expect(catchChance(x(25, 1.5, 30))).toBeCloseTo(0.24, 1);
-    expect(catchChance(x(25, 2, 30))).toBeCloseTo(0.3, 1);
-    expect(catchChance(x(3, 2, 70, 80))).toBeCloseTo(0.06, 1);
+  it('matches the plan: a common Pokémon ≈ 30% (3–4 fights), Pikachu ≈ 24%, Snorlax ≈ 5% / 7% / 9%', () => {
+    expect(catchChance(x(255, 1, 3))).toBeCloseTo(0.3, 2);
+    expect(catchChance(x(190, 1, 5))).toBeCloseTo(0.24, 2);
+    expect(catchChance(x(25, 1, 30))).toBeCloseTo(0.053, 2);
+    expect(catchChance(x(25, 1.5, 30))).toBeCloseTo(0.072, 2);
+    expect(catchChance(x(25, 2, 30))).toBeCloseTo(0.089, 2);
   });
 
-  it('common Pokémon (catch rate 255) are always caught; the Master Ball always catches', () => {
-    expect(throwBall(x(255, 1, 5), createRng(1))).toEqual({ caught: true, shakes: 3 });
+  it('the level no longer matters (no low-level bonus), only the ball and the species', () => {
+    expect(x(255, 1, 2)).toBe(x(255, 1, 40));
+    expect(x(255, 2, 5)).toBe(2 * x(255, 1, 5));
+  });
+
+  it('even a common Pokémon is often not caught on the first try; the Master Ball always catches', () => {
+    const rng = createRng(5);
+    const first = Array.from({ length: 2000 }, () => throwBall(x(255, 1, 3), rng).caught).filter(Boolean).length / 2000;
+    expect(first).toBeGreaterThan(0.25);
+    expect(first).toBeLessThan(0.35);
     expect(throwBall(x(3, Infinity, 70), createRng(1)).caught).toBe(true);
   });
 
-  it('low-level Pokémon are easier: (30 − level) / 10 below Lv. 21', () => {
-    expect([1, 5, 15, 20, 21, 50].map(lowLevelBonus)).toEqual([2.9, 2.5, 1.5, 1, 1, 1]);
-  });
-
   it('a wild Pokémon stronger than yours is much harder to catch (before the 8th badge)', () => {
-    expect(x(45, 1, 30, 20)).toBeCloseTo(45 * DIFFICULTY_PENALTY);
-    expect(x(45, 1, 30, 20, 8)).toBe(45);
-    expect(x(45, 1, 30, 30)).toBe(45);
+    expect(x(45, 1, 30, 20)).toBeCloseTo(45 * WILD_SPIRIT * DIFFICULTY_PENALTY);
+    expect(x(45, 1, 30, 20, 8)).toBeCloseTo(45 * WILD_SPIRIT);
+    expect(x(45, 1, 30, 30)).toBeCloseTo(45 * WILD_SPIRIT);
   });
 
   it('the shake checks give the formula chance (statistically, with a fixed seed)', () => {
-    const value = x(45, 1, 30); // ≈ 27%
+    const value = x(255, 1, 30); // ≈ 30%
     const rng = createRng(11);
     const caught = Array.from({ length: 20_000 }, () => throwBall(value, rng).caught).filter(Boolean).length / 20_000;
     expect(caught).toBeCloseTo(catchChance(value), 1);

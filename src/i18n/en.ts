@@ -78,7 +78,7 @@ export const en = {
   'story.rivalLost': 'Not bad, {player}… I’ll get stronger. See you on the road!',
   'story.rivalWon': 'Ha! Train harder, {player}! See you on the road!',
   'story.rested': '(Your Pokémon rested at home and is full of energy again.)',
-  'story.depart': 'Your journey starts now. Head north to Viridian City!',
+  'story.depart': 'Your journey starts now, right here in Pallet Town. Route 1 is just outside, and Viridian City lies to the north!',
 
   'starter.title': 'Choose your first partner',
 

@@ -79,7 +79,7 @@ export const pt: Record<MessageKey, string> = {
   'story.rivalLost': 'Nada mal, {player}… Vou ficar mais forte. Até a próxima!',
   'story.rivalWon': 'Rá! Treine mais, {player}! Até a próxima!',
   'story.rested': '(Seu Pokémon descansou em casa e está com energia total de novo.)',
-  'story.depart': 'Sua jornada começa agora. Siga para o norte, até a Cidade de Viridian!',
+  'story.depart': 'Sua jornada começa agora, aqui mesmo em Pallet. A Rota 1 fica logo ali, e a Cidade de Viridian fica ao norte!',
 
   'starter.title': 'Escolha seu primeiro parceiro',
 

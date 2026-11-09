@@ -3731,14 +3731,15 @@ kbd,
   filter: drop-shadow(0 0.6cqh 0.4cqh rgba(0, 0, 0, 0.5));
 }
 
-/* The button on the ball's front: it lights up green when the ball clicks shut. */
+/* The button on the ball's front: it lights up green when the ball clicks shut. The item sprites (30×30 art pixels,
+   the same template for every ball) have the button at pixel (12, 18), three pixels wide: placed there, at its size. */
 .capture-light {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 3cqh;
-  height: 3cqh;
-  margin: -1.5cqh 0 0 -1.5cqh;
+  left: calc(12.5 / 30 * 100%);
+  top: calc(18.5 / 30 * 100%);
+  width: 1.5cqh;
+  height: 1.5cqh;
+  margin: -0.75cqh 0 0 -0.75cqh;
   border-radius: 50%;
   opacity: 0;
 }
@@ -3885,19 +3886,21 @@ kbd,
 
 .capture-stage[data-state='caught'] .capture-light {
   opacity: 1;
-  background: radial-gradient(closest-side, #eaffd8, #4fe36a 55%, rgba(79, 227, 106, 0));
-  box-shadow: 0 0 3cqh 1cqh rgba(79, 227, 106, 0.55);
+  background: radial-gradient(closest-side, #f4fff0, #4fe36a 70%, #2fae4a);
+  box-shadow: 0 0 1cqh 0.3cqh rgba(79, 227, 106, 0.8);
   animation: capture-glow 1.2s ease-out;
 }
 
+/* The button flashes on: a bright ring that settles into a steady green dot. */
 @keyframes capture-glow {
   from {
-    transform: scale(3);
+    transform: scale(0.4);
     opacity: 0;
   }
-  25% {
-    transform: scale(1.4);
+  20% {
+    transform: scale(1.6);
     opacity: 1;
+    box-shadow: 0 0 2cqh 0.8cqh rgba(79, 227, 106, 0.9);
   }
 }
 

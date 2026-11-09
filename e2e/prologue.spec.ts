@@ -1,4 +1,4 @@
-// The prologue, played for real: title → the Professor → names → starter → the rival tutorial → Viridian City.
+// The prologue, played for real: title → the Professor → names → starter → the rival tutorial → Pallet Town.
 
 import type { Page } from '@playwright/test';
 import { expect, fixture, openGame, reload, save, scene, snapshot, step, test } from './helpers';
@@ -82,7 +82,7 @@ test.describe('title', () => {
 });
 
 test.describe('the prologue', () => {
-  test('from New game to Viridian City, through the whole rival tutorial', async ({ page }) => {
+  test('from New game to Pallet Town, through the whole rival tutorial', async ({ page }) => {
     test.setTimeout(120_000);
     await openGame(page, { scene: 'title' });
     await page.getByTestId('new-game').click();
@@ -128,13 +128,13 @@ test.describe('the prologue', () => {
     // The rival and the Professor, then the city.
     await expect(page.getByTestId('dialog')).toContainText('Bia');
     while (await page.getByTestId('dialog-next').isVisible()) await next(page);
-    await expect(page.getByTestId('city-heading')).toHaveText('Viridian City');
-    expect(await save(page)).toMatchObject({ prologue: 'done', location: 'viridian' });
+    await expect(page.getByTestId('city-heading')).toHaveText('Pallet Town');
+    expect(await save(page)).toMatchObject({ prologue: 'done', location: 'pallet' });
 
     // Continue from the title goes back to the city.
     await reload(page);
     await page.getByTestId('continue-game').click();
-    await expect(page.getByTestId('city-heading')).toHaveText('Viridian City');
+    await expect(page.getByTestId('city-heading')).toHaveText('Pallet Town');
   });
 
   test('empty names become the default ones', async ({ page }) => {

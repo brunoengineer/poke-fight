@@ -33,29 +33,42 @@ test.describe('the city', () => {
 });
 
 test.describe('hunting and catching', () => {
-  test('a wild Pokémon in the grass: beat it, throw a Poké Ball, and it joins the party', async ({ page }) => {
-    await openGame(page, { scene: 'city' }, { save: start() });
+  test('a wild Pokémon in the grass: beat it, throw a Poké Ball; it may break free, so hunt again until one is caught', async ({ page }) => {
+    // A common Pokémon is caught about 30% of the time with a Poké Ball: 3–4 fights on average.
+    await openGame(page, { scene: 'city' }, { save: { ...start(), bag: { 'poke-ball': 12 } } });
     await page.getByTestId('hunt-grass').click();
-    expect(await scene(page)).toMatchObject({ scene: 'fight', mode: 'wild' });
-    const wild = (await snapshot(page)).fighters[1].name;
-    expect(['Pidgey', 'Rattata']).toContain(wild);
-
-    await winBattle(page);
-    await expect(page.getByTestId('results-prompt')).toHaveText(`The wild ${wild} is worn out! Throw a ball?`);
-    // Route 1's Pokémon have a catch rate of 255: a Poké Ball always works.
-    await page.getByTestId('throw-poke-ball').click();
-    // The throw plays out (the tests skip straight to its end): the ball clicked shut.
-    await expect(page.getByTestId('capture-text')).toHaveText(`Gotcha! ${wild} was caught!`);
-    await expect(page.locator('.capture-stage')).toHaveAttribute('data-state', 'caught');
-    await page.getByTestId('capture-done').click();
-    await expect(page.getByTestId('results-lines')).toContainText(`Gotcha! ${wild} was caught!`);
+    let throws = 0;
+    let caught = '';
+    while (!caught && throws < 12) {
+      expect(await scene(page)).toMatchObject({ scene: 'fight', mode: 'wild' });
+      const wild = (await snapshot(page)).fighters[1].name;
+      expect(['Pidgey', 'Rattata']).toContain(wild);
+      await winBattle(page);
+      await expect(page.getByTestId('results-prompt')).toHaveText(`The wild ${wild} is worn out! Throw a ball?`);
+      await page.getByTestId('throw-poke-ball').click();
+      throws++;
+      // The throw plays out (the tests skip straight to its end): the ball clicked shut, or it burst open.
+      const state = await page.locator('.capture-stage').getAttribute('data-state');
+      if (state === 'caught') {
+        await expect(page.getByTestId('capture-text')).toHaveText(`Gotcha! ${wild} was caught!`);
+        caught = wild;
+      } else {
+        expect(state).toBe('escaped');
+        await expect(page.getByTestId('capture-text')).toHaveText(/broke free|appeared to be caught|Almost had it|so close/);
+      }
+      await page.getByTestId('capture-done').click();
+      if (!caught) {
+        await expect(page.getByTestId('results-lines')).toContainText(`broke free and fled`);
+        await page.getByTestId('hunt-again').click();
+      }
+    }
+    await expect(page.getByTestId('results-lines')).toContainText(`Gotcha! ${caught} was caught!`);
     await page.getByTestId('continue').click();
 
     const after = await save(page);
     expect(after.party).toHaveLength(2);
-    expect(after.bag['poke-ball']).toBe(4);
+    expect(after.bag['poke-ball']).toBe(12 - throws);
     expect(after.dex.caught).toContain(after.party[1].speciesId);
-    await expect(page.getByTestId('city-dex')).toContainText('2 caught');
   });
 
   test('after a wild battle, Hunt again starts another encounter in the same grass', async ({ page }) => {

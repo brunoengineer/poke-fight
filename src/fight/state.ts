@@ -96,8 +96,12 @@ export interface Fighter {
   combo: number;
   /** The input held on the last frame, to tell new presses from held buttons. */
   held: InputMask;
-  /** Frames a press is still remembered for; 0 = nothing buffered. */
-  buffer: { physical: number; special: number; big: number; dash: number };
+  /** Directions held on the last frames, newest first, for the back, down, forward motion (fight/motion.ts). */
+  directions: InputMask[];
+  /** Frames a press is still remembered for; 0 = nothing buffered. `motion`: the attack button right after the motion. */
+  buffer: { physical: number; special: number; big: number; dash: number; motion: number };
+  /** The current elemental special came from the motion: it cost no PP, and landing it earns none. */
+  freeSpecial: boolean;
   /** Legendary bosses only (the key is absent on everyone else): the attack schedule and the attack in progress. */
   boss?: BossState;
 }
@@ -216,7 +220,9 @@ function createFighter(id: FighterId, x: number, setup: FighterSetup): Fighter {
     jumpDirection: 0,
     combo: 0,
     held: 0,
-    buffer: { physical: 0, special: 0, big: 0, dash: 0 },
+    directions: [],
+    buffer: { physical: 0, special: 0, big: 0, dash: 0, motion: 0 },
+    freeSpecial: false,
     // Only bosses get the key, so every other fighter stays exactly as it was.
     ...(setup.boss ? { boss: createBossState(setup.boss, bossSeed(setup)) } : {}),
   };

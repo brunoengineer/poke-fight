@@ -33,6 +33,7 @@ import {
   type SpecialSlot,
 } from './frame-data';
 import { Button, cleanDirections, has, type InputMask } from './input';
+import { motionDone, pushDirections } from './motion';
 import type { ActionKind, AttackInfo, FightEvent, FightState, Fighter, HitSource } from './state';
 
 export interface StepResult {
@@ -76,7 +77,13 @@ export function step(previous: FightState, inputs: readonly [InputMask, InputMas
 function readInput(f: Fighter, mask: InputMask) {
   const pressed = mask & ~f.held;
   f.held = mask;
-  if (has(pressed, Button.Physical)) f.buffer.physical = BUFFER_FRAMES;
+  f.directions = pushDirections(f.directions, mask);
+  // The attack button right after back, down, forward is the free elemental special instead of a tackle. The motion
+  // is checked when the button is pressed (with the facing of that moment), then buffered like any press.
+  if (has(pressed, Button.Physical)) {
+    if (motionDone(f.directions, f.facing)) f.buffer.motion = BUFFER_FRAMES;
+    else f.buffer.physical = BUFFER_FRAMES;
+  }
   if (has(pressed, Button.Special)) f.buffer.special = BUFFER_FRAMES;
   if (has(pressed, Button.Big)) f.buffer.big = BUFFER_FRAMES;
   if (has(pressed, Button.Dash)) f.buffer.dash = BUFFER_FRAMES;
@@ -115,7 +122,10 @@ function think(f: Fighter, opponentX: number, events: FightEvent[]) {
     const forward = f.facing === 1 ? Button.Right : Button.Left;
     const back = f.facing === 1 ? Button.Left : Button.Right;
 
-    if (f.buffer.physical > 0) {
+    // The motion first: it is the harder input, so it is the one the player meant.
+    if (f.buffer.motion > 0) {
+      startSpecial(f, 'elemental', events, true);
+    } else if (f.buffer.physical > 0) {
       f.buffer.physical = 0;
       f.contact = null;
       setAction(f, 'attack', moveLength(PHYSICAL));
@@ -142,7 +152,11 @@ function think(f: Fighter, opponentX: number, events: FightEvent[]) {
       setAction(f, 'idle');
     }
   } else if (inJump) {
-    if (f.buffer.physical > 0) {
+    // In the air the motion works like the special button: it uses the jump's one air move.
+    if (f.buffer.motion > 0) {
+      f.airAttackUsed = true;
+      startSpecial(f, 'elemental', events, true);
+    } else if (f.buffer.physical > 0) {
       f.buffer.physical = 0;
       f.contact = null;
       f.airAttackUsed = true;
@@ -154,16 +168,20 @@ function think(f: Fighter, opponentX: number, events: FightEvent[]) {
   }
 
   if (f.action === 'prejump') f.jumpDirection = heldDirection(f);
-  for (const key of ['physical', 'special', 'big', 'dash'] as const) {
+  for (const key of ['physical', 'special', 'big', 'dash', 'motion'] as const) {
     if (f.buffer[key] > 0) f.buffer[key]--;
   }
 }
 
-/** PP is spent when the charge starts: a hit during the charge cancels the special and the PP is lost. */
-function startSpecial(f: Fighter, slot: SpecialSlot, events: FightEvent[]) {
+/**
+ * PP is spent when the charge starts: a hit during the charge cancels the special and the PP is lost.
+ * `free`: the elemental special from the motion, which spends no PP (and earns none when it lands).
+ */
+function startSpecial(f: Fighter, slot: SpecialSlot, events: FightEvent[], free = false) {
   const airborne = f.y > 0 || f.vy > 0;
-  f.buffer[slot === 'elemental' ? 'special' : 'big'] = 0;
-  f.pp -= slot === 'elemental' ? ELEMENTAL_COST : PP_MAX;
+  f.buffer[free ? 'motion' : slot === 'elemental' ? 'special' : 'big'] = 0;
+  if (!free) f.pp -= slot === 'elemental' ? ELEMENTAL_COST : PP_MAX;
+  f.freeSpecial = free;
   f.contact = null;
   // In the air it lasts until landing, like the air attack.
   setAction(f, slot, airborne ? 0 : moveLength(moveOf(slot, f.loadout)!));
@@ -311,10 +329,13 @@ function spawnProjectiles(state: FightState) {
       y1: f.y + p.y1,
       y2: f.y + p.y2,
       vx: f.facing * p.speed,
-      hit: move.hit,
+      hit: slot === 'elemental' ? earned(f, move.hit) : move.hit,
     });
   }
 }
+
+/** The free elemental special (from the motion) earns no PP when it lands, so it can't be used to fill the bar. */
+const earned = (f: Fighter, hit: HitData): HitData => (f.freeSpecial ? { ...hit, ppGain: 0 } : hit);
 
 function specialAttack(f: Fighter, slot: 'elemental' | 'big'): AttackInfo {
   const { power, type, category } = f.loadout[slot];
@@ -385,7 +406,8 @@ function resolveHits(state: FightState, events: FightEvent[], bossHits: readonly
     attacker.contact = 'hit';
     // By position, not facing: a jump or a rush can cross over.
     const away = defender.x === attacker.x ? attacker.facing : Math.sign(defender.x - attacker.x);
-    connections.push({ attacker, defender, hit: currentMove(attacker)!.hit, attack: meleeAttack(attacker), away, melee: true, source: meleeSource(attacker) });
+    const hit = currentMove(attacker)!.hit;
+    connections.push({ attacker, defender, hit: attacker.action === 'elemental' ? earned(attacker, hit) : hit, attack: meleeAttack(attacker), away, melee: true, source: meleeSource(attacker) });
   }
 
   state.projectiles = state.projectiles.filter(p => {
@@ -451,7 +473,7 @@ function applyHit(state: FightState, connection: Connection, events: FightEvent[
   const damage = Math.max(1, scaledDamage(fullDamage, defender.combo));
   defender.combo++;
   defender.hp = Math.max(0, defender.hp - damage);
-  defender.buffer = { physical: 0, special: 0, big: 0, dash: 0 };
+  defender.buffer = { physical: 0, special: 0, big: 0, dash: 0, motion: 0 };
   attacker.pp = Math.min(PP_MAX, attacker.pp + hit.ppGain);
   state.hitstop = Math.max(state.hitstop, hit.hitstop);
   events.push({ type: 'hit', attacker: attacker.id, defender: defender.id, damage, effectiveness, air, big: hit.big, combo: defender.combo, source, ...named });

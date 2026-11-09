@@ -34,6 +34,16 @@ describe('keyboard latch', () => {
     expect(keys.sample()).toBe(Button.Up | Button.Left);
   });
 
+  it('S and the down arrow are down (only the motion input uses it in a fight)', () => {
+    const keys = createKeyLatch();
+    keys.down('ArrowDown');
+    keys.down('KeyD');
+    expect(keys.sample()).toBe(Button.Down | Button.Right);
+    keys.up('ArrowDown');
+    keys.down('KeyS');
+    expect(keys.sample()).toBe(Button.Down | Button.Right);
+  });
+
   it('ignores keys that are not bound', () => {
     const keys = createKeyLatch();
     keys.down('KeyZ');
@@ -76,6 +86,13 @@ describe('controller', () => {
     expect(padMask(pad([], [STICK_DEADZONE - 0.01, 0]))).toBe(0);
     expect(padMask(pad([], [STICK_DEADZONE, 0]))).toBe(Button.Right);
     expect(padMask(pad([], [-0.9, -0.9]))).toBe(Button.Left | Button.Up);
+  });
+
+  it('down reaches the fight from the d-pad and the stick, diagonals included (the motion input)', () => {
+    expect(padMask(pad([PAD.Down]))).toBe(Button.Down);
+    expect(padMask(pad([], [0, 0.9]))).toBe(Button.Down);
+    expect(padMask(pad([], [-0.7, 0.7]))).toBe(Button.Left | Button.Down);
+    expect(padMask(pad([PAD.Down, PAD.Right]))).toBe(Button.Down | Button.Right);
   });
 
   it('works with pads that report fewer buttons', () => {

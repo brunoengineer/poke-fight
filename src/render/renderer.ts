@@ -913,13 +913,18 @@ function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView, trail: (id: 0
     ctx.fillText(`${p2}${view.infinitePp ? ` · ${t('hud.infinitePp')}` : ''}`, VIEW_W / 2, 31);
   }
   if (view.tools || view.banner?.step) {
-    roundRect(ctx, 16, VIEW_H - 26, VIEW_W - 32, view.tools ? 22 : 12, 5);
+    // Training shows three lines (the controls, the free special's motion, the tools); a tutorial only the controls.
+    const top = view.tools ? VIEW_H - 36 : VIEW_H - 26;
+    roundRect(ctx, 16, top, VIEW_W - 32, view.tools ? 32 : 12, 5);
     ctx.fillStyle = 'rgba(8,10,24,0.55)';
     ctx.fill();
     ctx.font = font(8, 'normal');
     ctx.fillStyle = '#d8dcf0';
-    ctx.fillText(t('controls.fight'), VIEW_W / 2, VIEW_H - 24);
-    if (view.tools) ctx.fillText(t('controls.sandbox'), VIEW_W / 2, VIEW_H - 14);
+    ctx.fillText(t('controls.fight'), VIEW_W / 2, top + 2);
+    if (view.tools) {
+      ctx.fillText(t('motion.hint'), VIEW_W / 2, top + 12);
+      ctx.fillText(t('controls.sandbox'), VIEW_W / 2, top + 22);
+    }
   }
   ctx.restore();
 }

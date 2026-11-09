@@ -8,6 +8,8 @@ import { button, glyph, heading, hintBar, screen, type ButtonSpec, type Hint, ty
 export interface OptionsView {
   title: string;
   info: string;
+  /** The motion input (back, down, forward + tackle: a free elemental special). */
+  motion: string;
   sound: { label: string; value: string; on: boolean; onClick: () => void };
   volumes: {
     label: string;
@@ -81,6 +83,7 @@ export function renderOptions(root: HTMLElement, view: OptionsView) {
             h('li', {}, [h('span', { class: 'pad pad-stick', text: '✥' }), h('span', { text: view.pad.move })]),
             ...view.pad.rows.map(row => h('li', {}, [glyph(row.pad, ''), h('span', { text: row.label })])),
           ]),
+          h('p', { class: 'screen-info options-motion', testid: 'options-motion', text: view.motion }),
         ]),
         h('section', { class: 'glass options-col keys' }, [
           h('h3', { class: 'label', text: view.keyboard.label }),

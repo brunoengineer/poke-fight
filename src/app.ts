@@ -832,7 +832,6 @@ export function startApp(elements: AppElements, options: TestOptions) {
         name: status(id) === 'unseen' ? t('dex.unknown') : species(id).name,
         sprite: spriteUrl(id),
         status: status(id),
-        owned: ownedCount(s, id) > 0,
       })),
       start,
       onOpen: id => showDexEntry(id),
@@ -1278,7 +1277,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
       seed: fightRng.int(2 ** 31),
       // (`?opponent=` in the tests replaces the CPU entirely.)
       profiles: setup.cpu && !opponentParam ? opponents.map(o => cpuProfile(o, setup.cpu!, fightRng)) : undefined,
-      owned: setup.showOwned && save ? opponents.map(o => o.speciesId !== null && ownedCount(save!, o.speciesId) > 0) : undefined,
+      // Caught at some point (the Pokédex's caught list, as the games mark it): evolving or releasing it never undoes that.
+      owned: setup.showOwned && save ? opponents.map(o => o.speciesId !== null && save!.dex.caught.includes(o.speciesId)) : undefined,
       director: setup.director,
       intro: setup.intro,
       style: setup.style,

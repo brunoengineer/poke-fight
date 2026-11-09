@@ -170,7 +170,7 @@ test.describe('releasing', () => {
 test.describe("the wild fight's Poké Ball", () => {
   const owned = (page: import('@playwright/test').Page) => page.evaluate(() => window.__pf!.debug().owned);
 
-  test('grey for a species you don\'t have; in color once you have one', async ({ page }) => {
+  test('grey for a species not caught yet; in color once caught', async ({ page }) => {
     await openGame(page, { scene: 'city' }, { save: { ...(fixture('save-v3-pallet-starter.json') as object), bag: { 'master-ball': 1 } } });
     await page.getByTestId('hunt-grass').click();
     await step(page, 1);
@@ -193,6 +193,16 @@ test.describe("the wild fight's Poké Ball", () => {
       // No balls left: there is nothing to throw, the results go straight to Hunt again.
       await expect(page.getByTestId('hunt-again')).toBeVisible();
     }
+  });
+
+  test('in color for a species caught before, even with none left (evolved or released), as in the games', async ({ page }) => {
+    const data = fixture('save-v3-pallet-starter.json') as { dex: { seen: number[]; caught: number[] } };
+    // Every Kanto species caught at some point; the party is only the starter.
+    const all = Array.from({ length: 151 }, (_, i) => i + 1);
+    await openGame(page, { scene: 'city' }, { save: { ...data, dex: { seen: all, caught: all } } });
+    await page.getByTestId('hunt-grass').click();
+    await step(page, 1);
+    expect(await owned(page)).toBe(true);
   });
 
   test("not shown against a trainer's Pokémon (it can't be caught)", async ({ page }) => {

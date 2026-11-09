@@ -19,8 +19,6 @@ export interface DexTile {
   name: string;
   sprite: string;
   status: DexTileStatus;
-  /** Has one now (party or box). */
-  owned: boolean;
 }
 
 export interface DexChoice {
@@ -108,7 +106,7 @@ export function renderDexList(root: HTMLElement, view: DexListView) {
     h(
       'button',
       {
-        class: `dex-tile ${tile.status}${tile.owned ? ' owned' : ''}`,
+        class: `dex-tile ${tile.status}`,
         testid: `dex-${tile.id}`,
         onClick: () => view.onOpen(tile.id),
         attrs: { type: 'button', 'aria-label': `${tile.number} ${tile.name}`, ...(tile.id === view.start ? { 'data-autofocus': '' } : {}) },

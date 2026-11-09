@@ -455,8 +455,9 @@ under 4 ms a frame on average for the busiest attack (enraged meteor rain), at 1
   one letter per pixel with a palette): an opened red Pokédex (lens, lights, screens, keypad, hinge) and a yellow
   backpack (lobes, flap and buckle, side pockets, navy outlines), drawn from scratch after reference pictures.
 - **Pokédex** (a screen since milestone 11's follow-ups; `game/pokedex.ts`, `ui/screens/pokedex.ts`). Two screens:
-  - Opened from the city's bottom bar (X). **The list**: all 151 in a grid (unseen ones as silhouettes named "???", a Poké Ball on caught ones: in color
-    while you have one, grey once none is left). A filter bar on top: **Owned** (caught at some point, as the games'
+  - Opened from the city's bottom bar (X). **The list**: all 151 in a grid (unseen ones as silhouettes named "???", a Poké Ball on caught ones, always in
+    color: caught means registered in the Pokédex, as in the games, so evolving or releasing it never undoes it;
+    decided after milestone 12, it used to turn grey once none was left). A filter bar on top: **Owned** (caught at some point, as the games'
     Pokédex says "owned"; released ones count), **Type** (a picker), **Legendary**, **Mythical** (with both on,
     either), **No.** (a range of 30 numbers, which also jumps there), and Clear. Filters add up, stay while the game
     runs, and the list says how many are shown.
@@ -883,7 +884,7 @@ sprites won't save it.
 | Look | Console style (milestone 11): a 16:9 frame, the place's art behind glass menus and bright cards, Barlow Condensed + Inter |
 | Art | Trainers, characters and backgrounds from Pokémon Showdown; items and badges from PokeAPI; all by URL, painted stand-ins until they load |
 | Menus and controller | Spatial navigation (by direction), focus kept on redraw, hint glyphs for the device in use, Y opens the party |
-| Pokédex | Opened from the city, the focus starts on the first filter (Owned); back from a species' page, on that species. A list with filters (owned, type, legendary, mythical, number) and a page per species that reveals more as you see and catch, scrolls with the d-pad, and walks the filtered list with LB / RB; Portuguese texts are the game's own translation; releasing is in the box, the dex keeps "caught"; wild fights show a Poké Ball (color: you have it) by the name |
+| Pokédex | Opened from the city, the focus starts on the first filter (Owned); back from a species' page, on that species. A list with filters (owned, type, legendary, mythical, number) and a page per species that reveals more as you see and catch, scrolls with the d-pad, and walks the filtered list with LB / RB; Portuguese texts are the game's own translation; releasing is in the box, the dex keeps "caught"; wild fights show a Poké Ball by the name (in color: caught in the Pokédex, even if it has since evolved or been released) |
 | Bag | A bag screen by pocket; potions and evolution items are used on a party Pokémon from it; the Pokédex and the Bag are picture buttons (drawn by the game) beside the party at the bottom of the city |
 | Hunting cards | Each city's hunting card shows every species of its ground (4 to 22), smaller when there are many; unseen ones as silhouettes, the most common first |
 | City cards | The town behind the cards is dimmed and softly blurred (the band of buildings at the top stays clear); cards have a deeper shadow, a dark outer edge and a bright rim |

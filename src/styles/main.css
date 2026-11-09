@@ -4774,11 +4774,6 @@ kbd,
   box-shadow: 0 0 0 0.2cqh #1b1624;
 }
 
-.dex-tile:not(.owned) .dex-tile-ball {
-  filter: grayscale(1);
-  opacity: 0.8;
-}
-
 .dex-tile:focus {
   outline: none;
   z-index: 1;

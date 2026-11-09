@@ -94,8 +94,9 @@ export interface SandboxView {
   /** Switching mid-round is part of this fight (not in the tutorial). */
   switching: boolean;
   /**
-   * Wild fights: whether the player already has the opponent's species (a Poké Ball by its name: in color if so, grey
-   * if not). Null in trainers' fights, where it can't be caught anyway.
+   * Wild fights: whether the opponent's species is caught in the Pokédex (a Poké Ball by its name: in color if so,
+   * grey if not; evolving or releasing never undoes it, as in the games). Null in trainers' fights, where it can't be
+   * caught anyway.
    */
   owned: boolean | null;
 }
@@ -138,7 +139,7 @@ export interface SandboxOptions {
   entrance?: boolean;
   stage?: StageSpec;
   trainers?: [TrainerLook | null, TrainerLook | null];
-  /** Wild fights: per opponent team member, whether the player has one of that species (see SandboxView.owned). */
+  /** Wild fights: per opponent team member, whether its species is caught in the Pokédex (see SandboxView.owned). */
   owned?: boolean[];
   /**
    * Training: every opponent becomes a legendary boss (4× HP) with these attacks, to watch and practice them. Journey

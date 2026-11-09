@@ -2,6 +2,7 @@
 // them together; the look is in styles/main.css. Every interactive piece is a <button> (focus, Enter and the
 // controller's A work the same), with a data-testid for the browser tests.
 
+import { cleanBadge } from '../render/badges';
 import { typeColor } from '../render/colors';
 import { h, type Child } from './dom';
 import { icon, type IconName } from './icons';
@@ -114,6 +115,15 @@ export function pokemonSprite(url: string, className = 'sprite', options: { silh
     class: `${className}${options.silhouette ? ' silhouette' : ''}`,
     attrs: { src: url, alt: '', crossorigin: 'anonymous', draggable: 'false', loading: 'lazy' },
   });
+}
+
+/** A gym badge: shown at once, then swapped for its cleaned version (no white rim, render/badges.ts). */
+export function badgePicture(url: string, className: string) {
+  const image = picture(url, className);
+  void cleanBadge(url).then(clean => {
+    if (clean !== url) image.src = clean;
+  });
+  return image;
 }
 
 /** A trainer, an item or a badge: plain images (their host sends no CORS header, so no crossorigin here). */

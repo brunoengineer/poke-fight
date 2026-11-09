@@ -5,7 +5,7 @@
 import { h } from '../dom';
 import { mount } from '../focus';
 import { icon, type IconName } from '../icons';
-import { button, hintBar, picture, pokemonSprite, screen, type ButtonSpec, type Hint } from '../kit';
+import { badgePicture, button, hintBar, pokemonSprite, screen, type ButtonSpec, type Hint } from '../kit';
 
 export type ReportKind = 'xp' | 'level' | 'move' | 'money' | 'badge' | 'heal' | 'ball' | 'fled' | 'evolve' | 'info';
 
@@ -87,7 +87,7 @@ export function renderResults(root: HTMLElement, view: ResultsView) {
           { class: 'report-lines', testid: 'results-lines' },
           view.lines.map((line, i) =>
             h('li', { class: `report-line ${line.kind}`, style: { '--i': i } }, [
-              line.image ? picture(line.image, 'badge report-badge') : h('span', { class: 'report-icon' }, [icon(ICONS[line.kind])]),
+              line.image ? badgePicture(line.image, 'badge report-badge') : h('span', { class: 'report-icon' }, [icon(ICONS[line.kind])]),
               h('span', { text: line.text }),
             ]),
           ),

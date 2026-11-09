@@ -4,7 +4,7 @@
 import { h } from '../dom';
 import { mount } from '../focus';
 import { icon } from '../icons';
-import { button, card, heading, hintBar, hpBar, picture, pokemonSprite, screen, stat, type ButtonSpec, type CardSpec, type Hint, type Pad } from '../kit';
+import { badgePicture, button, card, heading, hintBar, hpBar, picture, pokemonSprite, screen, stat, type ButtonSpec, type CardSpec, type Hint, type Pad } from '../kit';
 
 /** What a card shows at its top. */
 export interface PlaceArt {
@@ -77,7 +77,7 @@ function placeArt(art: PlaceArt | undefined) {
       return person;
     }),
     art.item ? picture(art.item, 'item place-item') : null,
-    art.badge ? picture(art.badge, 'badge place-badge') : null,
+    art.badge ? badgePicture(art.badge, 'badge place-badge') : null,
   ]);
 }
 
@@ -122,7 +122,7 @@ export function renderCity(root: HTMLElement, view: CityView) {
             ]),
             h('div', { class: 'badge-case', testid: 'city-badges', attrs: { 'aria-label': view.badgeCount } }, [
               ...view.badges.map(b => {
-                const image = picture(b.url, `badge${b.earned ? ' earned' : ''}`);
+                const image = badgePicture(b.url, `badge${b.earned ? ' earned' : ''}`);
                 image.title = b.name;
                 return image;
               }),

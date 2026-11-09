@@ -806,6 +806,8 @@ sprites won't save it.
 | Pokédex | A list with filters (owned, type, legendary, mythical, number) and a page per species that reveals more as you see and catch, scrolls with the d-pad, and walks the filtered list with LB / RB; Portuguese texts are the game's own translation; releasing is in the box, the dex keeps "caught"; wild fights show a Poké Ball (color: you have it) by the name |
 | Bag | A bag screen by pocket; potions and evolution items are used on a party Pokémon from it; the Pokédex and the Bag are picture buttons (drawn by the game) beside the party at the bottom of the city |
 | Hunting cards | Each city's hunting card shows every species of its ground (4 to 22), smaller when there are many; unseen ones as silhouettes, the most common first |
+| City cards | The town behind the cards is dimmed and softly blurred (the band of buildings at the top stays clear); cards have a deeper shadow, a dark outer edge and a bright rim |
+| Badges | Shown smooth (they are drawings, not pixel art), with a dark shadow; their white sticker rim is removed when they load (`render/badges.ts`) |
 | Party order | Reorder in the party screen (pick up, then swap); the first Pokémon leads. The two slots glide into each other's places; a screen redrawn after a change doesn't play its entrance again |
 | Switching | Once mid-round (Tab / View), again only after a faint; after every faint the player picks the next fighter. A mid-round switch continues the same round from where everyone stood |
 | CPU per Pokémon | Skill from who controls it (wild clumsy, trainers at their difficulty) plus its evolution stage and level; style from its stats; a new seed every fight |

@@ -219,7 +219,9 @@ p {
 .trainer,
 .item,
 .badge {
-  image-rendering: pixelated;
+  /* The badges are 85×85 drawings shown much smaller: smooth scaling keeps their outlines whole (nearest-neighbour
+     dropped outline pixels, leaving white dots). */
+  image-rendering: auto;
   user-select: none;
 }
 
@@ -371,10 +373,13 @@ p {
   background:
     radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--c) 60%, white 25%) 0%, transparent 55%),
     linear-gradient(165deg, color-mix(in srgb, var(--c) 88%, white 6%) 0%, color-mix(in srgb, var(--c) 50%, #0b0d1c) 100%);
+  /* A bright inner rim, a thin dark outer edge and two shadows (close and soft): the card lifts off the town. */
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
-    inset 0 0.5cqh 0 rgba(255, 255, 255, 0.16),
-    0 1.4cqh 3.4cqh rgba(0, 0, 0, 0.42);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+    inset 0 0.5cqh 0 rgba(255, 255, 255, 0.18),
+    0 0 0 1px rgba(0, 0, 0, 0.45),
+    0 0.5cqh 1cqh rgba(0, 0, 0, 0.45),
+    0 1.8cqh 4cqh rgba(0, 0, 0, 0.5);
   transition:
     transform 180ms var(--ease-pop),
     box-shadow 180ms,
@@ -681,6 +686,19 @@ kbd,
   grid-template-rows: auto 1fr auto;
 }
 
+/* Behind the cards, the town is dimmed and softly blurred, so the cards stand out; the band of buildings at the top
+   (above the cards) stays clear, fading in over a few cqh. */
+.city::before {
+  content: '';
+  position: absolute;
+  inset: 31% 0 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(6, 8, 22, 0.35), rgba(6, 8, 22, 0.62));
+  backdrop-filter: blur(0.5cqh) saturate(0.75);
+  mask-image: linear-gradient(180deg, transparent 0, #000 6cqh);
+}
+
 .topbar {
   display: flex;
   align-items: flex-start;
@@ -749,7 +767,7 @@ kbd,
 }
 
 .badge-case .badge.earned {
-  filter: drop-shadow(0 0 0.6cqh rgba(255, 255, 255, 0.45));
+  filter: drop-shadow(0 0.25cqh 0.35cqh rgba(0, 0, 0, 0.55));
   animation: pop 400ms var(--ease-pop) both;
 }
 

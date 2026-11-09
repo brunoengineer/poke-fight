@@ -34,7 +34,8 @@ export const ITEMS: Record<ItemId, Item> = {
   // Sold only at the Legends' Sanctuaries (the only ball that can catch a legendary): expensive on purpose.
   'master-ball': { id: 'master-ball', kind: 'ball', price: 30000, bonus: Infinity },
   // Only inside the Safari Zone (never in the bag: the Safari Game hands out 30).
-  'safari-ball': { id: 'safari-ball', kind: 'ball', price: 0, bonus: 1.5 },
+  // Better than in the games (×1.5): the Safari's Pokémon are rare ones (catch rate 30–45), and every throw costs a fight.
+  'safari-ball': { id: 'safari-ball', kind: 'ball', price: 0, bonus: 2 },
   potion: { id: 'potion', kind: 'potion', price: 300, heal: 20 },
   'super-potion': { id: 'super-potion', kind: 'potion', price: 700, heal: 50 },
   'hyper-potion': { id: 'hyper-potion', kind: 'potion', price: 1500, heal: 200 },

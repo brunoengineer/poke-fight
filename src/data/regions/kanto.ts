@@ -139,6 +139,7 @@ export const KANTO: Region = {
   generation: 1,
   lastSpecies: 151,
   color: '#e8403a',
+  cover: ['mewtwo', 'zapdos', 'articuno'],
   cities: CITIES,
   gyms: GYMS,
   league: { city: 'indigo', eliteFour: ELITE_FOUR, champion: { kind: 'rival', teams: CHAMPION_TEAMS, ai: { difficulty: 'hard', style: 'balanced' } } },

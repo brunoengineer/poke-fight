@@ -3757,99 +3757,412 @@ kbd,
 .travel-cards {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 2.4cqh;
+  gap: 2.2cqh;
   align-items: stretch;
   min-height: 0;
 }
 
+/* A region's card: its map under a wash of its color, its three legendaries standing in front, the name on top and
+   the journey (or its partners) in a panel below. */
 .travel-card {
   --c: var(--theme);
   position: relative;
+  isolation: isolate;
   display: grid;
-  grid-template-rows: 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
   padding: 0;
   border: 0;
-  border-radius: 2.2cqh;
+  border-radius: 2.4cqh;
   color: #fff;
   text-align: left;
   cursor: pointer;
-  background: linear-gradient(165deg, color-mix(in srgb, var(--c) 70%, #0b0d1c), #0b0d1c);
+  background: #0a0c1a;
+  --edge: color-mix(in srgb, var(--c) 55%, rgba(255, 255, 255, 0.35));
+  --edge-width: 0.25cqh;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.25),
-    0 0 0 1px rgba(0, 0, 0, 0.45),
-    0 1.8cqh 4cqh rgba(0, 0, 0, 0.5);
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 1.8cqh 4cqh rgba(0, 0, 0, 0.55);
   transition:
-    transform 180ms var(--ease-pop),
-    box-shadow 180ms,
-    filter 180ms;
-  animation: rise 420ms var(--ease-out) both;
+    transform 200ms var(--ease-pop),
+    box-shadow 200ms;
+  animation: rise 460ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
 }
 
+/* The card's edge, drawn over its content (an inset shadow would be hidden under the map). */
+.travel-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 var(--edge-width) var(--edge);
+  transition: box-shadow 200ms;
+}
+
+/* The color wash over the map: strong at the top (behind the name), clear around the legendaries, dark under the
+   panel so its text reads. */
+.travel-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 85% 55% at 50% 52%, transparent 35%, rgba(6, 7, 18, 0.55) 100%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--c) 78%, #0a0c1a) 0%,
+      color-mix(in srgb, var(--c) 30%, transparent) 26%,
+      transparent 46%,
+      rgba(8, 10, 24, 0.82) 68%,
+      #090b18 100%
+    );
+}
+
+.travel-scene {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+}
+
+/* The region's own map, painted as pixel art, fills the card behind everything. */
 .travel-map {
-  display: grid;
-  place-items: center;
-  min-height: 0;
-  padding: 1.6cqh;
+  position: absolute;
+  inset: 0;
 }
 
-/* The region's map, painted as pixel art. */
 .travel-map canvas {
   width: 100%;
-  height: auto;
-  border-radius: 1.4cqh;
+  height: 100%;
+  object-fit: cover;
   image-rendering: pixelated;
-  box-shadow: 0 0.8cqh 2cqh rgba(0, 0, 0, 0.45);
+  opacity: 0.6;
+  transform: scale(1.25);
 }
 
-.travel-text {
+/* A halo of the region's color behind the legendary in front. */
+.travel-glow {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 46cqh;
+  height: 46cqh;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--c) 70%, #fff) 0%,
+    color-mix(in srgb, var(--c) 55%, transparent) 28%,
+    transparent 66%
+  );
+  opacity: 0.75;
+}
+
+/* The legendaries fill the space between the name and the panel, standing on the panel. */
+.travel-legends {
+  position: relative;
+  grid-row: 2;
+  min-height: 0;
+  pointer-events: none;
+}
+
+.travel-legend {
+  position: absolute;
+  bottom: 0;
+  filter: drop-shadow(0 1cqh 0.8cqh rgba(0, 0, 0, 0.5));
+  animation: travel-float 2.8s ease-in-out infinite alternate;
+}
+
+.travel-legend.front {
+  left: 50%;
+  bottom: -1.5cqh;
+  width: 34cqh;
+  height: 34cqh;
+  margin-left: -17cqh;
+  z-index: 2;
+  transition: scale 220ms var(--ease-pop);
+}
+
+/* The two beside it stand further back: smaller, higher, a little darker. */
+.travel-legend.side {
+  width: 22cqh;
+  height: 22cqh;
+  bottom: 9cqh;
+  filter: brightness(0.72) drop-shadow(0 0.8cqh 0.6cqh rgba(0, 0, 0, 0.45));
+  animation-duration: 3.4s;
+}
+
+.travel-legend.left {
+  left: -4.5cqh;
+  animation-delay: -1.2s;
+}
+
+.travel-legend.right {
+  right: -4.5cqh;
+  transform: scaleX(-1);
+  animation-name: travel-float-flipped;
+  animation-delay: -2.1s;
+}
+
+@keyframes travel-float {
+  to {
+    translate: 0 -1cqh;
+  }
+}
+
+@keyframes travel-float-flipped {
+  to {
+    translate: 0 -1cqh;
+  }
+}
+
+/* A closed region has more room (no journey panel): its legendaries stand in the middle of it. */
+.travel-card:is(.locked, .soon) .travel-legend.front {
+  bottom: 7cqh;
+}
+
+.travel-card:is(.locked, .soon) .travel-legend.side {
+  bottom: 16cqh;
+}
+
+/* A closed region: its legendaries are shadows rimmed with its color. */
+.travel-legend.silhouette {
+  filter: brightness(0) drop-shadow(0 0 0.5cqh color-mix(in srgb, var(--c) 85%, #fff));
+  opacity: 0.92;
+}
+
+.travel-legend.side.silhouette {
+  filter: brightness(0) drop-shadow(0 0 0.4cqh color-mix(in srgb, var(--c) 70%, #fff));
+  opacity: 0.42;
+}
+
+.travel-head {
   display: grid;
-  gap: 0.8cqh;
-  padding: 1.6cqh 2.2cqh 2.2cqh;
+  justify-items: start;
+  gap: 0.6cqh;
+  padding: 2.2cqh 2.4cqh 0;
 }
 
-.travel-text strong {
-  font-size: 4.2cqh;
-  line-height: 1;
-}
-
-.travel-status {
+.travel-gen {
   display: inline-flex;
   align-items: center;
   gap: 0.8cqh;
-  font: 700 1.8cqh/1.25 var(--body);
+  padding: 0.35cqh 1cqh 0.35cqh 0.35cqh;
+  border-radius: 99px;
+  background: rgba(6, 8, 20, 0.5);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  font: 700 1.5cqh/1 var(--body);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.travel-gen b {
+  padding: 0.45cqh 0.9cqh;
+  border-radius: 99px;
+  background: #fff;
+  color: color-mix(in srgb, var(--c) 75%, #000);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.travel-name {
+  font-size: 5.4cqh;
+  line-height: 1;
+  text-shadow:
+    0 0.3cqh 0 color-mix(in srgb, var(--c) 45%, #000),
+    0 0.8cqh 2cqh rgba(0, 0, 0, 0.5);
+}
+
+/* A closed region: a lock in its corner. */
+.travel-lock {
+  position: absolute;
+  top: 2cqh;
+  right: 2cqh;
+  display: grid;
+  place-items: center;
+  width: 4.6cqh;
+  height: 4.6cqh;
+  border-radius: 50%;
+  background: rgba(6, 8, 20, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.travel-lock .icon {
+  width: 2.3cqh;
+  height: 2.3cqh;
+}
+
+.travel-info {
+  position: relative;
+  z-index: 3;
+  grid-row: 3;
+  display: grid;
+  gap: 1.2cqh;
+  margin: 0 1.4cqh 1.4cqh;
+  padding: 1.5cqh 1.6cqh;
+  border-radius: 1.6cqh;
+  background: linear-gradient(180deg, rgba(16, 19, 40, 0.86), rgba(9, 11, 26, 0.94));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 -0.6cqh 2cqh rgba(0, 0, 0, 0.35);
+}
+
+.travel-journey {
+  display: grid;
+  gap: 0.8cqh;
+}
+
+.travel-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.travel-label {
+  font: 800 1.45cqh/1 var(--body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.travel-count {
+  font: 800 1.8cqh/1 var(--body);
+  font-variant-numeric: tabular-nums;
+}
+
+.travel-badges {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0.5cqh;
+  margin-bottom: 0.4cqh;
+}
+
+.travel-badge img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  filter: grayscale(1) brightness(0.45);
+  opacity: 0.45;
+}
+
+.travel-badge.earned img {
+  filter: drop-shadow(0 0.3cqh 0.3cqh rgba(0, 0, 0, 0.5));
+  opacity: 1;
+}
+
+/* The Pokédex: caught out of the region's species. */
+.travel-bar {
+  height: 0.9cqh;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.travel-bar span {
+  display: block;
+  width: var(--p);
+  min-width: 0.9cqh;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 80%, #fff), color-mix(in srgb, var(--c) 40%, #fff));
+}
+
+.travel-partners {
+  display: grid;
+  gap: 0.4cqh;
+}
+
+.travel-partner-row {
+  display: flex;
+  justify-content: space-around;
+}
+
+.travel-partner {
+  width: 13cqh;
+  height: 13cqh;
+  margin: -2.6cqh -1.6cqh -2.4cqh;
+  filter: drop-shadow(0 0.5cqh 0.4cqh rgba(0, 0, 0, 0.5));
+}
+
+.travel-status {
+  display: flex;
+  align-items: center;
+  gap: 0.8cqh;
+  padding-top: 1.1cqh;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font: 800 1.75cqh/1.25 var(--body);
 }
 
 .travel-status .icon {
   flex: none;
   width: 2cqh;
   height: 2cqh;
+  color: color-mix(in srgb, var(--c) 60%, #fff);
 }
 
-.travel-card.here .travel-status {
+/* A closed region shows only how to open it: no rule above the line. */
+.travel-card.locked .travel-status,
+.travel-card.soon .travel-status {
+  padding-top: 0;
+  border-top: 0;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.travel-card.locked .travel-status .icon,
+.travel-card.soon .travel-status .icon {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.travel-card.here .travel-status,
+.travel-card.here .travel-status .icon {
   color: var(--gold);
+}
+
+/* Where you are: a gold edge. */
+.travel-card.here {
+  --edge: var(--gold);
+  --edge-width: 0.45cqh;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 0 3cqh color-mix(in srgb, var(--gold) 35%, transparent),
+    0 1.8cqh 4cqh rgba(0, 0, 0, 0.55);
+}
+
+/* A closed region: its map in grey, darker. */
+.travel-card.locked .travel-map,
+.travel-card.soon .travel-map {
+  filter: grayscale(1) brightness(0.55);
+}
+
+.travel-card.locked .travel-glow,
+.travel-card.soon .travel-glow {
+  opacity: 0.35;
 }
 
 .travel-card.locked,
 .travel-card.soon {
-  filter: grayscale(0.85) brightness(0.65);
   cursor: default;
 }
 
 .travel-card:focus {
   outline: none;
   z-index: 1;
-  transform: translateY(-1cqh) scale(1.03);
-  filter: none;
+  transform: translateY(-1cqh) scale(1.025);
+  --edge: #fff;
+  --edge-width: 0.4cqh;
   box-shadow:
-    inset 0 0 0 0.4cqh #fff,
-    0 0 0 0.8cqh color-mix(in srgb, var(--c) 50%, transparent),
+    0 0 0 0.8cqh color-mix(in srgb, var(--c) 55%, transparent),
     0 2.6cqh 6cqh rgba(0, 0, 0, 0.6);
 }
 
-.travel-card.locked:focus,
-.travel-card.soon:focus {
-  filter: grayscale(0.5) brightness(0.85);
+.travel-card:focus .travel-legend.front {
+  scale: 1.07;
 }
 
 /* The flight: a sky from where you left to where you go, clouds drifting by, the plane crossing it. */

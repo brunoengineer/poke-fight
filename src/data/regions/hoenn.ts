@@ -197,6 +197,7 @@ export const HOENN: Region = {
   generation: 3,
   lastSpecies: 386,
   color: '#2fbf71',
+  cover: ['rayquaza', 'groudon', 'kyogre'],
   cities: CITIES,
   gyms: GYMS,
   league: { city: 'ever-grande', eliteFour: ELITE_FOUR, champion: { kind: 'member', ...CHAMPION } },

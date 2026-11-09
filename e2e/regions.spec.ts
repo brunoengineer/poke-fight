@@ -38,6 +38,8 @@ test.describe('travelling between regions', () => {
     expect(before.champions).toEqual(['kanto']);
     await page.getByTestId('city-travel').click();
     await expect(page.getByTestId('travel-johto-status')).toHaveText('A new journey awaits');
+    // A journey not started yet shows its three partners instead.
+    await expect(page.getByTestId('travel-johto').locator('.travel-partner')).toHaveCount(3);
     await page.getByTestId('travel-johto').click();
 
     // The flight (instant in the tests), then Johto's Professor and the starters.
@@ -56,7 +58,10 @@ test.describe('travelling between regions', () => {
 
     // Back to Kanto: the journey there is as it was; Johto's waits.
     await page.getByTestId('city-travel').click();
-    await expect(page.getByTestId('travel-kanto-status')).toContainText('8 badge(s)');
+    await expect(page.getByTestId('travel-kanto-status')).toHaveText('Continue your journey');
+    // Its card shows the journey there: the 8 badges earned, and Kanto's Pokédex.
+    await expect(page.getByTestId('travel-kanto-badges').locator('.travel-badge.earned')).toHaveCount(8);
+    await expect(page.getByTestId('travel-kanto-dex')).toHaveText(`${before.dex.caught.length}/151`);
     await page.getByTestId('travel-kanto').click();
     await expect(page.getByTestId('city')).toBeVisible();
     const back = await current(page);

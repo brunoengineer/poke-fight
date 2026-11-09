@@ -157,6 +157,7 @@ export const JOHTO: Region = {
   generation: 2,
   lastSpecies: 251,
   color: '#d9a521',
+  cover: ['ho-oh', 'lugia', 'suicune'],
   cities: CITIES,
   gyms: GYMS,
   league: { city: 'johto-league', eliteFour: ELITE_FOUR, champion: { kind: 'member', ...CHAMPION } },

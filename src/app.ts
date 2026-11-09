@@ -1533,6 +1533,9 @@ export function startApp(elements: AppElements, options: TestOptions) {
 
   // ── Travelling between regions ─────────────────────────────────────────────────────────────────────────────────
   /** The plane: every region, what the player has there, and which ones are open. */
+  /** Generations in Roman numerals, as the games number them. */
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
+
   function showTravel() {
     if (!save) return;
     const s = save;
@@ -1551,20 +1554,35 @@ export function startApp(elements: AppElements, options: TestOptions) {
           state === 'here'
             ? t('travel.here')
             : state === 'open'
-              ? t('travel.journey', { badges: journey!.badges.length, caught: journey!.dex.caught.length })
+              ? t('travel.continue')
               : state === 'new'
                 ? t('travel.new')
                 : state === 'locked'
                   ? t('travel.locked', { region: t(`region.${REGION_IDS[i - 1]}`) })
                   : t('travel.soon');
+        const r = exists ? region(id) : null;
         return {
           id,
           name: t(`region.${id}`),
-          map: exists ? regionPicture(region(id), [], []) : null,
-          color: exists ? region(id).color : '#5d6385',
+          map: r ? regionPicture(r, [], []) : null,
+          color: r?.color ?? '#5d6385',
           status,
           state,
           onFly: () => flyTo(id),
+          generation: t('travel.gen', { n: ROMAN[(r?.generation ?? i + 1) - 1] }),
+          species: r ? t('travel.species', { count: r.lastSpecies }) : '',
+          legends: r ? r.cover.map(slug => spriteUrl(speciesBySlug(slug).id)) : [],
+          journey:
+            r && journey
+              ? {
+                  badgesLabel: t('travel.badges'),
+                  badges: r.gyms.map(g => ({ url: badgeArt(g.badge), earned: journey.badges.includes(g.badge) })),
+                  dexLabel: t('dex.title'),
+                  caught: journey.dex.caught.filter(n => n <= r.lastSpecies).length,
+                  total: r.lastSpecies,
+                }
+              : null,
+          partners: r && state === 'new' ? { label: t('travel.partners'), sprites: r.starters.map(spriteUrl) } : null,
         };
       }),
       back: { label: t('menu.back'), testid: 'back', onClick: goCity },

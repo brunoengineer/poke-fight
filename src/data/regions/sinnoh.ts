@@ -224,6 +224,7 @@ export const SINNOH: Region = {
   generation: 4,
   lastSpecies: 493,
   color: '#6f86d6',
+  cover: ['giratina', 'dialga', 'palkia'],
   cities: CITIES,
   gyms: GYMS,
   league: { city: 'sinnoh-league', eliteFour: ELITE_FOUR, champion: { kind: 'member', ...CHAMPION } },

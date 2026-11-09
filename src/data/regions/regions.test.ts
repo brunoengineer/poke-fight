@@ -119,6 +119,10 @@ describe('every region', () => {
           expect(l.attacks.every(isBossAttack), `${l.species}: ${l.attacks.join(',')}`).toBe(true);
         }
         expect(r.sanctuary.shop).toContain('master-ball');
+        // Its travel card shows three of them.
+        const slugs = r.sanctuary.legendaries.map(l => l.species);
+        expect(new Set(r.cover).size).toBe(3);
+        for (const slug of r.cover) expect(slugs, slug).toContain(slug);
       });
 
       it('every text exists in both languages', () => {

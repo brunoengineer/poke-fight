@@ -154,6 +154,8 @@ export interface Region {
   lastSpecies: number;
   /** The region's color (the travel screen). */
   color: string;
+  /** The legendaries on its travel card: the one in front first, then the two beside it (from its sanctuary). */
+  cover: readonly [string, string, string];
   /** In story order: the first one is where a journey starts. */
   cities: City[];
   /** The 8 gyms, in badge order. */

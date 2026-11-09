@@ -81,6 +81,11 @@ test.describe('party screen', () => {
     await page.getByTestId('special-elemental-0').click();
     await page.getByTestId('move-scratch').click();
     await expect(page.getByTestId('special-elemental-0')).toContainText('Scratch');
+    // Redrawn in place: the slots don't slide in again and the summary's sprite doesn't pop (no "new page").
+    await expect(page.getByTestId('party')).toHaveAttribute('data-redraw', '');
+    await expect(page.getByTestId('member-0')).toHaveCSS('animation-name', 'none');
+    await expect(page.locator('.summary-sprite')).toHaveCSS('animation-name', 'none');
+    await expect(page.getByTestId('special-elemental-0')).toBeFocused();
     await page.keyboard.press('p');
     await expect(page.getByTestId('party')).toBeHidden();
     expect((await snapshot(page)).fighters[0].loadout.elemental.name).toBe('Scratch');

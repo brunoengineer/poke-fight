@@ -2189,7 +2189,6 @@ export function startApp(elements: AppElements, options: TestOptions) {
         specials: t('party.specials'),
         items: t('party.items'),
         noItems: t('party.noItems'),
-        moving: moving !== null ? t('party.moving', { name: nameOf(s.party[moving]) }) : '',
         pick: t('party.pick'),
         cancel: t('party.cancel'),
       },

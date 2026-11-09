@@ -48,7 +48,7 @@ export interface PartyView {
   selected: number;
   /** The slot picked up to reorder (null: none). */
   moving: number | null;
-  labels: { lead: string; fainted: string; stats: string; specials: string; items: string; noItems: string; moving: string; pick: string; cancel: string };
+  labels: { lead: string; fainted: string; stats: string; specials: string; items: string; noItems: string; pick: string; cancel: string };
   /** The button that gets the focus (after a change). */
   focus: string;
   /** Two slots that just traded places: they glide to their new places (the rest of the screen stays still). */
@@ -96,12 +96,18 @@ export function renderParty(root: HTMLElement, view: PartyView) {
     focusStart(root);
   };
 
+  // The Pokémon shown in the summary: its sprite pops in when another one is focused, not when the screen is redrawn
+  // around the same one (a new move, a potion), so a change on the screen doesn't look like a new screen.
+  let shown = -1;
   const describe = (index: number) => {
+    if (index === shown) return;
+    const pop = shown !== -1;
+    shown = index;
     const m = view.members[index];
     summary.style.setProperty('--c', m.color);
     summary.replaceChildren(
       h('div', { class: 'summary-head' }, [
-        h('span', { class: 'summary-stage' }, [pokemonSprite(m.sprite, 'sprite summary-sprite')]),
+        h('span', { class: 'summary-stage' }, [pokemonSprite(m.sprite, `sprite summary-sprite${pop ? ' pop' : ''}`)]),
         h('div', { class: 'summary-title' }, [
           h('strong', { class: 'display', text: m.name }),
           h('span', { class: 'pills' }, [
@@ -175,10 +181,8 @@ export function renderParty(root: HTMLElement, view: PartyView) {
   });
 
   const party = screen('party', `party-screen${view.moving !== null ? ' is-moving' : ''}`, view.title, [
-    h('header', { class: 'party-head' }, [
-      heading(view.title),
-      view.moving !== null ? h('p', { class: 'moving-note', testid: 'party-moving', text: view.labels.moving }) : null,
-    ]),
+    // (Moving a Pokémon needs no words: the lifted slot and the highlighted places say it.)
+    h('header', { class: 'party-head' }, [heading(view.title)]),
     h('div', { class: 'members' }, slots),
     summary,
     h('footer', { class: 'screen-foot party-foot' }, [
@@ -187,9 +191,10 @@ export function renderParty(root: HTMLElement, view: PartyView) {
     ]),
     sheet,
   ]);
+  // The summary first: the place to focus may be in it (the special just changed).
+  describe(Math.min(view.selected, view.members.length - 1));
   const target = party.querySelector<HTMLElement>(`[data-testid="${view.focus}"]`);
   target?.setAttribute('data-autofocus', '');
-  describe(Math.min(view.selected, view.members.length - 1));
   mount(root, party);
   if (view.swapped) glide(slots, view.swapped);
 }

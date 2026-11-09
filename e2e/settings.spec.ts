@@ -141,7 +141,9 @@ test.describe('menus without a mouse', () => {
     await openGame(page, { scene: 'city' }, { save: fixture('save-v4-team.json') });
     await page.keyboard.press('p');
     await page.getByTestId('member-2').click();
-    await expect(page.getByTestId('party-moving')).toContainText('Machoke');
+    // Picked up: the slot is lifted and the others are places to put it (no note needed).
+    await expect(page.getByTestId('member-2')).toHaveClass(/moving/);
+    await expect(page.getByTestId('member-0')).toHaveClass(/target/);
     await page.getByTestId('member-0').click();
     await expect(page.getByTestId('member-0')).toContainText('Machoke');
     await expect(page.getByTestId('member-2')).toContainText('Charmeleon');
@@ -151,7 +153,7 @@ test.describe('menus without a mouse', () => {
     // B / Esc cancels a pick-up instead of closing the party.
     await page.getByTestId('member-1').click();
     await page.keyboard.press('Escape');
-    await expect(page.getByTestId('party-moving')).toHaveCount(0);
+    await expect(page.locator('.member.moving')).toHaveCount(0);
     await expect(page.getByTestId('party')).toBeVisible();
   });
 });

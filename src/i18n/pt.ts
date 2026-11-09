@@ -451,7 +451,6 @@ const base: Record<BaseKey, string> = {
   'party.specials': 'Especiais',
   'party.items': 'Itens',
   'party.noItems': 'Nada para usar neste Pokémon agora.',
-  'party.moving': 'Escolha para onde {name} vai',
   'party.place': 'Pôr aqui',
   'party.cancel': 'Cancelar',
   'party.pick': 'Escolha um golpe',

@@ -451,7 +451,6 @@ const base = {
   'party.specials': 'Specials',
   'party.items': 'Items',
   'party.noItems': 'Nothing to use on this Pokémon right now.',
-  'party.moving': 'Choose where {name} goes',
   'party.place': 'Place here',
   'party.cancel': 'Cancel',
   'party.pick': 'Choose a move',

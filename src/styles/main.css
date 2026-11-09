@@ -257,7 +257,7 @@ p {
 
 /* A screen drawn again after a change on it (ui/focus.ts mount): no entrance, so it doesn't look reloaded. */
 .screen[data-redraw],
-.screen[data-redraw] :is(.card, .place-name, .dialog-box, .clerk, .helper, .mini-party li, .item-card, .page, .page-line, .seat, .pedestal) {
+.screen[data-redraw] :is(.card, .place-name, .dialog-box, .clerk, .helper, .mini-party li, .item-card, .page, .page-line, .seat, .pedestal, .member) {
   animation: none;
 }
 
@@ -2660,15 +2660,6 @@ kbd,
   gap: 2.4cqh;
 }
 
-.moving-note {
-  padding: 0.8cqh 1.6cqh;
-  border-radius: 99px;
-  background: var(--gold);
-  color: var(--ink);
-  font: 800 1.9cqh/1 var(--body);
-  animation: pop 300ms var(--ease-pop) both;
-}
-
 .members {
   grid-area: members;
   display: grid;
@@ -2824,6 +2815,10 @@ kbd,
 .summary-sprite {
   width: 24cqh;
   height: 24cqh;
+}
+
+/* Another Pokémon focused: its sprite pops in (party.ts: not on a redraw around the same one). */
+.summary-sprite.pop {
   animation: pop 360ms var(--ease-pop) both;
 }
 

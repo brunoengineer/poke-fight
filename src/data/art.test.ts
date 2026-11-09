@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { BADGE_ORDER, CITY_ART, ELITE_SPRITES, KANTO_MAP, KANTO_ROUTES, LEADER_SPRITES, TRAINER_CLASSES, backdropUrl, badgeArt, trainerClassFor, typeBackdrop } from './art';
+import { BADGE_ORDER, CITY_ART, ELITE_SPRITES, KANTO_MAP, KANTO_ROUTES, LEADER_SPRITES, TRAINER_CLASSES, backdropUrl, badgeArt, itemUrl, trainerClassFor, typeBackdrop } from './art';
 import { ELITE_FOUR, GYMS, KANTO } from './regions/kanto';
 
 describe('art', () => {
+  it("items use PokeAPI's sprites; the Link Cable is drawn as the later games' Linking Cord", () => {
+    expect(itemUrl('potion')).toMatch(/items\/potion\.png$/);
+    expect(itemUrl('link-cable')).toMatch(/items\/linking-cord\.png$/);
+  });
+
   it('every city has a picture, a color and a place on the map; routes join real cities', () => {
     for (const c of KANTO) {
       expect(CITY_ART[c.id], c.id).toBeDefined();

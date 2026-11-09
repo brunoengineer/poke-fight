@@ -3677,6 +3677,285 @@ kbd,
   opacity: 0;
 }
 
+/* The Pokédex and the bag, beside the party at the bottom of the city. */
+.city-tools {
+  display: flex;
+  align-items: center;
+  gap: 1.4cqh;
+}
+
+.tool-button {
+  display: flex;
+  align-items: center;
+  gap: 1.2cqh;
+  height: 7.2cqh;
+  padding: 0 2.2cqh 0 1.8cqh;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--glass);
+  backdrop-filter: blur(1.4cqh);
+  color: inherit;
+  cursor: pointer;
+  transition:
+    transform 140ms var(--ease-pop),
+    box-shadow 140ms;
+}
+
+.tool-button .icon {
+  width: 3.4cqh;
+  height: 3.4cqh;
+}
+
+.tool-text {
+  display: grid;
+  gap: 0.4cqh;
+  text-align: left;
+}
+
+.tool-text strong {
+  font: 800 italic 2.3cqh/1 var(--display);
+  text-transform: uppercase;
+}
+
+.tool-text small {
+  font: 700 1.4cqh/1 var(--body);
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.tool-button:focus {
+  outline: none;
+  transform: translateY(-0.3cqh);
+  box-shadow:
+    0 0 0 0.4cqh #fff,
+    0 0 0 0.9cqh color-mix(in srgb, var(--theme) 50%, transparent);
+}
+
+/* ── Bag ─────────────────────────────────────────────────────────────────────────────────────────────────────── */
+
+.bag-screen {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'head head'
+    'list detail'
+    'foot foot';
+}
+
+.bag-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bag-foot {
+  grid-area: foot;
+}
+
+.bag-list {
+  grid-area: list;
+  display: grid;
+  align-content: start;
+  gap: 2cqh;
+  padding: 2cqh;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: none;
+}
+
+.bag-empty {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font: 600 italic 2.2cqh/1.4 var(--body);
+  color: var(--dim);
+}
+
+.bag-pocket {
+  display: grid;
+  gap: 0.8cqh;
+}
+
+.bag-item {
+  display: flex;
+  align-items: center;
+  gap: 1.4cqh;
+  min-height: 6cqh;
+  padding: 0 2cqh 0 1cqh;
+  border: 1px solid var(--line);
+  border-radius: 1.4cqh;
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  font: 700 2.1cqh/1 var(--body);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 140ms var(--ease-pop),
+    background 140ms;
+}
+
+.bag-item-image {
+  width: 5cqh;
+  height: 5cqh;
+  image-rendering: pixelated;
+}
+
+.bag-item-name {
+  flex: 1;
+}
+
+.bag-item b {
+  font: 800 italic 2.4cqh/1 var(--display);
+  color: var(--gold);
+}
+
+.bag-item:focus {
+  outline: none;
+  background: #fff;
+  color: var(--ink);
+  transform: scale(1.02);
+  box-shadow: 0 0 0 0.4cqh color-mix(in srgb, var(--theme) 65%, white);
+}
+
+.bag-item:focus b {
+  color: #b5760e;
+}
+
+.bag-detail {
+  grid-area: detail;
+  display: flex;
+  flex-direction: column;
+  gap: 1.8cqh;
+  padding: 2.4cqh 2.8cqh;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: none;
+}
+
+.bag-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 2cqh;
+}
+
+.bag-detail-head > div {
+  display: grid;
+  gap: 0.6cqh;
+}
+
+.bag-detail-head strong {
+  font-size: 4cqh;
+  line-height: 1;
+}
+
+.bag-detail-image {
+  width: 11cqh;
+  height: 11cqh;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0.6cqh 0.8cqh rgba(0, 0, 0, 0.5));
+}
+
+.bag-count {
+  font: 800 italic 2.4cqh/1 var(--display);
+  color: var(--gold);
+}
+
+.bag-text {
+  margin: 0;
+  font: 500 2.1cqh/1.45 var(--body);
+}
+
+.bag-elsewhere {
+  margin: 0;
+  padding: 1.4cqh 1.8cqh;
+  border-radius: 1.2cqh;
+  background: rgba(0, 0, 0, 0.22);
+  font: 600 italic 1.9cqh/1.4 var(--body);
+  color: var(--dim);
+}
+
+.bag-targets {
+  display: grid;
+  gap: 0.9cqh;
+}
+
+.bag-target {
+  display: flex;
+  align-items: center;
+  gap: 1.2cqh;
+  min-height: 7cqh;
+  padding: 0 2cqh 0 0.6cqh;
+  border: 1px solid var(--line);
+  border-radius: 1.4cqh;
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 140ms var(--ease-pop),
+    background 140ms;
+}
+
+.bag-target[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.bag-target-sprite {
+  width: 8cqh;
+  height: 8cqh;
+  margin: -1cqh -0.6cqh;
+}
+
+.bag-target-info {
+  flex: 1;
+  display: grid;
+  gap: 0.6cqh;
+}
+
+.bag-target-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1cqh;
+  font-size: 2cqh;
+}
+
+.bag-target-line small {
+  color: var(--dim);
+}
+
+.bag-target-note {
+  min-width: 13cqh;
+  font: 800 1.8cqh/1 var(--body);
+  text-align: right;
+  color: var(--dim);
+}
+
+.bag-target.ok .bag-target-note {
+  color: #7dffa0;
+}
+
+.bag-target:focus {
+  outline: none;
+  opacity: 1;
+  background: #fff;
+  color: var(--ink);
+  transform: scale(1.02);
+  box-shadow: 0 0 0 0.4cqh color-mix(in srgb, var(--theme) 65%, white);
+}
+
+.bag-target:focus .bag-target-note,
+.bag-target:focus .bag-target-line small {
+  color: #4a5070;
+}
+
+.bag-target.ok:focus .bag-target-note {
+  color: #138a3a;
+}
+
 /* ── Pokédex ─────────────────────────────────────────────────────────────────────────────────────────────────── */
 
 /* The list: the filter bar over a grid of every matching species. */
@@ -4148,28 +4427,6 @@ kbd,
 .dex-catch {
   font: 700 1.8cqh/1 var(--body);
   color: var(--dim);
-}
-
-/* The city's Pokédex chip is a button. */
-.dex-chip {
-  color: inherit;
-  cursor: pointer;
-  transition:
-    transform 140ms var(--ease-pop),
-    background 140ms;
-}
-
-.dex-chip .icon {
-  width: 2.2cqh;
-  height: 2.2cqh;
-}
-
-.dex-chip:focus {
-  outline: none;
-  background: #fff;
-  color: var(--ink);
-  transform: scale(1.05);
-  box-shadow: 0 0 0 0.4cqh color-mix(in srgb, var(--theme) 65%, white);
 }
 
 /* ── Releasing (the box) ──────────────────────────────────────────────────────────────────────────────────── */

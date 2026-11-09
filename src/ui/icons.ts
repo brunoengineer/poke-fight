@@ -10,6 +10,7 @@ const PATHS = {
   gym: 'M3 10 12 4l9 6M5 10v9h14v-9M9 19v-5h6v5M3 19h18',
   battle: 'M5 4l9 9M4 5l1-1M14 13l-2 2-3-3 2-2M19 4l-9 9M20 5l-1-1M10 13l2 2 3-3-2-2M7 17l-3 3M17 17l3 3',
   heal: 'M9 4h6v5h5v6h-5v5H9v-5H4V9h5z',
+  bag: 'M5 9h14l-1.2 11H6.2zM9 9V7a3 3 0 0 1 6 0v2M9 14h6',
   mart: 'M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2',
   pc: 'M4 5h16v11H4zM9 20h6M12 16v4',
   map: 'M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14',

@@ -33,7 +33,10 @@ export const backdropUrl = (backdrop: Backdrop) => `${SHOWDOWN}/fx/bg-${backdrop
 /** A trainer or a character, by Showdown sprite name (80×80, full body, facing the viewer). */
 export const trainerUrl = (sprite: string) => `${SHOWDOWN}/sprites/trainers/${sprite}.png`;
 
-export const itemUrl = (item: string) => `${POKEAPI}/items/${item}.png`;
+/** Items whose sprite has another name on PokeAPI (the Link Cable is drawn as the later games' Linking Cord). */
+const ITEM_SPRITES: Readonly<Record<string, string>> = { 'link-cable': 'linking-cord' };
+
+export const itemUrl = (item: string) => `${POKEAPI}/items/${ITEM_SPRITES[item] ?? item}.png`;
 
 /** Kanto's badges are 1–8 in gym order. */
 export const badgeUrl = (number: number) => `${POKEAPI}/badges/${number}.png`;

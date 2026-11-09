@@ -3,8 +3,8 @@
 
 import { h } from '../dom';
 import { mount } from '../focus';
-import { icon } from '../icons';
-import { button, card, heading, hintBar, hpBar, picture, pokemonSprite, screen, stat, type ButtonSpec, type CardSpec, type Hint } from '../kit';
+import { icon, type IconName } from '../icons';
+import { button, card, heading, hintBar, hpBar, picture, pokemonSprite, screen, stat, type ButtonSpec, type CardSpec, type Hint, type Pad } from '../kit';
 
 /** What a card shows at its top. */
 export interface PlaceArt {
@@ -28,9 +28,8 @@ export interface CityView {
   tagline: string;
   theme: string;
   money: string;
-  dex: string;
-  /** Opens the Pokédex (the chip is a button; X too). */
-  onDex: () => void;
+  /** Buttons beside the party, at the bottom: the Pokédex (X) and the bag (RB / B). */
+  tools: { label: string; detail: string; testid: string; icon: IconName; pad: Pad; key: string; onClick: () => void }[];
   badges: { url: string; earned: boolean; name: string }[];
   badgeCount: string;
   champion: string | null;
@@ -107,16 +106,6 @@ export function renderCity(root: HTMLElement, view: CityView) {
           h('div', { class: 'standing' }, [
             h('div', { class: 'standing-row' }, [
               stat('coin', view.money, 'city-money', 'stat money'),
-              h(
-                'button',
-                {
-                  class: 'stat dex-chip',
-                  testid: 'city-dex',
-                  onClick: view.onDex,
-                  attrs: { type: 'button', 'data-pad': 'x', 'data-key': 'KeyX' },
-                },
-                [icon('dex'), h('span', { text: view.dex })],
-              ),
               view.champion ? stat('crown', view.champion, 'city-champion', 'stat champion') : null,
             ]),
             h('div', { class: 'badge-case', testid: 'city-badges', attrs: { 'aria-label': view.badgeCount } }, [
@@ -134,7 +123,24 @@ export function renderCity(root: HTMLElement, view: CityView) {
           h('div', { class: 'adventure', style: { '--n': view.adventure.length } }, view.adventure.map((p, i) => placeCard(p, 'hero', i))),
           h('div', { class: 'services', style: { '--n': view.services.length } }, view.services.map((p, i) => placeCard(p, 'tile', i + view.adventure.length))),
         ]),
-        h('footer', { class: 'city-footer' }, [partyButton, hintBar(view.hints)]),
+        h('footer', { class: 'city-footer' }, [
+          h('div', { class: 'city-tools' }, [
+            partyButton,
+            ...view.tools.map(tool =>
+              h(
+                'button',
+                {
+                  class: 'tool-button',
+                  testid: tool.testid,
+                  onClick: tool.onClick,
+                  attrs: { type: 'button', 'aria-label': `${tool.label}: ${tool.detail}`, 'data-pad': tool.pad, 'data-key': tool.key },
+                },
+                [icon(tool.icon), h('span', { class: 'tool-text' }, [h('strong', { text: tool.label }), h('small', { text: tool.detail })])],
+              ),
+            ),
+          ]),
+          hintBar(view.hints),
+        ]),
       ],
       view.theme,
     ),

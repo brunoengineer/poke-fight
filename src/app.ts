@@ -1,7 +1,7 @@
 // The app: the save, the language, the scenes (title, the Professor's story, starter choice, fights, the city and
 // its menus) and the menus over fights (results, party), tied together. A fight only runs while no menu is open over it.
 
-import { BALLS, EVOLUTION_ITEMS, ITEMS, type BallId, type ItemId, type PotionId } from './data/items';
+import { BALLS, EVOLUTION_ITEMS, ITEMS, type BallId, type EvolutionItemId, type ItemId, type PotionId } from './data/items';
 import { move, species } from './data/pokedex';
 import { nextRegion } from './data/regions';
 import { backdropUrl, badgeArt, BADGE_ORDER, CHANSEY, cityArt, HUNT_BACKDROPS, trainerClassFor, KANTO_MAP, KANTO_ROUTES, ELITE_SPRITES, itemUrl, LEADER_SPRITES, PEOPLE, trainerUrl, typeBackdrop } from './data/art';
@@ -72,6 +72,8 @@ import { renderMart } from './ui/screens/mart';
 import { renderStarter } from './ui/screens/starter';
 import { renderDialog } from './ui/screens/dialog';
 import { renderCapture } from './ui/screens/capture';
+import { renderBag, type BagTarget } from './ui/screens/bag';
+import { bagContents, checkUse, usableFromBag, type Pocket } from './game/bag';
 import { renderDexEntry, renderDexList } from './ui/screens/pokedex';
 import { renderEvolution } from './ui/screens/evolution';
 import { renderOptions } from './ui/screens/options';
@@ -572,8 +574,26 @@ export function startApp(elements: AppElements, options: TestOptions) {
       tagline: t(`city.${s.location}.tagline` as MessageKey),
       theme: art.color,
       money: t('city.money', { money: s.money }),
-      dex: t('city.dex', { seen: s.dex.seen.length, caught: s.dex.caught.length }),
-      onDex: () => showPokedex(),
+      tools: [
+        {
+          label: t('dex.title'),
+          detail: t('city.dex', { seen: s.dex.seen.length, caught: s.dex.caught.length }),
+          testid: 'city-dex',
+          icon: 'dex',
+          pad: 'x',
+          key: 'KeyX',
+          onClick: () => showPokedex(),
+        },
+        {
+          label: t('bag.title'),
+          detail: t('bag.count', { count: Object.values(s.bag).reduce((sum, n) => sum + (n ?? 0), 0) }),
+          testid: 'city-bag',
+          icon: 'bag',
+          pad: 'rb',
+          key: 'KeyB',
+          onClick: () => showBag(),
+        },
+      ],
       badges: BADGE_ORDER.map(badge => ({ url: badgeArt(badge), earned: s.badges.includes(badge), name: t(`badge.${badge}` as MessageKey) })),
       badgeCount: t('city.badges', { count: s.badges.length }),
       champion: s.champion ? t('city.champion') : null,
@@ -586,8 +606,88 @@ export function startApp(elements: AppElements, options: TestOptions) {
         { label: t('city.options'), testid: 'city-options', icon: 'gear', onClick: () => showOptions(goCity) },
         { label: t('city.title'), testid: 'to-title', icon: 'exit', onClick: goTitle },
       ],
-      hints: [hints.select, hints.party, { pad: 'x', key: 'X', label: t('dex.title') }],
+      hints: [hints.select, hints.party, { pad: 'x', key: 'X', label: t('dex.title') }, { pad: 'rb', key: 'B', label: t('bag.title') }],
     });
+  }
+
+  // ── The bag ───────────────────────────────────────────────────────────────────────────────────────────────────
+  /** The bag: every item by pocket; potions and evolution items are used on a Pokémon from here. */
+  function showBag(start?: ItemId) {
+    if (!save) return;
+    const s = save;
+    scene = 'menu';
+    show();
+    indoors('#d0883a');
+    const contents = bagContents(s.bag);
+    const ELSEWHERE: Partial<Record<Pocket, MessageKey>> = { balls: 'bag.ballsUse', key: 'bag.rodsUse' };
+    const target = (id: ItemId, p: Pokemon, index: number): BagTarget => {
+      const check = checkUse(id, p);
+      const item = ITEMS[id];
+      const note = check.ok
+        ? item.kind === 'potion'
+          ? t('bag.heals', { hp: Math.min(item.heal, displayHp(maxHpOf(p) - p.hp)) })
+          : t('bag.canEvolve')
+        : t(`bag.${check.reason}`);
+      return {
+        testid: `use-${id}-${index}`,
+        name: nameOf(p),
+        level: t('party.level', { level: p.level }),
+        sprite: spriteUrl(p.speciesId),
+        hp: p.hp,
+        maxHp: maxHpOf(p),
+        note,
+        ok: check.ok,
+        onUse: () => useFromBag(id, index),
+      };
+    };
+    renderBag(overlayRoot, {
+      title: t('bag.title'),
+      money: t('city.money', { money: s.money }),
+      pockets: contents.map(pocket => ({
+        label: t(`bag.pocket.${pocket.pocket}`),
+        testid: `pocket-${pocket.pocket}`,
+        items: pocket.items.map(({ id, count }) => ({
+          id,
+          name: itemName(id),
+          count: `×${count}`,
+          image: itemUrl(id),
+          text: t(`item.${id}.text` as MessageKey),
+          usedElsewhere: usableFromBag(id) ? null : t(ELSEWHERE[pocket.pocket] ?? 'bag.ballsUse'),
+          targets: usableFromBag(id) ? s.party.map((p, i) => target(id, p, i)) : [],
+        })),
+      })),
+      empty: t('bag.empty'),
+      useOn: t('bag.useOn'),
+      start: start ?? null,
+      back: { label: t('menu.back'), testid: 'back', onClick: goCity },
+      hints: [{ pad: 'a', key: 'Enter', label: t('bag.use') }, hints.back],
+    });
+  }
+
+  /** Uses an item from the bag on a party Pokémon: a potion heals it; a stone or the Link Cable evolves it. */
+  function useFromBag(id: ItemId, index: number) {
+    if (!save) return;
+    const p = save.party[index];
+    if (!p || !checkUse(id, p).ok) return;
+    const item = ITEMS[id];
+    if (item.kind === 'potion') {
+      const healed = usePotion(p, id);
+      update(current => ({ ...current, bag: removeItem(current.bag, id), party: current.party.map((q, i) => (i === index ? healed : q)) }));
+      audio.play('levelUp');
+      showBag(id);
+      toast(t('bag.healed', { name: nameOf(p), hp: displayHp(healed.hp - p.hp) }));
+      return;
+    }
+    const to = itemEvolution(p, id as EvolutionItemId)!.to;
+    preloadSprites([to]);
+    const evolved = evolve(p, to).pokemon;
+    update(current => ({
+      ...current,
+      bag: removeItem(current.bag, id),
+      party: current.party.map((q, i) => (i === index ? evolve(q, to).pokemon : q)),
+      dex: register(current, [], [to]),
+    }));
+    playEvolution(p, evolved, () => showBag(id));
   }
 
   // ── The Pokédex ───────────────────────────────────────────────────────────────────────────────────────────────

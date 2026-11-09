@@ -11,7 +11,10 @@ test.describe('the city', () => {
     await openGame(page, { scene: 'city' }, { save: start() });
     await expect(page.getByTestId('city-heading')).toHaveText('Pallet Town');
     await expect(page.getByTestId('city-money')).toHaveText('₽3000');
-    await expect(page.getByTestId('city-dex')).toHaveText('2 seen · 1 caught');
+    // The Pokédex and the bag sit beside the party, at the bottom.
+    await expect(page.getByTestId('city-dex')).toContainText('Pokédex');
+    await expect(page.getByTestId('city-dex')).toContainText('2 seen · 1 caught');
+    await expect(page.getByTestId('city-bag')).toContainText('Bag');
     await expect(page.getByTestId('hunt-grass')).toBeEnabled();
     await expect(page.getByTestId('hunt-water')).toBeDisabled();
     await expect(page.getByTestId('hunt-water')).toContainText('You need a fishing rod');

@@ -395,9 +395,15 @@ More archetypes can come later (status effects: paralysis = slower, burn = damag
   from the box screen (X / Delete), after a "Keep it / Release" question with Keep it focused; any boxed Pokémon,
   or a party one as long as one stays in the party. The Pokédex still counts a released Pokémon as caught.
 - **Money**: from trainer, gym and League wins. Wild battles give little or none.
-- **Pokédex** (a screen since milestone 11's follow-ups; `game/pokedex.ts`, `ui/screens/pokedex.ts`), opened from the
-  city's "seen · caught" chip or X. Two screens:
-  - **The list**: all 151 in a grid (unseen ones as silhouettes named "???", a Poké Ball on caught ones: in color
+- **Bag** (after milestone 11; `game/bag.ts`, `ui/screens/bag.ts`): every item by pocket (medicine, Poké Balls,
+  evolution items, key items), opened from the city's bottom bar (RB / B). The focused item says what it does; potions,
+  stones and the Link Cable list the party with what they would do to each ("+20 HP", "Can evolve!", "Full HP", "No
+  effect"), and A uses it (an evolution plays its animation, then back to the bag). Balls and rods say where they are
+  used instead. The party screen can still use items too.
+- **The city's bottom bar**: the party, then the **Pokédex** (X) and the **Bag** (RB / B) as icon buttons (the
+  Pokédex's "seen · caught" chip at the top moved there).
+- **Pokédex** (a screen since milestone 11's follow-ups; `game/pokedex.ts`, `ui/screens/pokedex.ts`). Two screens:
+  - Opened from the city's bottom bar (X). **The list**: all 151 in a grid (unseen ones as silhouettes named "???", a Poké Ball on caught ones: in color
     while you have one, grey once none is left). A filter bar on top: **Owned** (caught at some point, as the games'
     Pokédex says "owned"; released ones count), **Type** (a picker), **Legendary**, **Mythical** (with both on,
     either), **No.** (a range of 30 numbers, which also jumps there), and Clear. Filters add up, stay while the game
@@ -785,6 +791,7 @@ sprites won't save it.
 | Art | Trainers, characters and backgrounds from Pokémon Showdown; items and badges from PokeAPI; all by URL, painted stand-ins until they load |
 | Menus and controller | Spatial navigation (by direction), focus kept on redraw, hint glyphs for the device in use, Y opens the party |
 | Pokédex | A list with filters (owned, type, legendary, mythical, number) and a page per species that reveals more as you see and catch, scrolls with the d-pad, and walks the filtered list with LB / RB; Portuguese texts are the game's own translation; releasing is in the box, the dex keeps "caught"; wild fights show a Poké Ball (color: you have it) by the name |
+| Bag | A bag screen by pocket; potions and evolution items are used on a party Pokémon from it; the Pokédex and the Bag are icon buttons beside the party at the bottom of the city |
 | Party order | Reorder in the party screen (pick up, then swap); the first Pokémon leads. The two slots glide into each other's places; a screen redrawn after a change doesn't play its entrance again |
 | Switching | Once mid-round (Tab / View), again only after a faint; after every faint the player picks the next fighter. A mid-round switch continues the same round from where everyone stood |
 | CPU per Pokémon | Skill from who controls it (wild clumsy, trainers at their difficulty) plus its evolution stage and level; style from its stats; a new seed every fight |

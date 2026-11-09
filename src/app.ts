@@ -109,6 +109,8 @@ interface ResultsState {
   evolutions: { index: number; to: number }[];
   /** The Pokémon that gained XP, for the cards (made when the battle ends, before any evolution). */
   xp: XpCard[];
+  /** The XP cards have been shown (their bars filled): shown again, they stand still. */
+  xpShown?: boolean;
   onContinue: () => void;
   /** Another encounter in the same place (hunting, the Safari). */
   again?: () => void;
@@ -1769,7 +1771,9 @@ export function startApp(elements: AppElements, options: TestOptions) {
       : state.xp.length
         ? []
         : [{ text: t('results.noXp'), kind: 'info' as const }];
-    const base = { title, outcome: state.outcome, lines, xp: state.xp, levelUp: t('results.levelUp') };
+    const base = { title, outcome: state.outcome, lines, xp: state.xp, settled: state.xpShown === true, levelUp: t('results.levelUp') };
+    // The bars fill once per battle: whatever comes next (a ball, an evolution) shows them where they ended.
+    state.xpShown = true;
 
     if (state.capture && s) {
       const target = state.capture.pokemon;

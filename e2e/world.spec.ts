@@ -63,6 +63,9 @@ test.describe('hunting and catching', () => {
       expect(['Pidgey', 'Rattata']).toContain(wild);
       await winBattle(page);
       await expect(page.getByTestId('results-prompt')).toHaveText(`The wild ${wild} is worn out! Throw a ball?`);
+      // The XP bars fill on this first showing of the results…
+      await expect(page.getByTestId('results-xp')).not.toHaveClass(/settled/);
+      await expect(page.getByTestId('results-xp').locator('.fill').first()).not.toHaveCSS('animation-name', 'none');
       await page.getByTestId('throw-poke-ball').click();
       throws++;
       // The throw plays out (the tests skip straight to its end): the ball clicked shut, or it burst open.
@@ -76,6 +79,9 @@ test.describe('hunting and catching', () => {
         await expect(page.getByTestId('capture-text')).toContainText(`${wild} broke free`);
       }
       await page.getByTestId('capture-done').click();
+      // …and not again when the results come back after the throw: they stand where they ended.
+      await expect(page.getByTestId('results-xp')).toHaveClass(/settled/);
+      await expect(page.getByTestId('results-xp').locator('.fill').first()).toHaveCSS('animation-name', 'none');
       if (!caught) {
         await expect(page.getByTestId('results-lines')).toContainText(`broke free and fled`);
         await page.getByTestId('hunt-again').click();

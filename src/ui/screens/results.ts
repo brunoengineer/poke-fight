@@ -27,6 +27,11 @@ export interface ResultsView {
   title: string;
   outcome: 'win' | 'loss' | 'draw';
   xp: XpCard[];
+  /**
+   * The XP was already shown for this battle (the screen comes back after a capture, an evolution…): the bars stand
+   * at their new values instead of filling again.
+   */
+  settled: boolean;
   levelUp: string;
   lines: { text: string; kind: ReportKind; image?: string }[];
   /** A question with a picture: the wild Pokémon to catch, or the one evolving. */
@@ -57,7 +62,7 @@ export function renderResults(root: HTMLElement, view: ResultsView) {
         view.xp.length
           ? h(
               'ul',
-              { class: 'xp-cards', testid: 'results-xp' },
+              { class: `xp-cards${view.settled ? ' settled' : ''}`, testid: 'results-xp' },
               view.xp.map((card, i) =>
                 h('li', { class: `xp-card${card.levelTo ? ' level-up' : ''}`, testid: `xp-${i}`, style: { '--i': i, '--from': card.from.toFixed(4), '--to': card.to.toFixed(4) } }, [
                   pokemonSprite(card.sprite, 'sprite xp-sprite'),

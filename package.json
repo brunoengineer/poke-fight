@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "endgame": "tsc --noEmit && vite build --mode endgame --outDir dist-endgame && vite preview --mode endgame --outDir dist-endgame --open /poke-fight/?fresh",
     "test": "node scripts/vitest.mjs run",
     "test:watch": "node scripts/vitest.mjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p e2e",

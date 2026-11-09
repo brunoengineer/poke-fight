@@ -13,7 +13,9 @@ export interface SaveStore {
   clear(): void;
 }
 
-export function createSaveStore(storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null): SaveStore {
+/** `key`: where the save is kept (the endgame build keeps its own, state/endgame.ts). */
+export function createSaveStore(storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null, key = SAVE_KEY): SaveStore {
+  const brokenKey = key === SAVE_KEY ? BROKEN_SAVE_KEY : `${key}.broken`;
   const safely = <T>(fn: () => T, fallback: T): T => {
     try {
       return storage ? fn() : fallback;
@@ -23,19 +25,19 @@ export function createSaveStore(storage: Pick<Storage, 'getItem' | 'setItem' | '
   };
   return {
     load() {
-      const raw = safely(() => storage!.getItem(SAVE_KEY), null);
+      const raw = safely(() => storage!.getItem(key), null);
       const result = parseSave(raw);
       if (result.status === 'broken' && raw !== null) {
-        safely(() => storage!.setItem(BROKEN_SAVE_KEY, raw), undefined);
-        safely(() => storage!.removeItem(SAVE_KEY), undefined);
+        safely(() => storage!.setItem(brokenKey, raw), undefined);
+        safely(() => storage!.removeItem(key), undefined);
       }
       return result;
     },
     write(save) {
-      safely(() => storage!.setItem(SAVE_KEY, serializeSave(save)), undefined);
+      safely(() => storage!.setItem(key, serializeSave(save)), undefined);
     },
     clear() {
-      safely(() => storage!.removeItem(SAVE_KEY), undefined);
+      safely(() => storage!.removeItem(key), undefined);
     },
   };
 }

@@ -2,8 +2,8 @@
 
 A study project: a real-time 2D fighting game (in the style of KOF / Street Fighter) with a Pokémon journey around it:
 pick a starter, hunt and catch, earn XP, evolve, beat the gyms and the League. It runs in the browser on your own
-machine only. **It is not distributed**: no deploy, no hosting, no store. Pokémon sprites and data are used only
-because they are convenient.
+machine only. **It is not distributed**: no store, no public link. Pokémon sprites and data are used only
+because they are convenient. (Exception, to study deploying: a temporary GitHub Pages deploy, see §7.1.)
 
 The second goal matters as much as the game: **practice building a project from zero with Claude**, one small,
 tested step at a time (see [How we work](#10-how-we-work-with-claude)).
@@ -510,7 +510,11 @@ World map (cities unlocked by badges)
 - **TypeScript + Vite**, no UI framework: menus in **DOM** (easy to style, accessible, easy to target in Playwright);
   the fight in **Canvas 2D**.
 - **Vitest** for all game rules and the fight simulation.
-- **Playwright** for end-to-end flows, running in **GitHub Actions** (CI only: no deploy step).
+- **Playwright** for end-to-end flows, running in **GitHub Actions** (`ci.yml`).
+- **A temporary study deploy** (decided 2026-11-09): `pages.yml` builds on every push to `main` (type check, unit
+  tests, `vite build` with the base `/poke-fight/`) and publishes `dist/` to GitHub Pages. The link is never shared
+  and the page asks search engines not to list it (`noindex`). To take it down: Settings → Pages → Unpublish site,
+  and delete `pages.yml` (else the next push publishes it again).
 - **Data**: `scripts/build-data.mjs` downloads from PokeAPI once and writes JSON into `src/data/generated/`, which is
   committed. The game never calls PokeAPI at runtime. Sprites are loaded by URL ❓ (or downloaded once into
   `public/sprites/`, git-ignored, to play offline).
@@ -765,6 +769,7 @@ sprites won't save it.
 | Music | Original loops only (no copied themes); cries are the games' recordings by URL |
 | Settings | Sound, volumes and keys live apart from the save (`poke-fight.settings`), one custom key per action, arrows always move |
 | Balance pass | Deferred until there is playtest data (numbers stay pinned in tests) |
+| Deploy | A temporary GitHub Pages deploy to study how it's done (link never shared, `noindex`, removed after a day or two) |
 
 ### Still open
 

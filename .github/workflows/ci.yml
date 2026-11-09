@@ -1,6 +1,6 @@
 name: CI
 
-# Checks every push and pull request. There is no build or deploy job: this game is never distributed.
+# Checks every push and pull request. Deploying is pages.yml's job (a temporary study deploy).
 
 on:
   push:

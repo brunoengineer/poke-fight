@@ -1,8 +1,10 @@
 # Poké Fight — notes for Claude
 
 A real-time 2D fighting game (KOF / Street Fighter style) with a Pokémon journey around it. It's a **study project**:
-the user is practicing building a project from zero with Claude, one small, tested step at a time. It is **never
-distributed** (no deploy, no hosting); Pokémon sprites and data are used only for convenience.
+the user is practicing building a project from zero with Claude, one small, tested step at a time. It is **not
+distributed**; Pokémon sprites and data are used only for convenience. The one exception is a **temporary study
+deploy** to GitHub Pages (`.github/workflows/pages.yml`, decided 2026-11-09, link never shared, to be removed after a
+day or two): don't add other hosting, and don't advertise the link anywhere (the page is `noindex`).
 
 - **The design lives in [plan.md](plan.md)**: vision, mechanics, architecture, roadmap, decided and open questions.
   Read the relevant section before starting a task. When a decision is made, update plan.md in the same change.
@@ -16,6 +18,7 @@ npm run dev        # http://localhost:5173
 npm test           # Vitest: rules and simulation (src/**/*.test.ts), through scripts/vitest.mjs
 npm run e2e        # Playwright: the real game in Chromium (e2e/)
 npm run typecheck  # src + e2e
+npm run build      # dist/, linked under /poke-fight/ (GitHub Pages); npm run preview serves it there
 npm run data       # rebuild src/data/generated/ from PokeAPI (committed; the game never calls PokeAPI)
 ```
 

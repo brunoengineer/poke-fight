@@ -1,0 +1,47 @@
+name: Pages
+
+# A temporary study deploy (decided 2026-11-09): every push to main builds the game and publishes it on GitHub Pages.
+# The link is not shared. To take it down: Settings → Pages → Unpublish site, then delete this file (or the next push
+# to main publishes it again).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Only the newest push deploys; one already deploying finishes first.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # The same checks as CI before anything is published (the browser tests run in ci.yml).
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

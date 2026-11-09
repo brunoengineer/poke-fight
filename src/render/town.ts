@@ -5,6 +5,7 @@
 // screen's cards leave visible.
 
 import { townPlan, type TownFeature, type TownPlan } from '../data/regions';
+import { landmarkOf, paintLandmark } from './landmarks';
 import { bayer, clumps, hash, mix, noise, Pixels, rgb, seeded, smooth, tone, type Ball, type RGB } from './pixel';
 
 const W = 480;
@@ -46,11 +47,12 @@ function planOf(placeId: string): Plan {
 
 const cache = new Map<string, HTMLCanvasElement>();
 
-/** The city's picture (painted once, then reused). */
+/** The city's picture (painted once, then reused). A League and a sanctuary have their own (render/landmarks.ts). */
 export function townPicture(cityId: string): HTMLCanvasElement {
   let canvas = cache.get(cityId);
   if (!canvas) {
-    canvas = paintTown(cityId).toCanvas();
+    const landmark = landmarkOf(cityId);
+    canvas = (landmark ? paintLandmark(landmark) : paintTown(cityId)).toCanvas();
     cache.set(cityId, canvas);
   }
   return canvas;

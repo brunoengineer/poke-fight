@@ -2429,11 +2429,45 @@ kbd,
   image-rendering: pixelated;
 }
 
+/*
+ * The board is a size container: inside it, 1cqh is 1% of the map's height, and one art pixel of the map (180 tall) is
+ * --px. Each place's marker is an invisible area laid exactly over the icon the map draws there (render/region-map.ts:
+ * its box around the place's point, in art pixels), its name under it.
+ */
+.map-board {
+  container-type: size;
+  --px: calc(100cqh / 180);
+}
+
 .place {
   position: absolute;
-  translate: -50% -50%;
-  display: grid;
-  justify-items: center;
+  width: 0;
+  height: 0;
+  --l: -12;
+  --t: -11;
+  --w: 24;
+  --h: 17;
+}
+
+.place.city {
+  --l: -15;
+  --t: -21;
+  --w: 30;
+  --h: 26;
+}
+
+.place.league {
+  --l: -18;
+  --t: -34;
+  --w: 36;
+  --h: 41;
+}
+
+.place.sanctuary {
+  --l: -16;
+  --t: -22;
+  --w: 32;
+  --h: 31;
 }
 
 .place .node-status {
@@ -2441,9 +2475,11 @@ kbd,
 }
 
 .node {
-  display: grid;
-  justify-items: center;
-  gap: 0.4cqh;
+  position: absolute;
+  left: calc(var(--l) * var(--px));
+  top: calc(var(--t) * var(--px));
+  width: calc(var(--w) * var(--px));
+  height: calc(var(--h) * var(--px));
   padding: 0;
   border: 0;
   background: none;
@@ -2451,81 +2487,90 @@ kbd,
 }
 
 .node-dot {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 5.2cqh;
-  height: 5.2cqh;
-  border-radius: 50%;
-  /* A ring around the little town drawn on the map. */
-  box-shadow: 0 0 0 0.35cqh rgba(255, 255, 255, 0.9), 0 0.5cqh 1.2cqh rgba(0, 0, 0, 0.45);
-  transition: transform 160ms var(--ease-pop);
-  color: var(--ink);
-}
-
-/* The badge on the ring: a pin where you are, a lock where you can't go yet. */
-.node-dot .icon {
   position: absolute;
-  top: -1.2cqh;
-  right: -1.2cqh;
-  width: 2.6cqh;
-  height: 2.6cqh;
-  padding: 0.45cqh;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0.3cqh 0.8cqh rgba(0, 0, 0, 0.4);
+  inset: 0;
+  border-radius: 1.4cqh;
+  color: var(--ink);
+  transition:
+    box-shadow 160ms,
+    background 160ms;
 }
 
 .node-name {
-  padding: 0.4cqh 1cqh;
-  border-radius: 0.8cqh;
-  background: rgba(8, 10, 26, 0.75);
-  font: 800 italic 1.9cqh/1 var(--display);
+  position: absolute;
+  top: calc(100% + var(--px));
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6cqh;
+  padding: 0.5cqh 1.1cqh;
+  border-radius: 1cqh;
+  background: rgba(8, 10, 26, 0.78);
+  box-shadow: 0 0.4cqh 1cqh rgba(0, 0, 0, 0.35);
+  font: 800 italic 2.2cqh/1 var(--display);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   white-space: nowrap;
+  transition:
+    background 160ms,
+    color 160ms;
 }
 
-.node.locked .node-dot {
-  box-shadow: 0 0 0 0.3cqh rgba(20, 16, 40, 0.55);
-}
-
-.node.locked .node-dot .icon {
-  background: #5d6385;
-  color: #fff;
+.node-name .icon {
+  width: 2.2cqh;
+  height: 2.2cqh;
+  margin-left: -0.3cqh;
 }
 
 .node.locked .node-name {
-  opacity: 0.6;
+  color: #b9bdd6;
 }
 
+/* Where you are: a gold frame, a gold name with a pin. */
 .node.here .node-dot {
-  box-shadow: 0 0 0 0.45cqh var(--gold), 0 0.5cqh 1.2cqh rgba(0, 0, 0, 0.45);
-  animation: pulse 1.4s ease-in-out infinite;
+  box-shadow: 0 0 0 0.5cqh var(--gold), 0 0 2.4cqh color-mix(in srgb, var(--gold) 55%, transparent);
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
 }
 
-.node.here .node-dot .icon {
+.node.here .node-name {
   background: var(--gold);
-}
-
-@keyframes pulse {
-  50% {
-    box-shadow: 0 0 0 0.45cqh var(--gold), 0 0 0 1.4cqh color-mix(in srgb, var(--gold) 30%, transparent);
-  }
+  color: var(--ink);
 }
 
 .node:focus {
   outline: none;
 }
 
+/* The place being read about: a white frame around its icon. */
 .node:focus .node-dot {
-  transform: scale(1.25);
-  box-shadow: 0 0 0 0.5cqh #fff, 0 0 0 1.1cqh color-mix(in srgb, var(--theme) 60%, transparent);
+  box-shadow: 0 0 0 0.5cqh #fff, 0 0 0 1.3cqh color-mix(in srgb, var(--theme) 55%, transparent), 0 1cqh 3cqh rgba(0, 0, 0, 0.35);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.node.here:focus .node-dot {
+  box-shadow: 0 0 0 0.5cqh var(--gold), 0 0 0 1.3cqh color-mix(in srgb, var(--gold) 45%, transparent), 0 1cqh 3cqh rgba(0, 0, 0, 0.35);
 }
 
 .node:focus .node-name {
   background: #fff;
   color: var(--ink);
+}
+
+/* The focused place's picture, at the top of the side panel. */
+.map-preview {
+  margin: -2.6cqh -2.6cqh 0.4cqh;
+  aspect-ratio: 16 / 8;
+  border-radius: 2.4cqh 2.4cqh 0 0;
+  background-size: 100% auto;
+  background-position: center top;
+  image-rendering: pixelated;
+  -webkit-mask-image: linear-gradient(#000 70%, transparent);
+  mask-image: linear-gradient(#000 70%, transparent);
+}
+
+.map-preview.locked {
+  filter: grayscale(0.85) brightness(0.7);
 }
 
 .map-panel {

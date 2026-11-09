@@ -279,7 +279,7 @@ export const JOHTO: Region = {
       [42, 34, 2],
     ],
     places: {
-      'new-bark': { x: 70, y: 48 },
+      'new-bark': { x: 72, y: 48 },
       cherrygrove: { x: 58, y: 48 },
       violet: { x: 46, y: 26 },
       azalea: { x: 46, y: 50 },
@@ -290,7 +290,7 @@ export const JOHTO: Region = {
       mahogany: { x: 60, y: 12 },
       blackthorn: { x: 74, y: 12 },
       'johto-league': { x: 92, y: 32 },
-      'johto-sanctuary': { x: 52, y: 31 },
+      'johto-sanctuary': { x: 57, y: 34 },
     },
     // Roads go along one axis, then the other: the places are set so they follow the games' routes (29 east–west,
     // 30–31 up to Violet, 32 down to Azalea, Ilex and 34 up to Goldenrod, 35–37 through the National Park…).

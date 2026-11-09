@@ -3,8 +3,8 @@
 // rivers, the roads between the places (sea routes dotted over the water), and each place as a little town. 300×180
 // art pixels: three per unit of the region's 100×60 map box (RegionMap in data/regions/types.ts).
 
-import type { Region, RegionMap } from '../data/regions';
-import { bayer, clumps, mix, noise, Pixels, rgb, smooth, tone, type RGB } from './pixel';
+import type { Region, RegionMap, TownFeature } from '../data/regions';
+import { bayer, clumps, hash, mix, noise, Pixels, rgb, smooth, tone, type RGB } from './pixel';
 
 export const MAP_W = 300;
 export const MAP_H = 180;
@@ -299,32 +299,330 @@ export function regionPicture(region: Region, places: readonly MapPlace[], roads
     });
   }
 
-  // The towns: a little plaza with roofs (the Pokémon Center's red, the Mart's blue, houses).
-  for (const c of places) town(p, Math.round(c.x * S), Math.round(c.y * S), c.open, c.id);
+  // The places, back to front: towns and cities, the League, the sanctuary.
+  for (const c of [...places].sort((a, b) => a.y - b.y)) {
+    const x = Math.round(c.x * S);
+    const y = Math.round(c.y * S);
+    const kind = iconKind(region, c.id);
+    if (kind === 'league') leagueIcon(p, x, y, c.open, region.color);
+    else if (kind === 'sanctuary') sanctuaryIcon(p, x, y, c.open, region.sanctuary.art.color);
+    else townIcon(p, x, y, c.open, c.id, region.towns[c.id]?.row);
+  }
   return p.toCanvas();
 }
 
-function town(p: Pixels, cx: number, cy: number, open: boolean, id: string) {
-  const x0 = cx - 6;
-  const y0 = cy - 5;
-  const plaza = open ? rgb('#e9e2cf') : rgb('#bdb6aa');
-  p.rect(x0 - 1, y0 - 1, 14, 12, C.outline);
-  p.rect(x0, y0, 12, 10, plaza);
-  p.rect(x0, y0, 12, 1, tone(plaza, 0.4));
-  const roofs = id === 'indigo' ? [rgb('#3a3f8f'), rgb('#e04a40'), rgb('#3a3f8f')] : [rgb('#e04a40'), rgb('#3d7fe0'), rgb('#d08a2e')];
-  const spots: [number, number][] = [
-    [1, 1],
-    [7, 1],
-    [4, 6],
-  ];
-  spots.forEach(([dx, dy], i) => {
-    const roof = open ? roofs[i] : mix(roofs[i], rgb('#8a8496'), 0.6);
-    p.rect(x0 + dx, y0 + dy, 4, 2, roof);
-    p.rect(x0 + dx, y0 + dy, 4, 1, tone(roof, 0.35));
-    p.rect(x0 + dx, y0 + dy + 2, 4, 1, open ? rgb('#f8f6f0') : rgb('#cfc9c0'));
-    p.set(x0 + dx + 1, y0 + dy + 2, open ? rgb('#4f86c2') : rgb('#8a8496'));
+/**
+ * The box each kind of icon covers around its place's point, in art pixels (left, top, width, height): the map
+ * screen lays its markers exactly over them (the same numbers are in main.css, .place), and a test keeps every
+ * region's icons and names from overlapping (region-map.test.ts).
+ */
+export const ICON_BOX = {
+  town: { l: -12, t: -11, w: 24, h: 17 },
+  city: { l: -15, t: -21, w: 30, h: 26 },
+  league: { l: -18, t: -34, w: 36, h: 41 },
+  sanctuary: { l: -16, t: -22, w: 32, h: 31 },
+} as const;
+
+export type IconKind = keyof typeof ICON_BOX;
+
+/** Which icon a place has. */
+export const iconKind = (region: Region, placeId: string): IconKind =>
+  placeId === region.league.city
+    ? 'league'
+    : placeId === region.sanctuary.id
+      ? 'sanctuary'
+      : (region.towns[placeId]?.row.length ?? 0) >= 4
+        ? 'city'
+        : 'town';
+
+// ── The places on the map ─────────────────────────────────────────────────────────────────────────────────────────
+// Little pixel-art icons in 3/4 view, standing on the place's point (where its roads meet): a town of houses (bigger
+// for a city), the League's palace on its plateau, the sanctuary's shrine with its floating crystal. A place not open
+// yet is drawn faded, without its lights.
+
+const GREY = rgb('#8a8496');
+const WALL = rgb('#f6f1e6');
+const DOOR = rgb('#6a4a3a');
+const GLASS = rgb('#7fb6ee');
+
+/** Dims a color for a place that isn't open yet. */
+const dim = (c: RGB, open: boolean) => (open ? c : mix(c, GREY, 0.6));
+
+/** A house: a roof (its top row lit, its eave dark), a white front with windows and a door, outlined. */
+function house(p: Pixels, x: number, y: number, w: number, roof: RGB, open: boolean, storeys = 1, stripe?: RGB) {
+  const roofH = 4;
+  const wallH = storeys === 1 ? 3 : 6;
+  // Outline and shadow.
+  p.rect(x - 1, y, w + 2, roofH + wallH + 1, C.outline);
+  p.rect(x, y - 1, w, 1, C.outline);
+  for (let j = 1; j <= roofH + wallH; j++) p.blend(x + w + 1, y + j, C.outline, 0.4);
+  for (let i = 0; i < w + 1; i++) p.blend(x + i, y + roofH + wallH + 1, C.outline, 0.4);
+  for (let j = 0; j < roofH; j++) {
+    for (let i = 0; i < w; i++) {
+      const c = j === 0 ? tone(roof, 0.35) : j === roofH - 1 ? tone(roof, -0.3) : stripe && j === 2 ? stripe : roof;
+      p.set(x + i, y + j, dim(c, open));
+    }
+  }
+  for (let j = 0; j < wallH; j++) for (let i = 0; i < w; i++) p.set(x + i, y + roofH + j, dim(i === w - 1 ? tone(WALL, -0.15) : WALL, open));
+  // Windows on each floor, a door on the ground floor.
+  for (let f = 0; f < storeys; f++) {
+    const wy = y + roofH + f * 3;
+    p.set(x + 1, wy, dim(GLASS, open));
+    p.set(x + w - 2, wy, dim(GLASS, open));
+  }
+  const door = x + Math.floor(w / 2);
+  p.set(door, y + roofH + wallH - 1, dim(DOOR, open));
+  if (wallH > 2) p.set(door, y + roofH + wallH - 2, dim(DOOR, open));
+}
+
+/** A round little tree. */
+function bushTree(p: Pixels, x: number, y: number, open: boolean) {
+  p.blend(x + 1, y + 3, C.outline, 0.35);
+  p.blend(x + 2, y + 3, C.outline, 0.35);
+  if (open) clumps(p, [{ x: x + 0.5, y: y, r: 2.7 }], LEAVES, rgb('#16402a'));
+  else clumps(p, [{ x: x + 0.5, y: y, r: 2.7 }], LEAVES.map(c => dim(c, false)), rgb('#3a3644'));
+  p.set(x, y + 2, rgb('#5e3a22'));
+}
+
+/** The ground of a town: a clearing of packed earth, dithered into the grass at its edge. */
+function clearing(p: Pixels, cx: number, cy: number, rx: number, ry: number, open: boolean) {
+  for (let y = Math.floor(cy - ry); y <= cy + ry; y++) {
+    for (let x = Math.floor(cx - rx); x <= cx + rx; x++) {
+      const d = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
+      if (d < 0.75 || (d < 1 && bayer(x, y) > (d - 0.75) * 4)) p.set(x, y, dim(d < 0.4 ? rgb('#efe0b0') : rgb('#e2cc94'), open));
+    }
+  }
+}
+
+const ROOFS = ['#d0553d', '#4f9a4a', '#8d5bb0', '#d08a2e', '#c0465e', '#3f7cc0'].map(rgb);
+
+/** A tall building (a skyscraper, a department store): glass and steel, rows of windows, a flat roof. */
+function tower(p: Pixels, x: number, y: number, w: number, storeys: number, open: boolean, glass: RGB, roof: RGB) {
+  const h = 2 + storeys * 3;
+  p.rect(x - 1, y - 1, w + 2, h + 2, C.outline);
+  for (let j = 1; j <= h; j++) p.blend(x + w + 1, y + j, C.outline, 0.4);
+  p.rect(x, y, w, 2, dim(roof, open));
+  p.rect(x, y, w, 1, dim(tone(roof, 0.35), open));
+  for (let j = 2; j < h; j++) {
+    for (let i = 0; i < w; i++) {
+      const window = (j - 2) % 3 !== 2 && i % 2 === 1 && i < w - 1;
+      p.set(x + i, y + j, dim(window ? tone(glass, 0.35) : i === w - 1 ? tone(glass, -0.35) : glass, open));
+    }
+  }
+  p.set(x + Math.floor(w / 2), y + h - 1, dim(DOOR, open));
+}
+
+/** The spooky Pokémon Tower: a narrow purple spire. */
+function spire(p: Pixels, x: number, y: number, open: boolean) {
+  tower(p, x, y + 3, 5, 4, open, rgb('#b8a8d8'), rgb('#6a4a9a'));
+  for (let j = 0; j < 4; j++) for (let i = -j; i <= j; i++) p.set(x + 2 + i, y + j, j === 3 ? C.outline : dim(i < 0 ? rgb('#9a7ac8') : rgb('#6a4a9a'), open));
+  p.set(x + 2, y - 1, C.outline);
+}
+
+/** A little volcano behind a town (Cinnabar): a rocky cone, a glowing crater, a wisp of smoke. */
+function volcanoBack(p: Pixels, cx: number, base: number, open: boolean) {
+  for (let j = 0; j < 12; j++) {
+    const half = 3 + j;
+    for (let i = -half; i <= half; i++) {
+      const edge = Math.abs(i) === half || j === 0;
+      p.set(cx + i, base - 12 + j, edge ? C.outline : dim(i < -half / 3 ? rgb('#b07a52') : (i + j) % 4 === 0 ? rgb('#6e4a32') : rgb('#8a5c3e'), open));
+    }
+  }
+  p.rect(cx - 2, base - 12, 5, 1, dim(rgb('#ff6a2a'), open));
+  p.set(cx, base - 13, dim(rgb('#ffd27a'), open));
+  if (open) for (let j = 0; j < 4; j++) p.blend(cx + 1 + (j % 2), base - 15 - j, rgb('#e8e4f0'), 0.7);
+}
+
+/**
+ * A town on the map, built from its plan (data/regions: its main row of buildings): the Pokémon Center and the Mart
+ * in front, its landmarks behind (the gym, a tower, a skyscraper, the lab…), houses filling in. A city (four or more
+ * buildings in its row) gets the full block; a town a few houses and a tree.
+ */
+function townIcon(p: Pixels, cx: number, cy: number, open: boolean, id: string, plan: readonly TownFeature[] | undefined) {
+  const seed = hash(id);
+  const row = plan ?? ['house', 'center', 'house'];
+  const city = row.length >= 4;
+  const roofA = ROOFS[seed % ROOFS.length];
+  const roofB = ROOFS[(seed >>> 4) % ROOFS.length];
+  clearing(p, cx, cy - (city ? 3 : 2), city ? 15 : 11, city ? 9 : 6, open);
+  if (row.includes('volcano')) volcanoBack(p, cx + 9, cy - 9, open);
+  // The back row: up to three landmarks, then houses.
+  const landmarks = row.filter(f => f !== 'house' && f !== 'center' && f !== 'mart' && f !== 'volcano');
+  const back = city ? [...landmarks, 'house', 'house', 'house'].slice(0, 3) : [...landmarks, 'house', 'house'].slice(0, 2);
+  const slots = city ? [cx - 13, cx - 4, cx + 6] : [cx - 9, cx + 2];
+  back.forEach((f, i) => {
+    const x = slots[i];
+    const y = cy - (city ? 11 : 9);
+    const roof = i === 1 ? roofB : roofA;
+    switch (f) {
+      case 'gym':
+        house(p, x - 1, y - 1, 9, rgb('#e0a22e'), open, 1, rgb('#ffffff'));
+        break;
+      case 'tower':
+        spire(p, x + 1, y - 9, open);
+        break;
+      case 'skyscraper':
+        tower(p, x, y - 8, 7, 4, open, rgb('#6aa8e0'), rgb('#7a8496'));
+        break;
+      case 'store':
+        tower(p, x, y - 5, 7, 3, open, rgb('#e8b8c8'), rgb('#c0465e'));
+        break;
+      case 'tall':
+        house(p, x, y - 3, 8, rgb('#7a8496'), open, 2);
+        break;
+      case 'lab':
+        house(p, x - 1, y, 9, rgb('#a8b4c4'), open);
+        p.set(x + 6, y - 2, dim(rgb('#d8dce4'), open));
+        p.set(x + 6, y - 1, C.outline);
+        break;
+      case 'museum':
+        house(p, x - 1, y, 9, rgb('#b8a68a'), open);
+        for (let k = 0; k < 4; k++) p.set(x + k * 2, y + 5, dim(rgb('#d8ccb4'), open));
+        break;
+      default:
+        house(p, x, y, 7, roof, open);
+    }
   });
-  // Its shadow.
-  for (let i = 0; i < 14; i++) p.blend(x0 + i, y0 + 11, C.outline, 0.35);
-  for (let j = 0; j < 12; j++) p.blend(x0 + 13, y0 + j, C.outline, 0.35);
+  // The front row: the Center and the Mart (a house where there is none).
+  const center = rgb('#e04a40');
+  if (city) {
+    house(p, cx - 10, cy - 3, 8, center, open, 1, rgb('#ffffff'));
+    house(p, cx + 1, cy - 3, 8, row.includes('mart') ? rgb('#3d7fe0') : roofB, open);
+  } else {
+    house(p, cx - 5, cy - 2, 8, center, open, 1, rgb('#ffffff'));
+    bushTree(p, cx + 7, cy + 1, open);
+  }
+}
+
+function leagueIcon(p: Pixels, cx: number, cy: number, open: boolean, color: string) {
+  const accent = dim(rgb(color), open);
+  const stone = [rgb('#a89c88'), rgb('#e8dfcc'), rgb('#fbf6ea')].map(c => dim(c, open));
+  const gold = [rgb('#9a6a1e'), rgb('#e0aa38'), rgb('#ffe08a')].map(c => dim(c, open));
+  const cliff = [rgb('#7e5a3e'), rgb('#9c7250'), rgb('#c79a6a')].map(c => dim(c, open));
+  // The plateau: a rocky shelf, its top paved.
+  for (let y = cy - 3; y <= cy + 6; y++) {
+    for (let x = cx - 17; x <= cx + 17; x++) {
+      const top = ((x - cx) / 16) ** 2 + ((y - cy + 1) / 4) ** 2 < 1;
+      const side = !top && Math.abs(x - cx) <= 16 - (y - cy - 1) && y >= cy && y <= cy + 5;
+      if (top) p.set(x, y, bayer(x, y) < 0.2 ? stone[0] : stone[1]);
+      else if (side) p.set(x, y, y === cy + 5 || Math.abs(x - cx) === 16 - (y - cy - 1) ? C.outline : x < cx ? cliff[2] : (x + y) % 3 === 0 ? cliff[0] : cliff[1]);
+    }
+  }
+  for (let x = cx - 16; x <= cx + 16; x++) p.blend(x + 1, cy + 6, C.outline, 0.35);
+  // The hall: columns, the great door, the roof in the region's color with gold trim.
+  const top = cy - 8;
+  p.rect(cx - 12, top - 1, 25, 10, C.outline);
+  for (let y = top; y < cy; y++) for (let x = cx - 11; x <= cx + 11; x++) p.set(x, y, (x - cx + 12) % 3 === 0 ? stone[2] : x > cx + 8 ? stone[0] : stone[1]);
+  p.rect(cx - 2, cy - 4, 5, 4, gold[1]);
+  p.rect(cx - 1, cy - 4, 3, 1, gold[2]);
+  p.rect(cx, cy - 3, 1, 3, gold[0]);
+  for (let y = top - 4; y < top; y++) {
+    const inset = top - 1 - y;
+    for (let x = cx - 13 + inset; x <= cx + 13 - inset; x++) p.set(x, y, x === cx - 13 + inset || x === cx + 13 - inset ? C.outline : y === top - 4 ? tone(accent, 0.3) : accent);
+  }
+  p.rect(cx - 13, top - 1, 27, 1, gold[1]);
+  // The gable with its crest, the tower and its dome, a flag.
+  for (let y = top - 9; y < top - 1; y++) {
+    const half = Math.round((y - (top - 9)) * 0.9) + 1;
+    for (let x = -half; x <= half; x++) p.set(cx + x, y, Math.abs(x) === half ? gold[0] : stone[2]);
+  }
+  p.set(cx, top - 5, gold[2]);
+  p.set(cx - 1, top - 4, gold[1]);
+  p.set(cx + 1, top - 4, gold[1]);
+  p.set(cx, top - 4, rgb('#ffffff'));
+  p.rect(cx - 3, top - 15, 7, 7, C.outline);
+  p.rect(cx - 2, top - 14, 5, 6, stone[1]);
+  p.set(cx, top - 12, dim(rgb('#ffd27a'), open));
+  for (let y = 0; y < 4; y++) {
+    const half = [1, 2, 3, 3][y];
+    for (let x = -half; x <= half; x++) p.set(cx + x, top - 19 + y, Math.abs(x) === half ? gold[0] : x < 0 ? gold[2] : gold[1]);
+  }
+  p.rect(cx, top - 24, 1, 5, C.outline);
+  p.rect(cx + 1, top - 24, 3, 2, dim(rgb('#e0403a'), open));
+  // Side towers with pointed roofs.
+  for (const tx of [cx - 14, cx + 12]) {
+    p.rect(tx - 1, top - 5, 5, 13, C.outline);
+    p.rect(tx, top - 4, 3, 11, stone[1]);
+    p.set(tx + 1, top - 2, dim(rgb('#ffd27a'), open));
+    for (let y = 0; y < 4; y++) for (let x = -y; x <= y; x++) p.set(tx + 1 + x, top - 9 + y, Math.abs(x) === y && y > 0 ? C.outline : tone(accent, x < 0 ? 0.25 : 0));
+  }
+  // Stairs and the carpet down the plateau.
+  for (let s = 0; s < 3; s++) p.rect(cx - 5 - s, cy + s, 11 + s * 2, 1, s % 2 ? stone[0] : stone[2]);
+  p.rect(cx - 1, cy, 3, 4, dim(rgb('#c83040'), open));
+  if (open) {
+    // Gold glints.
+    for (const [x, y] of [
+      [cx - 6, top - 20],
+      [cx + 7, top - 16],
+    ]) {
+      p.set(x, y, rgb('#fff6c8'));
+      p.blend(x - 1, y, rgb('#fff6c8'), 0.5);
+      p.blend(x + 1, y, rgb('#fff6c8'), 0.5);
+      p.blend(x, y - 1, rgb('#fff6c8'), 0.5);
+      p.blend(x, y + 1, rgb('#fff6c8'), 0.5);
+    }
+  }
+}
+
+function sanctuaryIcon(p: Pixels, cx: number, cy: number, open: boolean, color: string) {
+  const glow = open ? rgb(color) : GREY;
+  const marble = [rgb('#7a7e9e'), rgb('#b4b7d2'), rgb('#e2e4f4')].map(c => dim(c, open));
+  // A soft halo of its light on the ground around it.
+  if (open) {
+    for (let y = cy - 20; y <= cy + 8; y++) {
+      for (let x = cx - 18; x <= cx + 18; x++) {
+        const d = Math.hypot((x - cx) / 18, (y - cy + 6) / 14);
+        if (d < 1 && bayer(x, y) < (1 - d) * 0.9) p.blend(x, y, glow, 0.35);
+      }
+    }
+  }
+  // The platform: two tiers of stone, seen at a slant.
+  for (const [ry, rx, oy, c] of [
+    [4, 14, 4, marble[0]],
+    [4, 12, 2, marble[1]],
+  ] as const) {
+    for (let y = Math.floor(cy + oy - ry); y <= cy + oy + ry; y++) {
+      for (let x = cx - rx; x <= cx + rx; x++) {
+        const d = ((x - cx) / rx) ** 2 + ((y - cy - oy) / ry) ** 2;
+        if (d <= 1) p.set(x, y, d > 0.8 ? C.outline : y < cy + oy - 1 ? tone(c, 0.25) : c);
+      }
+    }
+  }
+  // The rune circle on it.
+  for (let a = 0; a < 40; a++) {
+    const t = (a / 40) * Math.PI * 2;
+    if (a % 5 !== 4) p.set(Math.round(cx + Math.cos(t) * 8), Math.round(cy + 2 + Math.sin(t) * 2), open ? tone(glow, 0.3) : marble[0]);
+  }
+  // Pillars: the arch's two, and broken ones at the edges.
+  const pillar = (x: number, height: number) => {
+    p.rect(x - 1, cy - height - 1, 4, height + 2, C.outline);
+    for (let y = cy - height; y <= cy; y++) {
+      p.set(x, y, marble[2]);
+      p.set(x + 1, y, marble[1]);
+    }
+  };
+  pillar(cx - 11, 7);
+  pillar(cx + 10, 9);
+  pillar(cx - 6, 15);
+  pillar(cx + 5, 15);
+  // The lintel across the arch, its runes lit.
+  p.rect(cx - 9, cy - 19, 19, 4, C.outline);
+  p.rect(cx - 8, cy - 18, 17, 2, marble[2]);
+  if (open) for (let x = cx - 6; x <= cx + 6; x += 3) p.set(x, cy - 17, tone(glow, 0.4));
+  // The crystal, floating in the arch.
+  const tones = open ? [tone(glow, -0.35), glow, tone(glow, 0.45), rgb('#ffffff')] : [marble[0], marble[1], marble[2], marble[2]];
+  for (let y = -5; y <= 5; y++) {
+    const half = Math.round((1 - Math.abs(y) / 5.5) * 3);
+    for (let x = -half; x <= half; x++) {
+      const edge = Math.abs(x) === half;
+      p.set(cx + x, cy - 8 + y, edge ? (open ? tone(glow, -0.6) : C.outline) : x < 0 ? (y < 0 ? tones[3] : tones[2]) : y < 0 ? tones[1] : tones[0]);
+    }
+  }
+  if (open) {
+    for (const [x, y] of [
+      [cx - 3, cy - 15],
+      [cx + 4, cy - 11],
+      [cx - 4, cy - 4],
+    ]) p.set(x, y, rgb('#ffffff'));
+  }
 }

@@ -226,7 +226,7 @@ export const KANTO: Region = {
       [62, 36, 2],
     ],
     places: {
-      indigo: { x: 11, y: 10 },
+      indigo: { x: 11, y: 12 },
       pewter: { x: 24, y: 14 },
       viridian: { x: 22, y: 30 },
       pallet: { x: 22, y: 44 },
@@ -236,8 +236,8 @@ export const KANTO: Region = {
       saffron: { x: 58, y: 28 },
       lavender: { x: 78, y: 28 },
       vermilion: { x: 58, y: 42 },
-      fuchsia: { x: 45, y: 51 },
-      'kanto-sanctuary': { x: 50, y: 37 },
+      fuchsia: { x: 47, y: 51 },
+      'kanto-sanctuary': { x: 33.5, y: 39.5 },
     },
     routes: [
       ['pallet', 'viridian'],

@@ -29,6 +29,13 @@ test.describe('the city', () => {
     await expect(page.getByTestId('place-pallet')).toContainText('You are here');
     await expect(page.getByTestId('go-cerulean')).toBeDisabled();
     await expect(page.getByTestId('place-cerulean')).toContainText('Needs 1 badge(s)');
+    // The League and the sanctuary have their own icons (the markers cover them); the panel shows the place's picture.
+    await expect(page.getByTestId('place-indigo')).toHaveClass(/league/);
+    await expect(page.getByTestId('place-kanto-sanctuary')).toHaveClass(/sanctuary/);
+    await expect(page.getByTestId('place-saffron')).toHaveClass(/city/);
+    await expect(page.getByTestId('map-preview')).toHaveCSS('background-image', /^url\("data:image\/png/);
+    await page.getByTestId('go-cerulean').focus();
+    await expect(page.getByTestId('map-preview')).toHaveClass(/locked/);
     await page.getByTestId('go-viridian').click();
     await expect(page.getByTestId('city-heading')).toHaveText('Viridian City');
     expect((await save(page)).location).toBe('viridian');

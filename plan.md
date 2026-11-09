@@ -746,10 +746,22 @@ Pokémon sprites are single front/back images, not fighting-game animation frame
   and the city's water (the sea, a river with a bridge, a pond, Vermilion's harbor with its ship). Each city has its
   ground (grass, rock, sand, paving) and time of day (Lavender at dusk and the Plateau at night, windows lit). The
   battle field's fights use the city's battle background again (a top-down town can't be a side-view stage).
-- **The world map** is pixel art too (`render/kanto-map.ts`): the sea with surf and shallows, a rugged coast and
+- **The League and the Legends' Sanctuary have pictures of their own** (`render/landmarks.ts`, decided after
+  milestone 13's step 2: they were towns of houses): the League is a palace on its plateau at sunset in its region's
+  color (columns, banners, a gabled portico with a gold crest, a domed tower, side towers with flags, braziers, a red
+  carpet down the stairs); the sanctuary an ancient shrine at night (an aurora, the moon, a great arch with glowing
+  runes, a crystal floating in it over a rune circle, broken columns with ivy, cold lanterns, a still pool), glowing
+  in the sanctuary's own color (Kanto violet, Johto gold, Hoenn jade, Sinnoh blue).
+- **The world map** is pixel art too (`render/region-map.ts`): the sea with surf and shallows, a rugged coast and
   beaches, mountain **ranges** (several peaks each, lit and shaded faces, crevices, snow) instead of triangles,
   forests of little trees, a lake and a river, roads that turn on the map's axes (dotted over the sea, grey while
-  locked), and each city as a little town. The city buttons are rings around them.
+  locked). Each place is an icon in 3/4 view (redrawn with the League and sanctuary pictures): a town is a clearing
+  with a few houses and the Pokémon Center; a city (four or more buildings in its plan) a block built from its plan,
+  its landmarks behind (the gym, Lavender's tower, skyscrapers, the department store, the lab, the museum,
+  Cinnabar's volcano); the League a palace on a rocky plateau; the sanctuary a shrine with a floating crystal. A
+  place not open yet is faded. The buttons are invisible frames laid exactly over the icons (`ICON_BOX`): white on
+  focus, gold where you are; the name under each, with a pin or a lock. A test keeps every region's icons and names
+  on the map and apart (`region-map.test.ts`). The side panel shows the focused place's picture.
 - Both are drawn by a small pixel painter (`render/pixel.ts`): pixels written to a buffer, light from the top-left,
   dark outlines, a few tones per material with ordered dithering between them, and fixed noise for textures.
 - Items and badges: the PokeAPI sprites.

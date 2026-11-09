@@ -2,7 +2,8 @@
 // d-pad moves between cities by direction (spatial navigation), the side panel describes the focused one, A travels.
 
 import type { Region } from '../../data/regions';
-import { regionPicture } from '../../render/region-map';
+import { iconKind, regionPicture } from '../../render/region-map';
+import { townUrl } from '../../render/town';
 import { h } from '../dom';
 import { mount } from '../focus';
 import { icon } from '../icons';
@@ -54,6 +55,8 @@ export function renderMap(root: HTMLElement, view: MapView) {
   const describe = (c: MapCity) =>
     panel.replaceChildren(
       ...[
+      // The place itself: its painted panorama (a town, the League's palace, the sanctuary's shrine).
+      h('div', { class: `map-preview${c.open ? '' : ' locked'}`, testid: 'map-preview', style: { 'background-image': `url("${townUrl(c.id)}")` }, attrs: { 'aria-hidden': 'true' } }),
       h('small', { class: 'map-status' }, [icon(c.here ? 'pin' : c.open ? 'map' : 'lock'), c.status]),
       h('h2', { class: 'display', text: c.name }),
       h('p', { class: 'tagline', text: c.tagline }),
@@ -81,11 +84,14 @@ export function renderMap(root: HTMLElement, view: MapView) {
           ...(c.here || !c.open ? { 'aria-disabled': 'true', 'data-focusable': '' } : {}),
         },
       },
-      [h('span', { class: 'node-dot' }, [c.here ? icon('pin') : !c.open ? icon('lock') : null]), h('span', { class: 'node-name', text: c.name })],
+      // The frame over the icon; the name under it, with a pin where you are or a lock where you can't go yet.
+      [h('span', { class: 'node-dot' }), h('span', { class: 'node-name' }, [c.here ? icon('pin') : !c.open ? icon('lock') : null, c.name])],
     );
     if (c.open && !c.here) node.addEventListener('click', c.onGo);
     node.addEventListener('focus', () => describe(c));
-    return h('div', { class: 'place', testid: `place-${c.id}`, style: { left: `${(c.x / W) * 100}%`, top: `${(c.y / H) * 100}%` } }, [
+    // Which icon the map draws there (render/region-map.ts): the marker covers it.
+    const kind = iconKind(view.region, c.id);
+    return h('div', { class: `place ${kind}`, testid: `place-${c.id}`, style: { left: `${(c.x / W) * 100}%`, top: `${(c.y / H) * 100}%` } }, [
       node,
       h('small', { class: 'node-status', text: c.status }),
     ]);

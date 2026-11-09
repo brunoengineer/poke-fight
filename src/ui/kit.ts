@@ -7,7 +7,7 @@ import { h, type Child } from './dom';
 import { icon, type IconName } from './icons';
 
 /** A controller button a hint or a shortcut refers to. */
-export type Pad = 'a' | 'b' | 'x' | 'y' | 'lb' | 'rb' | 'start';
+export type Pad = 'a' | 'b' | 'x' | 'y' | 'lb' | 'rb' | 'start' | 'view';
 
 export interface ButtonSpec {
   label: string;
@@ -149,7 +149,7 @@ export interface Hint {
   label: string;
 }
 
-const PAD_LABELS: Record<Pad, string> = { a: 'A', b: 'B', x: 'X', y: 'Y', lb: 'LB', rb: 'RB', start: '≡' };
+const PAD_LABELS: Record<Pad, string> = { a: 'A', b: 'B', x: 'X', y: 'Y', lb: 'LB', rb: 'RB', start: '≡', view: '⧉' };
 
 /** The glyph of a controller button and of its keyboard key; CSS shows the one for the device in use. */
 export function glyph(pad: Pad, key: string) {

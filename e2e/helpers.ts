@@ -96,7 +96,7 @@ export const snapshot = (page: Page) => page.evaluate(() => window.__pf!.snapsho
 export const battle = (page: Page) => page.evaluate(() => window.__pf!.battle());
 
 /** The standard gamepad layout's button numbers (as in src/engine/input/gamepad.ts). */
-export const PAD = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, Start: 9, Up: 12, Down: 13, Left: 14, Right: 15 } as const;
+export const PAD = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, Back: 8, Start: 9, Up: 12, Down: 13, Left: 14, Right: 15 } as const;
 
 /**
  * A fake controller (call before openGame): the game reads it through navigator.getGamepads like a real one.

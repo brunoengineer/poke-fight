@@ -129,8 +129,22 @@ describe('the trainers’ entrance', () => {
     ticks(sandbox, ENTRANCE.total);
     for (let i = 0; i < 600 && sandbox.view().battle.phase === 'fight'; i++) sandbox.tick(i % 20 === 0 ? Button.Physical : Button.Right);
     expect(sandbox.view().battle.phase).toBe('ko');
-    for (let i = 0; i < KO_DELAY + 5 && !sandbox.view().entrance; i++) sandbox.tick(0);
+    // The player keeps its Pokémon for the next round (J on the choose screen).
+    for (let i = 0; i < KO_DELAY + 5 && !sandbox.view().entrance; i++) sandbox.tick(i % 2 === 0 ? 0 : Button.Physical);
     expect(sandbox.view().entrance).toMatchObject({ sides: [false, true], first: false });
+  });
+
+  it('a switch mid-round: the player’s side throws a new ball; refused during the entrance', () => {
+    const sandbox = createSandbox({ entrance: true });
+    expect(sandbox.trySwitch()).toBe('busy');
+    ticks(sandbox, ENTRANCE.total + 5);
+    expect(sandbox.trySwitch()).toBe('ok');
+    sandbox.tick(Button.Down);
+    sandbox.tick(0);
+    sandbox.tick(Button.Physical);
+    expect(sandbox.view().entrance).toMatchObject({ sides: [true, false], first: false });
+    ticks(sandbox, ENTRANCE.total + 5);
+    expect(sandbox.trySwitch()).toBe('used');
   });
 
   it('reset (R) plays the whole entrance again', () => {

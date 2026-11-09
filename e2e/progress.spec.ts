@@ -10,7 +10,11 @@ test.describe('after a battle', () => {
     const results = page.getByTestId('results');
     await expect(results).toBeVisible();
     await expect(results.getByRole('heading')).toHaveText('Victory!');
-    await expect(page.getByTestId('results-lines')).toContainText('Charmeleon gained');
+    // Each Pokémon that gained XP has a card: its level, the XP and its bar.
+    await expect(page.getByTestId('xp-0')).toContainText('Charmeleon');
+    await expect(page.getByTestId('xp-0')).toContainText(/\+\d+ XP/);
+    await expect(page.getByTestId('xp-0')).toContainText('Lv. ');
+    await expect(page.getByTestId('xp-0').locator('.xp-progress')).toBeVisible();
     await page.getByTestId('continue').click();
     await expect(results).toBeHidden();
 
@@ -34,7 +38,10 @@ test.describe('evolution', () => {
     await openGame(page, {}, { save: fixture('save-v2-ready-to-evolve.json') });
     expect((await snapshot(page)).fighters[0].name).toBe('Charmander');
     await winBattle(page);
-    await expect(page.getByTestId('results-lines')).toContainText('Charmander grew to Lv. 16!');
+    // The card shows the level up: from Lv. 15 straight to Lv. 17 (enough XP for two levels).
+    await expect(page.getByTestId('xp-0')).toContainText('Lv. 15');
+    await expect(page.getByTestId('xp-0')).toContainText('Lv. 17');
+    await expect(page.getByTestId('xp-0')).toContainText('Level up!');
     await expect(page.getByTestId('results-prompt')).toHaveText('What? Charmander is evolving!');
     await page.getByTestId('evolve').click();
     await expect(page.getByTestId('results-lines')).toContainText('Charmander evolved into Charmeleon!');

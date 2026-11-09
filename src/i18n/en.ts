@@ -2,7 +2,7 @@
 // Pokémon and move names are not translated: they come from the data, in English (as Brazilian players know them).
 
 export const en = {
-  'controls.fight': '{keyUp}{keyLeft}{keyDown}{keyRight} move · {keyPhysical} tackle · {keySpecial} special · {keyBig} big · {keyGuard} guard · {keyDash} dash',
+  'controls.fight': '{keyUp}{keyLeft}{keyDown}{keyRight} move · {keyPhysical} tackle · {keySpecial} special · {keyBig} big · {keyGuard} guard · {keyDash} dash · Tab switch',
   'controls.sandbox': 'F1 debug · F2 opponent · F3 infinite PP · F4 CPU style · P party · R reset',
   'hud.dummy': 'dummy: {mode}',
   'hud.cpu': 'CPU {difficulty} · {style}',
@@ -26,7 +26,7 @@ export const en = {
   'effect.super': 'Super effective!',
   'effect.weak': 'Not very effective…',
   'effect.none': 'No effect',
-  'battle.choose': 'Choose your next Pokémon (↑ ↓, {keyPhysical})',
+  'battle.choose': 'Choose your next Pokémon',
   'battle.fainted': 'fainted',
 
   'results.win': 'Victory!',
@@ -389,6 +389,22 @@ export const en = {
   'league.championTitle': 'Champion',
   'place.party': 'Party',
   'credits.art': 'Art: Pokémon Showdown (trainers, backgrounds) and the PokeAPI sprites (Pokémon, items, badges).',
+  'battle.next': 'Next round: who fights?',
+  'battle.switch': 'Switch to…',
+  'battle.inBattle': 'fighting',
+  'battle.chooseKeys': '↑ ↓ choose · {keyPhysical} send',
+  'battle.switchKeys': '↑ ↓ choose · {keyPhysical} send · {keyGuard} cancel',
+  'hud.switch': '⇄ Tab: switch',
+  'hud.switchUsed': '⇄ switch used',
+  'switch.used': 'You already switched. You can switch again after a Pokémon faints.',
+  'switch.alone': 'No other Pokémon can fight.',
+  'action.switch': 'Switch Pokémon (Tab)',
+  'results.huntAgain': 'Hunt again',
+  'results.levelUp': 'Level up!',
+  'results.gain': '+{xp} XP',
+  'results.learned': 'Learned {move}',
+  'results.toCity': 'Back to the city',
+  'results.toSafari': 'Back to the gate',
 } as const;
 
 export type MessageKey = keyof typeof en;

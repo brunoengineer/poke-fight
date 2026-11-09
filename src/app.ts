@@ -16,7 +16,7 @@ import { createFixedStep } from './engine/loop';
 import { createRng } from './engine/rng';
 import type { Style } from './fight/ai/profiles';
 import type { TeamMember } from './fight/battle';
-import { afterBattle, type ReportLine } from './game/after-battle';
+import { afterBattle, type ReportLine, type XpGain } from './game/after-battle';
 import { addCaught, canSendToBox, canTakeFromBox, sendToBox, swapInParty, takeFromBox } from './game/box';
 import { catchValue, throwBall } from './game/capture';
 import { buy, canUsePotion, countOf, MAX_MONEY, moneyAfterLoss, prizeMoney, removeItem, usePotion } from './game/economy';
@@ -58,7 +58,7 @@ import { renderOptions } from './ui/screens/options';
 import { renderTitle, type TitleOption } from './ui/screens/title';
 import { moveFocus, pressBack, pressFocused, pressShortcut, trackInput } from './ui/focus';
 import { renderHallOfFame, renderLeague, renderPage, renderSafari } from './ui/screens/journey';
-import { renderResults, type ReportKind } from './ui/screens/results';
+import { renderResults, type ReportKind, type XpCard } from './ui/screens/results';
 import { renderParty, type MoveInfo, type PartyMember } from './ui/screens/party';
 
 /** A text to show: a translation key and its values. */
@@ -81,7 +81,11 @@ interface ResultsState {
   capture: { pokemon: Pokemon; playerLevel: number } | null;
   /** Party indexes ready to evolve, asked one at a time. */
   evolutions: { index: number; to: number }[];
+  /** The Pokémon that gained XP, for the cards (made when the battle ends, before any evolution). */
+  xp: XpCard[];
   onContinue: () => void;
+  /** Another encounter in the same place (hunting, the Safari). */
+  again?: () => void;
 }
 
 function safeStorage(): Storage | null {
@@ -567,6 +571,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
       { pad: 'b', label: 'action.big' },
       { pad: 'rb', label: 'action.guard' },
       { pad: 'lb', label: 'action.dash' },
+      { pad: 'view', label: 'action.switch' },
     ];
     renderOptions(overlayRoot, {
       title: t('options.title'),
@@ -881,8 +886,16 @@ export function startApp(elements: AppElements, options: TestOptions) {
           : { id: 'route', backdrop: HUNT_BACKDROPS.grass };
 
   /** Hunting: a wild Pokémon from this city's grass, cave or water (fishing with the best rod). */
+  /** The last hunting ground (for "Hunt again" on the results screen). */
+  let lastHunt: HuntKind | null = null;
+  const huntAgain = () => {
+    closeModal();
+    if (lastHunt) startHunt(lastHunt);
+  };
+
   function startHunt(kind: HuntKind) {
     if (!save) return;
+    lastHunt = kind;
     const s = save;
     const table = encounterTable(city(s.location), kind, kind === 'water' ? ownsRod(s) : null);
     if (table.length === 0) return;
@@ -1119,6 +1132,19 @@ export function startApp(elements: AppElements, options: TestOptions) {
     return { key: 'results.move', params: { name, move: move(line.move).name } };
   };
 
+  /** The XP cards on the results screen. */
+  const xpCards = (gains: readonly XpGain[], party: readonly Pokemon[]): XpCard[] =>
+    gains.map(gain => ({
+      name: nameOf(party[gain.index]),
+      sprite: spriteUrl(party[gain.index].speciesId),
+      amount: t('results.gain', { xp: gain.amount }),
+      levelFrom: t('party.level', { level: gain.levelFrom }),
+      levelTo: gain.levelTo > gain.levelFrom ? t('party.level', { level: gain.levelTo }) : null,
+      from: gain.progressFrom,
+      to: gain.progressTo,
+      moves: gain.moves.map(slug => t('results.learned', { move: move(slug).name })),
+    }));
+
   /** Which icon a report line gets (by its text). */
   const reportKind = (key: MessageKey): ReportKind => {
     if (key === 'results.xp') return 'xp';
@@ -1137,14 +1163,18 @@ export function startApp(elements: AppElements, options: TestOptions) {
     const state = results;
     const s = save;
     const title = t(state.outcome === 'win' ? 'results.win' : state.outcome === 'loss' ? 'results.loss' : 'results.draw');
-    const lines = state.lines.length
-      ? state.lines.map(l => ({
+    const ON_CARDS = new Set<MessageKey>(['results.xp', 'results.level', 'results.move']);
+    const rest = state.xp.length ? state.lines.filter(l => !ON_CARDS.has(l.key)) : state.lines;
+    const lines = rest.length
+      ? rest.map(l => ({
           text: t(l.key, l.params),
           kind: reportKind(l.key),
           image: l.key === 'gym.badgeEarned' && gym ? badgeArt(gym.badge) : undefined,
         }))
-      : [{ text: t('results.noXp'), kind: 'info' as const }];
-    const base = { title, outcome: state.outcome, lines };
+      : state.xp.length
+        ? []
+        : [{ text: t('results.noXp'), kind: 'info' as const }];
+    const base = { title, outcome: state.outcome, lines, xp: state.xp, levelUp: t('results.levelUp') };
 
     if (state.capture && s) {
       const target = state.capture.pokemon;
@@ -1184,11 +1214,19 @@ export function startApp(elements: AppElements, options: TestOptions) {
       });
       return;
     }
+    const again = state.again;
     renderResults(overlayRoot, {
       ...base,
       prompt: null,
-      buttons: [{ label: t('results.continue'), testid: 'continue', icon: 'arrow', primary: true, onClick: state.onContinue }],
-      hints: [{ pad: 'a', key: 'Enter', label: t('results.continue') }],
+      buttons: again
+        ? [
+            { label: t('results.huntAgain'), testid: 'hunt-again', icon: 'grass', primary: true, onClick: again },
+            { label: t(mode === 'safari' ? 'results.toSafari' : 'results.toCity'), testid: 'continue', icon: 'arrow', primary: false, back: true, onClick: state.onContinue },
+          ]
+        : [{ label: t('results.continue'), testid: 'continue', icon: 'arrow', primary: true, onClick: state.onContinue }],
+      hints: again
+        ? [{ pad: 'a', key: 'Enter', label: t('results.huntAgain') }, { pad: 'b', key: 'Esc', label: t(mode === 'safari' ? 'results.toSafari' : 'results.toCity') }]
+        : [{ pad: 'a', key: 'Enter', label: t('results.continue') }],
     });
   }
 
@@ -1271,6 +1309,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
         lines: [{ key: 'results.practice', params: {} }],
         capture: null,
         evolutions: [],
+        xp: [],
         onContinue: () => {
           closeModal();
           sandbox?.reset();
@@ -1286,6 +1325,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
         lines: won ? report.lines.map(line => lineFor(line, party)) : [],
         capture: null,
         evolutions: [],
+        xp: won ? xpCards(report.gains, party) : [],
         onContinue: () => {
           closeModal();
           endPrologue(outcome);
@@ -1316,6 +1356,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
         lines,
         capture: null,
         evolutions: won ? report.evolutions : [],
+        xp: xpCards(report.gains, party),
         onContinue: () => {
           closeModal();
           if (!won) return goCity();
@@ -1340,9 +1381,15 @@ export function startApp(elements: AppElements, options: TestOptions) {
         lines,
         capture: !fled && opponent && safari && safari.balls > 0 ? { pokemon: opponent, playerLevel: winner.level } : null,
         evolutions: report.evolutions,
+        xp: xpCards(report.gains, party),
         onContinue: () => {
           closeModal();
           showSafari();
+        },
+        again: () => {
+          closeModal();
+          if (safari && safari.balls > 0) searchSafari();
+          else showSafari();
         },
       };
     } else {
@@ -1375,6 +1422,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
         lines,
         capture: outcome === 'win' && finished === 'wild' && opponent && hasBall ? { pokemon: opponent, playerLevel: winner.level } : null,
         evolutions: outcome === 'loss' ? [] : report.evolutions,
+        xp: xpCards(report.gains, party),
+        again: finished === 'wild' && lastHunt ? () => huntAgain() : undefined,
         onContinue: () => {
           closeModal();
           if (!leader) return goCity();
@@ -1564,6 +1613,28 @@ export function startApp(elements: AppElements, options: TestOptions) {
     showParty();
   }
 
+  /** Tab / the View button during a fight: switch Pokémon, if the rules allow it now (else say why). */
+  function trySwitch() {
+    if (scene !== 'fight' || modal !== 'none' || !sandbox) return;
+    const result = sandbox.trySwitch();
+    if (result === 'ok') audio.play('select');
+    else if (result === 'used') toast(t('switch.used'));
+    else if (result === 'alone') toast(t('switch.alone'));
+  }
+
+  /** A short message over the fight that fades by itself. */
+  const toastLayer = frame.appendChild(document.createElement('div'));
+  toastLayer.className = 'toast-layer';
+  toastLayer.setAttribute('aria-live', 'polite');
+  function toast(text: string) {
+    const note = document.createElement('div');
+    note.className = 'toast';
+    note.dataset.testid = 'toast';
+    note.textContent = text;
+    toastLayer.replaceChildren(note);
+    window.setTimeout(() => note.remove(), 2600);
+  }
+
   // ── Input ─────────────────────────────────────────────────────────────────────────────────────────────────────
   const keys = createKeyLatch(bindingsOf(settings.keys));
   const tool = (action: (s: Sandbox) => void) => () => {
@@ -1586,6 +1657,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
         else leaveCurrentFight();
       },
       KeyM: toggleMute,
+      Tab: trySwitch,
     },
     { paused: () => scene !== 'fight' || modal !== 'none', alwaysOn: ['KeyP', 'Escape', 'KeyM'] },
   );
@@ -1640,6 +1712,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
 
   const pressFocusedOrPrimary = () => pressShortcut(overlayRoot, '[data-primary]') || pressFocused(overlayRoot);
   let startWasHeld = false;
+  let viewWasHeld = false;
   let padBefore: MenuPad = NO_MENU_PAD;
   let last: number | undefined;
   function onAnimationFrame(now: number) {
@@ -1660,6 +1733,12 @@ export function startApp(elements: AppElements, options: TestOptions) {
       for (const shortcut of ['x', 'lb', 'rb'] as const) if (pressed(shortcut)) pressShortcut(overlayRoot, `[data-pad="${shortcut}"]`);
       if (pressed('y') && !pressShortcut(overlayRoot, '[data-pad="y"]')) toggleParty();
     }
+    // In a fight: the View button switches Pokémon.
+    if (overlayRoot.hidden && pad.view && !viewWasHeld) {
+      input.usePad();
+      trySwitch();
+    }
+    viewWasHeld = pad.view;
     padBefore = pad.menu;
     // A controller's Start presses the open menu's main button.
     if (pad.start && !startWasHeld && !overlayRoot.hidden) pressFocusedOrPrimary();

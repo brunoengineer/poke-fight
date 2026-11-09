@@ -1,14 +1,14 @@
 // 6 vs 6 battles: one Pokémon each at a time; after a KO the next one comes in.
 
 import { describe, expect, it } from 'vitest';
-import { battleStep, createBattle, KO_DELAY, MAX_TEAM, type BattleEvent, type BattleState, type TeamMember } from './battle';
+import { battleStep, createBattle, KO_DELAY, MAX_TEAM, requestSwitch, type BattleEvent, type BattleState, type TeamMember } from './battle';
 import { ELEMENTAL_COST, MAX_HP, PP_START } from './constants';
 import { ELEMENTAL, PHYSICAL } from './frame-data';
 import { TACKLE_DAMAGE } from './testing';
 import { Button, type InputMask } from './input';
 import { DEFAULT_LOADOUT } from './state';
 
-const { Physical, Special, Right, Down, Up } = Button;
+const { Physical, Special, Right, Down, Up, Guard } = Button;
 
 const member = (name: string, hp = MAX_HP): TeamMember => ({
   speciesId: null,
@@ -53,7 +53,8 @@ describe('battle', () => {
   });
 
   it('after a KO, the bodies fall for a moment, then the opponent sends its next Pokémon', () => {
-    const battle = createBattle([team('A', 2), team('B', 3, TACKLE_DAMAGE)]);
+    // One Pokémon on player 1's side: nothing to choose, the next round starts right away.
+    const battle = createBattle([team('A', 1), team('B', 3, TACKLE_DAMAGE)]);
     const { battle: after, events } = play(battle, 200, brawl);
     const ko = events.find(e => e.type === 'ko')!;
     const roundStart = events.find(e => e.type === 'roundStart')!;
@@ -124,6 +125,68 @@ describe('battle', () => {
     expect(later).toMatchObject({ phase: 'over', winner: 0, rounds: over.rounds });
     expect(later.round).toEqual(over.round);
     expect(later.teams).toEqual(over.teams);
+  });
+
+  it('after the opponent faints, player 1 picks who fights the next round (the same one by default)', () => {
+    let b = createBattle([team('A', 3), team('B', 2, TACKLE_DAMAGE)]);
+    for (let f = 1; f <= 300 && b.phase !== 'choose'; f++) b = battleStep(b, [brawl(f), 0]).battle;
+    expect(b).toMatchObject({ phase: 'choose', chooseReason: 'next', cursor: 0 });
+    // Down, then J: A2 comes in (half a PP bar); the opponent's B2 too.
+    const presses = [Down, 0, Physical];
+    b = play(b, presses.length, f => presses[f - 1]).battle;
+    expect(b.phase).toBe('fight');
+    expect(b.round.fighters.map(f => f.name)).toEqual(['A2', 'B2']);
+    expect(b.round.fighters[0].pp).toBe(PP_START);
+  });
+
+  describe('switching mid-round', () => {
+    const start = () => {
+      // A few frames in: B1 has taken a tackle.
+      const battle = createBattle([team('A', 3), team('B', 2)]);
+      return play(battle, 60, f => (f < 40 ? Right : f === 40 ? Physical : 0)).battle;
+    };
+
+    it('pauses on the choose screen; the new Pokémon comes in, the opponent keeps its HP and the clock runs on', () => {
+      const before = start();
+      const asked = requestSwitch(before);
+      expect(asked.result).toBe('ok');
+      expect(asked.battle).toMatchObject({ phase: 'choose', chooseReason: 'switch', cursor: 0 });
+      const presses = [Down, 0, Physical];
+      const { battle: b, events } = play(asked.battle, presses.length, f => presses[f - 1]);
+      expect(events.some(e => e.type === 'roundStart')).toBe(true);
+      expect(b.phase).toBe('fight');
+      expect(b.round.fighters[0]).toMatchObject({ name: 'A2', pp: PP_START });
+      expect(b.round.fighters[1]).toMatchObject({ name: 'B1', hp: before.round.fighters[1].hp, pp: before.round.fighters[1].pp });
+      expect(b.round.timer).toBe(before.round.timer);
+      expect(b.switchReady).toBe(false);
+    });
+
+    it('only once: a second switch is refused until a Pokémon faints', () => {
+      const asked = requestSwitch(start());
+      const { battle: switched } = play(asked.battle, 3, f => [Down, 0, Physical][f - 1]);
+      expect(requestSwitch(switched)).toMatchObject({ result: 'used', battle: switched });
+      // The opponent faints (B1 had full HP: tackle it until it does), and the switch comes back.
+      let b = switched;
+      for (let i = 0; i < 3000 && b.phase === 'fight'; i++) b = battleStep(b, [brawl(i + 1), 0]).battle;
+      for (let i = 0; i < KO_DELAY + 1 && b.phase === 'ko'; i++) b = battleStep(b, [0, 0]).battle;
+      expect(b.switchReady).toBe(true);
+    });
+
+    it('Guard, or picking the same Pokémon, cancels: nothing changes and the switch is still there', () => {
+      const before = start();
+      let { battle: b } = play(requestSwitch(before).battle, 1, () => Guard);
+      expect(b).toMatchObject({ phase: 'fight', switchReady: true });
+      expect(b.round.fighters[0].name).toBe('A1');
+      ({ battle: b } = play(requestSwitch(b).battle, 1, () => Physical));
+      expect(b).toMatchObject({ phase: 'fight', switchReady: true, rounds: before.rounds });
+    });
+
+    it('refused with nobody else able to fight, or outside a round', () => {
+      const alone = createBattle([[member('A1'), member('A2', 0)], team('B', 1)]);
+      expect(requestSwitch(alone).result).toBe('alone');
+      const choosing = requestSwitch(start()).battle;
+      expect(requestSwitch(choosing).result).toBe('busy');
+    });
   });
 
   it('HP is written back to the team after each round', () => {

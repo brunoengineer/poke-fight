@@ -46,7 +46,8 @@ shake, synthesized sound effects, original chiptune music and the Pokémon's cri
 (from the title) is a practice mode with Lv. 30 teams.
 
 WASD or arrows move (steer jumps in the air), J tackle, K elemental special (¼ PP), I big special (full PP), L guard,
-Space dash (+ back: back dash); every key can be changed in **Options**. M sound on/off, P party, Esc leave / back.
+Space dash (+ back: back dash), Tab switch Pokémon (once, then again after a faint); every key can be changed in
+**Options**. M sound on/off, P party, Esc leave / back.
 Menus work with the arrow keys and Enter, the mouse, or a controller (d-pad, A, B, Y for the party, Start). In Training: F1 debug overlay,
 F2 player 2 (dummy behaviors, CPU easy / normal / hard), F3 infinite PP, F4 CPU style, R reset.
 `?opponent=cpu-hard` (or `stand`, `guard`…) in the URL picks player 2 in fights; `?entrance=0` skips the Poké Ball

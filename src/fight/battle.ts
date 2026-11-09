@@ -2,8 +2,14 @@
 //
 //   fight  → a round between the two active Pokémon (fight/step.ts)
 //   ko     → a round ended: the bodies fall for a moment
-//   choose → player 1 picks its next Pokémon (the opponent always sends the next one in its team order)
+//   choose → player 1 picks a Pokémon (the opponent always sends the next one in its team order):
+//              - 'fainted': its Pokémon fainted, it must pick another;
+//              - 'next':    the opponent's fainted, it picks who fights the next round (the same one is fine);
+//              - 'switch':  it asked to switch mid-round (requestSwitch); Guard or the same Pokémon cancels.
 //   over   → one team has no Pokémon left
+//
+// Switching (decided after milestone 11): player 1 can switch once mid-round; after that, only once a Pokémon has
+// fainted (on either side) can it switch again. A switch keeps the round's clock running.
 //
 // The Pokémon that stays keeps the HP and PP it has left; a Pokémon coming in starts with half a PP bar. HP carries
 // over to the team (and, later, out of the battle). Both start a new round from their starting positions.
@@ -18,6 +24,8 @@ export type TeamMember = Omit<FighterSetup, 'pp'>;
 
 export type BattlePhase = 'fight' | 'ko' | 'choose' | 'over';
 
+export type ChooseReason = 'fainted' | 'next' | 'switch';
+
 export interface BattleState {
   teams: [TeamMember[], TeamMember[]];
   /** Index in each team of the Pokémon fighting now. */
@@ -28,6 +36,12 @@ export interface BattleState {
   phaseFrame: number;
   /** Player 1's choice on the 'choose' screen. */
   cursor: number;
+  /** Why player 1 is choosing (only meaningful in the 'choose' phase). */
+  chooseReason: ChooseReason;
+  /** Player 1 can still switch mid-round (until it does; a faint gives it back). */
+  switchReady: boolean;
+  /** Who was fighting when the current round started (a Pokémon still there keeps its PP). */
+  roundActive: [number, number];
   /** Player 1's input on the last frame (menu presses). */
   held: InputMask;
   winner: FighterId | 'draw' | null;
@@ -65,6 +79,9 @@ export function createBattle(teams: readonly [readonly TeamMember[], readonly Te
     phase: 'fight',
     phaseFrame: 0,
     cursor: 0,
+    chooseReason: 'fainted',
+    switchReady: true,
+    roundActive: [active[0], active[1]],
     held: 0,
     winner: null,
     roundFrames,
@@ -114,9 +131,22 @@ export function battleStep(previous: BattleState, inputs: readonly [InputMask, I
       const at = Math.max(0, choices.indexOf(battle.cursor));
       if (has(pressed, Button.Down)) battle.cursor = choices[(at + 1) % choices.length];
       if (has(pressed, Button.Up)) battle.cursor = choices[(at - 1 + choices.length) % choices.length];
-      if (has(pressed, Button.Physical)) {
-        battle.active[0] = battle.cursor;
-        startRound(battle, events);
+      const switching = battle.chooseReason === 'switch';
+      if (switching && has(pressed, Button.Guard)) {
+        battle.phase = 'fight';
+      } else if (has(pressed, Button.Physical)) {
+        if (switching && battle.cursor === battle.active[0]) {
+          // The same Pokémon: nothing changes, the switch isn't used.
+          battle.phase = 'fight';
+        } else {
+          if (switching) {
+            saveHp(battle);
+            battle.switchReady = false;
+          }
+          battle.active[0] = battle.cursor;
+          // A switch keeps the clock running; after a faint, the next round has a full clock.
+          startRound(battle, events, switching ? battle.round.timer : battle.roundFrames);
+        }
       }
       break;
     }
@@ -140,25 +170,48 @@ function afterKo(battle: BattleState, events: BattleEvent[]) {
     events.push({ type: 'battleOver' });
     return;
   }
+  // A faint (on either side) gives player 1 its switch back.
+  battle.switchReady = true;
   // The opponent sends its next Pokémon in team order.
   if (battle.teams[1][battle.active[1]].hp === 0) battle.active[1] = left[1][0];
-  if (battle.teams[0][battle.active[0]].hp === 0) {
+  const fainted = battle.teams[0][battle.active[0]].hp === 0;
+  // Player 1 picks who fights next: a replacement, or (with more than one able to fight) maybe a fresh Pokémon.
+  if (fainted || left[0].length > 1) {
     battle.phase = 'choose';
     battle.phaseFrame = 0;
-    battle.cursor = left[0][0];
+    battle.chooseReason = fainted ? 'fainted' : 'next';
+    battle.cursor = fainted ? left[0][0] : battle.active[0];
     return;
   }
-  startRound(battle, events);
+  startRound(battle, events, battle.roundFrames);
 }
 
-function startRound(battle: BattleState, events: BattleEvent[]) {
+/**
+ * Player 1 asks to switch mid-round: the fight pauses on the choose screen. Refused (and nothing changes) when the
+ * switch was already used since the last faint, when nobody else can fight, or outside a running round.
+ */
+export function requestSwitch(previous: BattleState): { battle: BattleState; result: 'ok' | 'used' | 'alone' | 'busy' } {
+  if (previous.phase !== 'fight' || previous.round.winner !== null) return { battle: previous, result: 'busy' };
+  if (alive(previous.teams[0]).length < 2) return { battle: previous, result: 'alone' };
+  if (!previous.switchReady) return { battle: previous, result: 'used' };
+  const battle = structuredClone(previous);
+  battle.phase = 'choose';
+  battle.phaseFrame = 0;
+  battle.chooseReason = 'switch';
+  // The fighter's current HP shows on the menu (and must count if it is switched out).
+  battle.teams[0][battle.active[0]].hp = battle.round.fighters[0].hp;
+  battle.cursor = battle.active[0];
+  return { battle, result: 'ok' };
+}
+
+function startRound(battle: BattleState, events: BattleEvent[], timer: number) {
   const previous = battle.round;
-  // The Pokémon that stayed keeps its PP; one coming in starts with half a bar. (Only fainted Pokémon are replaced,
-  // so a fighter with HP left is the same Pokémon.)
+  // A Pokémon still there from the last round keeps its PP; one coming in starts with half a bar.
   const pp = ([0, 1] as const).map(side =>
-    previous.fighters[side].hp > 0 ? previous.fighters[side].pp : PP_START,
+    battle.active[side] === battle.roundActive[side] && previous.fighters[side].hp > 0 ? previous.fighters[side].pp : PP_START,
   ) as [number, number];
-  battle.round = newRound(battle.teams, battle.active, pp, battle.roundFrames);
+  battle.round = newRound(battle.teams, battle.active, pp, timer);
+  battle.roundActive = [battle.active[0], battle.active[1]];
   battle.rounds++;
   noteWhoFights(battle);
   battle.phase = 'fight';

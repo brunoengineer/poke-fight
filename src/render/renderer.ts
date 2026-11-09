@@ -460,7 +460,8 @@ function drawEffect(ctx: CanvasRenderingContext2D, view: SandboxView) {
 /** The tutorial's instruction or a battle's intro, under the HUD. */
 function drawBanner(ctx: CanvasRenderingContext2D, view: SandboxView) {
   const { banner } = view;
-  if (!banner) return;
+  // The choose menu takes the middle of the screen.
+  if (!banner || view.battle.phase === 'choose') return;
   const text = t(banner.key, banner.params);
   ctx.save();
   ctx.font = font(10);
@@ -607,6 +608,22 @@ function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView, trail: (id: 0
     ctx.restore();
   }
 
+  // Player 1's switch: ready (with its key), or used until a Pokémon faints.
+  if (view.switching && battle.phase === 'fight' && battle.teams[0].filter(m => m.hp > 0).length > 1) {
+    const ready = battle.switchReady;
+    const text = t(ready ? 'hud.switch' : 'hud.switchUsed');
+    ctx.save();
+    ctx.font = font(8);
+    const w = Math.ceil(ctx.measureText(text).width) + 12;
+    roundRect(ctx, 8, 48, w, 12, 4);
+    ctx.fillStyle = ready ? 'rgba(108,140,255,0.85)' : 'rgba(20,22,48,0.7)';
+    ctx.fill();
+    ctx.fillStyle = ready ? '#ffffff' : '#7e86ab';
+    ctx.textAlign = 'left';
+    ctx.fillText(text, 14, 50);
+    ctx.restore();
+  }
+
   // The timer.
   const seconds = Math.ceil(battle.round.timer / 60);
   const hurry = battle.round.timer < 10 * 60 && battle.round.timer < ROUND_FRAMES;
@@ -662,7 +679,8 @@ function drawPhase(ctx: CanvasRenderingContext2D, view: SandboxView) {
   } else if (battle.phase === 'choose') {
     const team = battle.teams[0];
     const top = 70;
-    const height = 26 + team.length * 16;
+    const height = 40 + team.length * 16;
+    const titles = { fainted: 'battle.choose', next: 'battle.next', switch: 'battle.switch' } as const;
     roundRect(ctx, VIEW_W / 2 - 120, top - 10, 240, height, 8);
     ctx.fillStyle = 'rgba(14,16,40,0.92)';
     ctx.fill();
@@ -670,7 +688,7 @@ function drawPhase(ctx: CanvasRenderingContext2D, view: SandboxView) {
     ctx.stroke();
     ctx.font = font(10);
     ctx.fillStyle = '#ffd25e';
-    ctx.fillText(t('battle.choose'), VIEW_W / 2, top - 4);
+    ctx.fillText(t(titles[battle.chooseReason]), VIEW_W / 2, top - 4);
     team.forEach((member, i) => {
       const y = top + 14 + i * 16;
       const selected = i === battle.cursor;
@@ -682,10 +700,15 @@ function drawPhase(ctx: CanvasRenderingContext2D, view: SandboxView) {
       ctx.font = font(9, selected ? 'bold' : 'normal');
       ctx.fillStyle = member.hp === 0 ? '#6b6f7a' : selected ? '#ffffff' : '#b9c0e0';
       ctx.textAlign = 'left';
-      ctx.fillText(`${selected ? '▶ ' : '  '}${member.name}`, VIEW_W / 2 - 104, y);
+      const fighting = i === battle.active[0] && member.hp > 0;
+      ctx.fillText(`${selected ? '▶ ' : '  '}${member.name}${fighting ? ` · ${t('battle.inBattle')}` : ''}`, VIEW_W / 2 - 104, y);
       ctx.textAlign = 'right';
       ctx.fillText(member.hp === 0 ? t('battle.fainted') : `${displayHp(member.hp)}/${displayHp(member.maxHp)}`, VIEW_W / 2 + 104, y);
     });
+    ctx.textAlign = 'center';
+    ctx.font = font(8, 'normal');
+    ctx.fillStyle = '#9aa3c7';
+    ctx.fillText(t(battle.chooseReason === 'switch' ? 'battle.switchKeys' : 'battle.chooseKeys'), VIEW_W / 2, top + 16 + team.length * 16);
   } else if (battle.phase === 'over') {
     // The results screen (DOM) shows over a dimmed fight.
     ctx.fillStyle = 'rgba(6, 8, 20, 0.5)';

@@ -3,7 +3,7 @@
 import type { MessageKey } from './en';
 
 export const pt: Record<MessageKey, string> = {
-  'controls.fight': '{keyUp}{keyLeft}{keyDown}{keyRight} mover · {keyPhysical} investida · {keySpecial} especial · {keyBig} especial forte · {keyGuard} defesa · {keyDash} avanço',
+  'controls.fight': '{keyUp}{keyLeft}{keyDown}{keyRight} mover · {keyPhysical} investida · {keySpecial} especial · {keyBig} especial forte · {keyGuard} defesa · {keyDash} avanço · Tab trocar',
   'controls.sandbox': 'F1 depuração · F2 oponente · F3 PP infinito · F4 estilo da CPU · P equipe · R reiniciar',
   'hud.dummy': 'boneco: {mode}',
   'hud.cpu': 'CPU {difficulty} · {style}',
@@ -27,7 +27,7 @@ export const pt: Record<MessageKey, string> = {
   'effect.super': 'É super efetivo!',
   'effect.weak': 'Não é muito efetivo…',
   'effect.none': 'Não teve efeito',
-  'battle.choose': 'Escolha seu próximo Pokémon (↑ ↓, {keyPhysical})',
+  'battle.choose': 'Escolha seu próximo Pokémon',
   'battle.fainted': 'desmaiado',
 
   'results.win': 'Vitória!',
@@ -390,4 +390,20 @@ export const pt: Record<MessageKey, string> = {
   'league.championTitle': 'Campeão',
   'place.party': 'Equipe',
   'credits.art': 'Arte: Pokémon Showdown (treinadores, cenários) e os sprites da PokeAPI (Pokémon, itens, insígnias).',
+  'battle.next': 'Próxima rodada: quem luta?',
+  'battle.switch': 'Trocar por…',
+  'battle.inBattle': 'lutando',
+  'battle.chooseKeys': '↑ ↓ escolher · {keyPhysical} enviar',
+  'battle.switchKeys': '↑ ↓ escolher · {keyPhysical} enviar · {keyGuard} cancelar',
+  'hud.switch': '⇄ Tab: trocar',
+  'hud.switchUsed': '⇄ troca usada',
+  'switch.used': 'Você já trocou. Poderá trocar de novo depois que um Pokémon desmaiar.',
+  'switch.alone': 'Nenhum outro Pokémon pode lutar.',
+  'action.switch': 'Trocar Pokémon (Tab)',
+  'results.huntAgain': 'Caçar de novo',
+  'results.levelUp': 'Subiu de nível!',
+  'results.gain': '+{xp} XP',
+  'results.learned': 'Aprendeu {move}',
+  'results.toCity': 'Voltar à cidade',
+  'results.toSafari': 'Voltar à entrada',
 };

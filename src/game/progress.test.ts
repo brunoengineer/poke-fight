@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { speciesBySlug } from '../data/pokedex';
 import { battleStep, createBattle, type BattleState } from '../fight/battle';
 import { Button } from '../fight/input';
-import { afterBattle } from './after-battle';
+import { afterBattle, levelProgress } from './after-battle';
 import { createPokemon, maxHpOf, toFighter, type Pokemon } from './pokemon';
 import { evolve, gainXp, heal, levelEvolution, setSpecial, specialOptions } from './progress';
 import { battleXp } from './rewards';
@@ -144,5 +144,17 @@ describe('battle rewards', () => {
     expect(report.lines).toContainEqual({ kind: 'level', index: 0, level: 16 });
     expect(report.evolutions).toEqual([{ index: 0, to: id('charmeleon') }]);
     expect(after[0].hp).toBeLessThanOrEqual(maxHpOf(after[0]));
+    // The results screen's XP bar: almost full at Lv. 15, then a little into Lv. 16.
+    const [gain] = report.gains;
+    expect(gain).toMatchObject({ index: 0, levelFrom: 15, levelTo: 16, amount: report.lines[0].kind === 'xp' ? report.lines[0].amount : 0 });
+    expect(gain.progressFrom).toBeGreaterThan(0.99);
+    expect(gain.progressTo).toBeGreaterThanOrEqual(0);
+    expect(gain.progressTo).toBeLessThan(1);
+  });
+
+  it('level progress: 0 at the start of a level, 1 at the last level', () => {
+    const start = { ...createPokemon(id('charmander'), 15), xp: xpForLevel('medium-slow', 15) };
+    expect(levelProgress(start)).toBe(0);
+    expect(levelProgress(createPokemon(id('charmander'), 100))).toBe(1);
   });
 });

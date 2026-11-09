@@ -66,6 +66,8 @@ export function padMenu(pad: PadLike): MenuPad {
 export interface PadReading {
   mask: InputMask;
   start: boolean;
+  /** The View / Back / Select button (switching Pokémon in a fight). */
+  view: boolean;
   menu: MenuPad;
 }
 
@@ -73,6 +75,6 @@ export interface PadReading {
 export function readFirstPad(): PadReading {
   const pads = typeof navigator.getGamepads === 'function' ? navigator.getGamepads() : [];
   const pad = pads.find(p => p?.connected);
-  if (!pad) return { mask: 0, start: false, menu: NO_MENU_PAD };
-  return { mask: padMask(pad), start: pad.buttons[PAD.Start]?.pressed === true, menu: padMenu(pad) };
+  if (!pad) return { mask: 0, start: false, view: false, menu: NO_MENU_PAD };
+  return { mask: padMask(pad), start: pad.buttons[PAD.Start]?.pressed === true, view: pad.buttons[PAD.Back]?.pressed === true, menu: padMenu(pad) };
 }

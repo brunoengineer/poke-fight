@@ -288,10 +288,17 @@ More archetypes can come later (status effects: paralysis = slower, burn = damag
   the Pokémon Center or with Potions).
 - **Trainer / Gym / League**: like the real Pokémon games, up to **6 against 6, one at a time**. Each trainer's
   team size (1–6) comes from the data. When a Pokémon faints, its trainer recalls it and sends the next one:
-  you pick yours from the party (a quick menu with the fight paused), the CPU follows its team order. The
-  Pokémon that stays keeps the HP it has left, and HP carries over after the battle. You lose when all your
-  Pokémon have fainted (→ back to the last Pokémon Center, lose some money, like the games).
-  ❓ Later: switching mid-fight (a "recall" button with a few vulnerable frames).
+  the CPU follows its team order. The Pokémon that stays keeps the HP it has left, and HP carries over after the
+  battle. You lose when all your Pokémon have fainted (→ back to the last Pokémon Center, lose some money, like the
+  games).
+- **Choosing and switching** (after milestone 11; rules in `fight/battle.ts`):
+  - After **every** faint (yours or theirs), you pick who fights the next round (a quick menu, the fight paused;
+    your current Pokémon is selected, so J keeps it). With one Pokémon left there is nothing to pick.
+  - **Mid-round, once**: Tab (controller: View) pauses on the same menu; Guard or the same Pokémon cancels without
+    using the switch. The new Pokémon comes in with half a PP bar, the opponent keeps its HP and PP, and the round's
+    clock keeps running (no free reset).
+  - After a switch, the next one is refused until a Pokémon faints (on either side); a message says so, and the HUD
+    shows the switch as ready or used. No switching in the tutorial.
 - **Time over**: the side with the higher % HP wins.
 
 ### 4.7 CPU / AI
@@ -696,6 +703,8 @@ sprites won't save it.
 | Art | Trainers, characters and backgrounds from Pokémon Showdown; items and badges from PokeAPI; all by URL, painted stand-ins until they load |
 | Menus and controller | Spatial navigation (by direction), focus kept on redraw, hint glyphs for the device in use, Y opens the party |
 | Party order | Reorder in the party screen (pick up, then swap); the first Pokémon leads |
+| Switching | Once mid-round (Tab / View), again only after a faint; after every faint the player picks the next fighter |
+| Results | XP cards per Pokémon (level, XP bar filling from where it was, level ups, new moves); "Hunt again" after wild and Safari battles |
 | Options | One screen for sound, language (also kept on the device, without a save) and keys; New game asks in-game before erasing |
 | Entrance | Trainers throw their balls before each Pokémon (72 frames, inputs ignored); the browser tests skip it (`?entrance=0`) |
 | Music | Original loops only (no copied themes); cries are the games' recordings by URL |

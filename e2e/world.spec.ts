@@ -52,6 +52,17 @@ test.describe('hunting and catching', () => {
     await expect(page.getByTestId('city-dex')).toContainText('2 caught');
   });
 
+  test('after a wild battle, Hunt again starts another encounter in the same grass', async ({ page }) => {
+    await openGame(page, { scene: 'city' }, { save: start() });
+    await page.getByTestId('hunt-grass').click();
+    await winBattle(page);
+    await page.getByTestId('let-go').click();
+    await expect(page.getByTestId('hunt-again')).toBeFocused();
+    await page.keyboard.press('Enter');
+    expect(await scene(page)).toMatchObject({ scene: 'fight', mode: 'wild' });
+    expect(['Pidgey', 'Rattata']).toContain((await snapshot(page)).fighters[1].name);
+  });
+
   test('a defeated wild Pokémon can be let go', async ({ page }) => {
     await openGame(page, { scene: 'city' }, { save: start() });
     await page.getByTestId('hunt-grass').click();

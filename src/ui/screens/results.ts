@@ -9,9 +9,25 @@ import { button, hintBar, picture, pokemonSprite, screen, type ButtonSpec, type 
 
 export type ReportKind = 'xp' | 'level' | 'move' | 'money' | 'badge' | 'heal' | 'ball' | 'fled' | 'evolve' | 'info';
 
+/** A Pokémon that gained XP: its bar fills from where it was (rolling over on a level up). */
+export interface XpCard {
+  name: string;
+  sprite: string;
+  amount: string;
+  levelFrom: string;
+  /** The new level, if it grew. */
+  levelTo: string | null;
+  /** How far into the level the bar was, and is now (0–1). */
+  from: number;
+  to: number;
+  moves: string[];
+}
+
 export interface ResultsView {
   title: string;
   outcome: 'win' | 'loss' | 'draw';
+  xp: XpCard[];
+  levelUp: string;
   lines: { text: string; kind: ReportKind; image?: string }[];
   /** A question with a picture: the wild Pokémon to catch, or the one evolving. */
   prompt: { text: string; sprite: string; evolving: boolean } | null;
@@ -38,6 +54,34 @@ export function renderResults(root: HTMLElement, view: ResultsView) {
     screen('results', `results-screen ${view.outcome}`, view.title, [
       h('header', { class: 'banner' }, [h('span', { class: 'banner-stripe' }), h('h2', { class: 'display banner-title', text: view.title })]),
       h('section', { class: 'report glass' }, [
+        view.xp.length
+          ? h(
+              'ul',
+              { class: 'xp-cards', testid: 'results-xp' },
+              view.xp.map((card, i) =>
+                h('li', { class: `xp-card${card.levelTo ? ' level-up' : ''}`, testid: `xp-${i}`, style: { '--i': i, '--from': card.from.toFixed(4), '--to': card.to.toFixed(4) } }, [
+                  pokemonSprite(card.sprite, 'sprite xp-sprite'),
+                  h('div', { class: 'xp-info' }, [
+                    h('div', { class: 'xp-line' }, [
+                      h('strong', { text: card.name }),
+                      h('span', { class: 'xp-levels' }, [
+                        h('small', { class: 'xp-level from', text: card.levelFrom }),
+                        card.levelTo ? h('small', { class: 'xp-level to', text: card.levelTo }) : null,
+                      ]),
+                      h('span', { class: 'xp-amount', text: card.amount }),
+                    ]),
+                    h('span', { class: 'bar xp xp-progress' }, [h('span', { class: 'fill' })]),
+                    card.levelTo || card.moves.length
+                      ? h('div', { class: 'xp-line news' }, [
+                          card.levelTo ? h('span', { class: 'level-chip', text: view.levelUp }) : null,
+                          ...card.moves.map(text => h('small', { class: 'xp-move', text })),
+                        ])
+                      : null,
+                  ]),
+                ]),
+              ),
+            )
+          : null,
         h(
           'ul',
           { class: 'report-lines', testid: 'results-lines' },

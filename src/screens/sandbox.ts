@@ -5,7 +5,7 @@ import { pushHistory, type HistoryEntry } from '../engine/input/history';
 import { createAdvantageTracker, trackAdvantage, type AdvantageTracker } from '../fight/advantage';
 import { cpuStep, createCpu, describeCpu, resetCpuMemory, type CpuState } from '../fight/ai/cpu';
 import { DIFFICULTIES, makeProfile, STYLES, type Difficulty, type Style } from '../fight/ai/profiles';
-import { battleStep, createBattle, type BattleEvent, type BattleState, type TeamMember } from '../fight/battle';
+import { battleStep, createBattle, requestSwitch, type BattleEvent, type BattleState, type TeamMember } from '../fight/battle';
 import { PP_MAX } from '../fight/constants';
 import { DUMMY_MODES, dummyInput, type DummyMode } from '../fight/dummy';
 import { cleanDirections, type InputMask } from '../fight/input';
@@ -87,12 +87,16 @@ export interface SandboxView {
   trainers: [TrainerLook | null, TrainerLook | null];
   /** The trainers throwing their Poké Balls; the fight waits for it. */
   entrance: Entrance | null;
+  /** Switching mid-round is part of this fight (not in the tutorial). */
+  switching: boolean;
 }
 
 export interface Sandbox {
   /** Simulates one frame with player 1's input. Returns that frame's events. */
   tick(p1: InputMask): BattleEvent[];
   reset(): void;
+  /** Player 1 asks to switch Pokémon mid-round (the battle's rules decide; never during the entrance). */
+  trySwitch(): 'ok' | 'used' | 'alone' | 'busy';
   /** A new battle with this player team (after the party changed: XP, evolution, specials, healing). */
   setPlayerTeam(team: TeamMember[]): void;
   toggleDebug(): void;
@@ -174,7 +178,8 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
         entrance = entrance.frame + 1 >= ENTRANCE.total ? null : { ...entrance, frame: entrance.frame + 1 };
         return [];
       }
-      const before = [...battle.active];
+      // Who started the round that is ending (the opponent's replacement is picked before the player's choice).
+      const before = [...battle.roundActive];
       const result = battleStep(battle, [p1, player2Input()]);
       battle = result.battle;
       // Training only: the sandbox refills PP outside the fight rules.
@@ -201,6 +206,12 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
     setPlayerTeam(team) {
       player = team;
       this.reset();
+    },
+    trySwitch() {
+      if (entrance || director) return 'busy';
+      const asked = requestSwitch(battle);
+      battle = asked.battle;
+      return asked.result;
     },
     reset() {
       battle = newBattle();
@@ -241,6 +252,7 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
         ? null
         : (director?.banner() ?? (options.intro && battle.rounds === 1 && battle.round.frame < INTRO_FRAMES ? options.intro : null)),
       tools,
+      switching: !director,
       stage: options.stage ?? { id: 'stadium' },
       trainers: options.trainers ?? [null, null],
       entrance,

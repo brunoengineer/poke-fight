@@ -1,42 +1,17 @@
-// Kanto, as menus (plan.md §3 and §6): each city's unlock rule, shop and hunting grounds. Hunting grounds are the real
-// Red/Blue location areas from the generated data (their names are PokeAPI's), grouped by kind:
+// Kanto (plan.md §3 and §6), the first region: Red/Blue's cities, gyms, League and hunting grounds. Hunting grounds
+// are the real Red/Blue location areas from the generated data (their names are PokeAPI's), grouped by kind:
 //   - grass and cave: Pokémon found walking there;
-//   - water: Pokémon fished there (with the best rod owned; surfing comes later).
-// A new region is a file like this one.
+//   - water: Pokémon fished there (with the best rod owned).
+// The other regions are files like this one (see types.ts for what each part means).
 
-import type { Difficulty, Style } from '../../fight/ai/profiles';
 import type { ItemId } from '../items';
+import type { City, Gym, LeagueMember, Region, TeamSpec } from './types';
 
-export type HuntKind = 'grass' | 'water' | 'cave';
-
-export interface City {
-  id: string;
-  /** Badges needed to travel there. */
-  badges: number;
-  /** What its Poké Mart sells (null: no shop). */
-  shop: ItemId[] | null;
-  hunts: Partial<Record<HuntKind, string[]>>;
-  /** The Safari Zone's areas (Fuchsia only). */
-  safari?: string[];
-}
-
-export interface Gym {
-  /** The badge's id. */
-  badge: string;
-  city: string;
-  leader: string;
-  type: string;
-  /** Badges needed to challenge it (on top of reaching the city): Viridian's gym is the last one. */
-  badges: number;
-  /** The leader's team, as in Red/Blue. */
-  team: readonly (readonly [species: string, level: number])[];
-  /** How the leader fights: a CPU difficulty and a style that suits the type. */
-  ai: { difficulty: Difficulty; style: Style };
-}
+export type { City, Gym, HuntKind, LeagueMember } from './types';
 
 const MART: ItemId[] = ['poke-ball', 'great-ball', 'potion', 'super-potion'];
 
-export const KANTO: readonly City[] = [
+const CITIES: City[] = [
   {
     id: 'pallet',
     badges: 0,
@@ -133,76 +108,165 @@ export const KANTO: readonly City[] = [
 ];
 
 /** The 8 gyms, in the order the badges are meant to be won (leaders, badges and teams as in Red/Blue). */
-export const GYMS: readonly Gym[] = [
-  { badge: 'boulder', city: 'pewter', leader: 'Brock', type: 'rock', badges: 0, team: [['geodude', 12], ['onix', 14]], ai: { difficulty: 'normal', style: 'defensive' } },
-  { badge: 'cascade', city: 'cerulean', leader: 'Misty', type: 'water', badges: 1, team: [['staryu', 18], ['starmie', 21]], ai: { difficulty: 'normal', style: 'zoner' } },
-  { badge: 'thunder', city: 'vermilion', leader: 'Lt. Surge', type: 'electric', badges: 2, team: [['voltorb', 21], ['pikachu', 18], ['raichu', 24]], ai: { difficulty: 'normal', style: 'aggressive' } },
-  { badge: 'rainbow', city: 'celadon', leader: 'Erika', type: 'grass', badges: 3, team: [['victreebel', 29], ['tangela', 24], ['vileplume', 29]], ai: { difficulty: 'normal', style: 'defensive' } },
-  { badge: 'soul', city: 'fuchsia', leader: 'Koga', type: 'poison', badges: 4, team: [['koffing', 37], ['muk', 39], ['koffing', 37], ['weezing', 43]], ai: { difficulty: 'hard', style: 'zoner' } },
-  { badge: 'marsh', city: 'saffron', leader: 'Sabrina', type: 'psychic', badges: 5, team: [['kadabra', 38], ['mr-mime', 37], ['venomoth', 38], ['alakazam', 43]], ai: { difficulty: 'hard', style: 'zoner' } },
-  { badge: 'volcano', city: 'cinnabar', leader: 'Blaine', type: 'fire', badges: 6, team: [['growlithe', 42], ['ponyta', 40], ['rapidash', 42], ['arcanine', 47]], ai: { difficulty: 'hard', style: 'aggressive' } },
-  { badge: 'earth', city: 'viridian', leader: 'Giovanni', type: 'ground', badges: 7, team: [['rhyhorn', 45], ['dugtrio', 42], ['nidoqueen', 44], ['nidoking', 45], ['rhydon', 50]], ai: { difficulty: 'hard', style: 'balanced' } },
+const GYMS: Gym[] = [
+  { badge: 'boulder', city: 'pewter', leader: 'Brock', type: 'rock', badges: 0, team: [['geodude', 12], ['onix', 14]], ai: { difficulty: 'normal', style: 'defensive' }, sprite: 'brock', badgeSprite: 1 },
+  { badge: 'cascade', city: 'cerulean', leader: 'Misty', type: 'water', badges: 1, team: [['staryu', 18], ['starmie', 21]], ai: { difficulty: 'normal', style: 'zoner' }, sprite: 'misty', badgeSprite: 2 },
+  { badge: 'thunder', city: 'vermilion', leader: 'Lt. Surge', type: 'electric', badges: 2, team: [['voltorb', 21], ['pikachu', 18], ['raichu', 24]], ai: { difficulty: 'normal', style: 'aggressive' }, sprite: 'ltsurge', badgeSprite: 3 },
+  { badge: 'rainbow', city: 'celadon', leader: 'Erika', type: 'grass', badges: 3, team: [['victreebel', 29], ['tangela', 24], ['vileplume', 29]], ai: { difficulty: 'normal', style: 'defensive' }, sprite: 'erika', badgeSprite: 4 },
+  { badge: 'soul', city: 'fuchsia', leader: 'Koga', type: 'poison', badges: 4, team: [['koffing', 37], ['muk', 39], ['koffing', 37], ['weezing', 43]], ai: { difficulty: 'hard', style: 'zoner' }, sprite: 'koga', badgeSprite: 5 },
+  { badge: 'marsh', city: 'saffron', leader: 'Sabrina', type: 'psychic', badges: 5, team: [['kadabra', 38], ['mr-mime', 37], ['venomoth', 38], ['alakazam', 43]], ai: { difficulty: 'hard', style: 'zoner' }, sprite: 'sabrina', badgeSprite: 6 },
+  { badge: 'volcano', city: 'cinnabar', leader: 'Blaine', type: 'fire', badges: 6, team: [['growlithe', 42], ['ponyta', 40], ['rapidash', 42], ['arcanine', 47]], ai: { difficulty: 'hard', style: 'aggressive' }, sprite: 'blaine', badgeSprite: 7 },
+  { badge: 'earth', city: 'viridian', leader: 'Giovanni', type: 'ground', badges: 7, team: [['rhyhorn', 45], ['dugtrio', 42], ['nidoqueen', 44], ['nidoking', 45], ['rhydon', 50]], ai: { difficulty: 'hard', style: 'balanced' }, sprite: 'giovanni', badgeSprite: 8 },
 ];
 
-export const gymIn = (cityId: string) => GYMS.find(g => g.city === cityId) ?? null;
-
-export function city(id: string): City {
-  const found = KANTO.find(c => c.id === id);
-  if (!found) throw new Error(`Unknown city ${id}`);
-  return found;
-}
-
-export const isUnlocked = (c: City, badges: number) => badges >= c.badges;
-
-/** The Pokémon League (Indigo Plateau, 8 badges): four battles in a row, then the Champion. */
-export interface LeagueMember {
-  id: string;
-  name: string;
-  type: string;
-  team: readonly (readonly [species: string, level: number])[];
-  ai: { difficulty: Difficulty; style: Style };
-}
-
 /** The Elite Four, with their Red/Blue teams. */
-export const ELITE_FOUR: readonly LeagueMember[] = [
-  {
-    id: 'lorelei',
-    name: 'Lorelei',
-    type: 'ice',
-    team: [['dewgong', 54], ['cloyster', 53], ['slowbro', 54], ['jynx', 56], ['lapras', 56]],
-    ai: { difficulty: 'hard', style: 'zoner' },
-  },
-  {
-    id: 'bruno',
-    name: 'Bruno',
-    type: 'fighting',
-    team: [['onix', 53], ['hitmonchan', 55], ['hitmonlee', 55], ['onix', 56], ['machamp', 58]],
-    ai: { difficulty: 'hard', style: 'aggressive' },
-  },
-  {
-    id: 'agatha',
-    name: 'Agatha',
-    type: 'ghost',
-    team: [['gengar', 56], ['golbat', 56], ['haunter', 55], ['arbok', 58], ['gengar', 60]],
-    ai: { difficulty: 'hard', style: 'defensive' },
-  },
-  {
-    id: 'lance',
-    name: 'Lance',
-    type: 'dragon',
-    team: [['gyarados', 58], ['dragonair', 56], ['dragonair', 56], ['aerodactyl', 60], ['dragonite', 62]],
-    ai: { difficulty: 'hard', style: 'aggressive' },
-  },
+const ELITE_FOUR: LeagueMember[] = [
+  { id: 'lorelei', name: 'Lorelei', type: 'ice', team: [['dewgong', 54], ['cloyster', 53], ['slowbro', 54], ['jynx', 56], ['lapras', 56]], ai: { difficulty: 'hard', style: 'zoner' }, sprite: 'lorelei-gen3' },
+  { id: 'bruno', name: 'Bruno', type: 'fighting', team: [['onix', 53], ['hitmonchan', 55], ['hitmonlee', 55], ['onix', 56], ['machamp', 58]], ai: { difficulty: 'hard', style: 'aggressive' }, sprite: 'bruno' },
+  { id: 'agatha', name: 'Agatha', type: 'ghost', team: [['gengar', 56], ['golbat', 56], ['haunter', 55], ['arbok', 58], ['gengar', 60]], ai: { difficulty: 'hard', style: 'defensive' }, sprite: 'agatha-gen3' },
+  { id: 'lance', name: 'Lance', type: 'dragon', team: [['gyarados', 58], ['dragonair', 56], ['dragonair', 56], ['aerodactyl', 60], ['dragonite', 62]], ai: { difficulty: 'hard', style: 'aggressive' }, sprite: 'lance' },
 ];
 
 /** The Champion is the rival: their Red/Blue team depends on the starter they took (by species id). */
-export const CHAMPION_TEAMS: Record<number, readonly (readonly [species: string, level: number])[]> = {
+const CHAMPION_TEAMS: Record<number, TeamSpec> = {
   7: [['pidgeot', 61], ['alakazam', 59], ['rhydon', 61], ['arcanine', 61], ['exeggutor', 63], ['blastoise', 65]],
   1: [['pidgeot', 61], ['alakazam', 59], ['rhydon', 61], ['gyarados', 61], ['arcanine', 63], ['venusaur', 65]],
   4: [['pidgeot', 61], ['alakazam', 59], ['rhydon', 61], ['exeggutor', 61], ['gyarados', 63], ['charizard', 65]],
 };
 
-export const CHAMPION_AI: LeagueMember['ai'] = { difficulty: 'hard', style: 'balanced' };
-
-/** Where the League is. */
-export const LEAGUE_CITY = 'indigo';
+export const KANTO: Region = {
+  id: 'kanto',
+  generation: 1,
+  lastSpecies: 151,
+  color: '#e8403a',
+  cities: CITIES,
+  gyms: GYMS,
+  league: { city: 'indigo', eliteFour: ELITE_FOUR, champion: { kind: 'rival', teams: CHAMPION_TEAMS, ai: { difficulty: 'hard', style: 'balanced' } } },
+  // Bulbasaur, Charmander, Squirtle; the Professor teaches each its first type move; the rival takes the one that beats yours.
+  starters: [1, 4, 7],
+  starterGifts: { 1: 'vine-whip', 4: 'ember', 7: 'bubble' },
+  rivalPick: { 1: 4, 4: 7, 7: 1 },
+  people: { professor: 'oak', rival: 'blue' },
+  training: ['rattata', 'pidgey', 'geodude'],
+  art: {
+    pallet: { backdrop: 'meadow', color: '#7ed68a' },
+    viridian: { backdrop: 'route', color: '#4fbf6a' },
+    pewter: { backdrop: 'mountain', color: '#c9a36a' },
+    cerulean: { backdrop: 'river', color: '#4fa3ff' },
+    vermilion: { backdrop: 'beach', color: '#ff9a3d' },
+    lavender: { backdrop: 'dampcave', color: '#a879ff' },
+    celadon: { backdrop: 'forest', color: '#62d17a' },
+    fuchsia: { backdrop: 'beachshore', color: '#ff6fb5' },
+    saffron: { backdrop: 'city', color: '#ffc94a' },
+    cinnabar: { backdrop: 'volcanocave', color: '#ff5a4a' },
+    indigo: { backdrop: 'spl', color: '#8f7bff' },
+  },
+  towns: {
+    pallet: { ground: 'grass', row: ['house', 'lab', 'house'], water: ['seaBottom'], light: 'day', grass: '#78c850' },
+    viridian: { ground: 'grass', row: ['house', 'center', 'mart', 'house', 'gym'], water: ['pond'], light: 'day', grass: '#5fb54a' },
+    pewter: { ground: 'rock', row: ['house', 'museum', 'center', 'mart', 'gym'], water: [], light: 'day' },
+    cerulean: { ground: 'grass', row: ['house', 'center', 'gym', 'mart'], water: ['river', 'pond'], light: 'day', grass: '#6cc55a' },
+    vermilion: { ground: 'grass', row: ['center', 'mart', 'gym', 'house'], water: ['seaRight'], light: 'sunset', grass: '#7cc455' },
+    lavender: { ground: 'grass', row: ['house', 'tower', 'center', 'mart'], water: [], light: 'dusk', grass: '#7aa86a' },
+    celadon: { ground: 'grass', row: ['house', 'store', 'center', 'gym', 'tall'], water: ['pond'], light: 'day', grass: '#58b35a' },
+    fuchsia: { ground: 'grass', row: ['gate', 'center', 'mart', 'gym'], water: ['pond'], light: 'day', grass: '#86c24a' },
+    saffron: { ground: 'paved', row: ['tall', 'skyscraper', 'center', 'gym', 'mart', 'tall'], water: [], light: 'day' },
+    cinnabar: { ground: 'sand', row: ['center', 'mart', 'gym', 'volcano'], water: ['seaBottom'], light: 'sunset' },
+    indigo: { ground: 'grass', row: ['center', 'league', 'mart'], water: [], light: 'night', grass: '#5f9e5a' },
+  },
+  map: {
+    // The mainland and Cinnabar Island (shapes made for this map, roughly Kanto's).
+    land: 'M5 7 Q18 1 36 4 Q52 1 66 4 Q84 3 89 13 Q94 26 88 38 Q82 49 66 48 Q58 55 46 56 Q36 55 32 49 L18 49 Q8 46 8 32 Q3 18 5 7 Z',
+    islands: [
+      { x: 21, y: 55.5, r: 4.4 },
+      { x: 33, y: 57.5, r: 1.2 },
+      { x: 95, y: 44, r: 1.4 },
+      { x: 3, y: 52, r: 1.6 },
+    ],
+    lakes: [{ x: 67, y: 9.5, rx: 4.2, ry: 2.2 }],
+    rivers: [
+      [
+        [67, 9],
+        [71, 7.5],
+        [74, 6],
+        [77, 4.5],
+        [80, 3],
+      ],
+    ],
+    // Mt. Moon, the Rock Tunnel, Victory Road and the plateau, a few hills.
+    mountains: [
+      [34, 11, 1.1],
+      [38, 9.5, 1.3],
+      [41.5, 11.5, 1],
+      [36.5, 13, 0.8],
+      [44, 10, 0.8],
+      [70, 17, 1.2],
+      [73.5, 19, 1],
+      [67.5, 19.5, 0.8],
+      [76, 16.5, 0.8],
+      [11, 20, 1.2],
+      [14, 22.5, 1],
+      [8.5, 23.5, 0.9],
+      [6.5, 14, 0.8],
+      [16, 6.5, 0.9],
+      [19, 8, 0.7],
+      [84, 30, 0.8],
+      [86.5, 33, 0.7],
+    ],
+    // Viridian Forest, the woods around the Safari Zone, groves along the routes.
+    forests: [
+      [17.5, 22, 5.5],
+      [27, 20, 2.5],
+      [47, 44, 4.5],
+      [39, 47, 2.5],
+      [80, 40, 3],
+      [52, 18, 2.2],
+      [12, 40, 3],
+      [62, 36, 2],
+    ],
+    places: {
+      indigo: { x: 11, y: 10 },
+      pewter: { x: 24, y: 14 },
+      viridian: { x: 22, y: 30 },
+      pallet: { x: 22, y: 44 },
+      cinnabar: { x: 21, y: 55.5 },
+      cerulean: { x: 58, y: 11 },
+      celadon: { x: 42, y: 28 },
+      saffron: { x: 58, y: 28 },
+      lavender: { x: 78, y: 28 },
+      vermilion: { x: 58, y: 42 },
+      fuchsia: { x: 45, y: 51 },
+      'kanto-sanctuary': { x: 50, y: 37 },
+    },
+    routes: [
+      ['pallet', 'viridian'],
+      ['viridian', 'pewter'],
+      ['viridian', 'indigo'],
+      ['pewter', 'cerulean'],
+      ['cerulean', 'saffron'],
+      ['cerulean', 'lavender'],
+      ['saffron', 'celadon'],
+      ['saffron', 'lavender'],
+      ['saffron', 'vermilion'],
+      ['lavender', 'vermilion'],
+      ['celadon', 'fuchsia'],
+      ['vermilion', 'fuchsia'],
+      ['fuchsia', 'cinnabar'],
+      ['cinnabar', 'pallet'],
+      ['saffron', 'kanto-sanctuary'],
+    ],
+  },
+  sanctuary: {
+    id: 'kanto-sanctuary',
+    art: { backdrop: 'space', color: '#b388ff' },
+    town: { ground: 'paved', row: ['tower', 'league', 'tower'], water: ['pond'], light: 'night' },
+    shop: ['ultra-ball', 'hyper-potion', 'master-ball'],
+    legendaries: [
+      { species: 'articuno', level: 55, attacks: ['meteor', 'vortex', 'slash'], backdrop: 'icecave' },
+      { species: 'zapdos', level: 55, attacks: ['meteor', 'rampage', 'nova'], backdrop: 'thunderplains' },
+      { species: 'moltres', level: 55, attacks: ['nova', 'slash', 'meteor'], backdrop: 'volcanocave' },
+      { species: 'mewtwo', level: 70, attacks: ['nova', 'vortex', 'slash', 'meteor'], backdrop: 'space' },
+      { species: 'mew', level: 60, attacks: ['nova', 'meteor', 'vortex'], backdrop: 'space' },
+    ],
+  },
+};

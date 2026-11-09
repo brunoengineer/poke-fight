@@ -37,4 +37,9 @@ describe('the bag', () => {
     expect(checkUse('thunder-stone', { ...mon('pikachu'), hp: 0 })).toEqual({ ok: false, reason: 'fainted' });
     expect(checkUse('link-cable', mon('kadabra', 30))).toEqual({ ok: true });
   });
+
+  it("nothing evolves past the region's Pokédex: a Dusk Stone does nothing for Murkrow in Hoenn (Honchkrow is #430)", () => {
+    expect(checkUse('dusk-stone', mon('murkrow'), 386)).toEqual({ ok: false, reason: 'noEffect' });
+    expect(checkUse('dusk-stone', mon('murkrow'), 493)).toEqual({ ok: true });
+  });
 });

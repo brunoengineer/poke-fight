@@ -7,13 +7,14 @@ import { Button, type InputMask } from '../fight/input';
 import { createFight, type FightState } from '../fight/state';
 import { step } from '../fight/step';
 import { toFighter } from './pokemon';
-import { createStarter, RIVAL_PICK } from './story';
+import { KANTO } from '../data/regions/kanto';
+import { createStarter } from './story';
 import { afterFrame, createTutorial, currentStep, rivalInput, type TutorialState, type TutorialStep } from './tutorial';
 
 const { Left, Right, Up, Physical, Special, Guard, Dash } = Button;
 
 function start() {
-  const state = createFight({ fighters: [toFighter(createStarter(4)), toFighter(createStarter(RIVAL_PICK[4]))] });
+  const state = createFight({ fighters: [toFighter(createStarter(KANTO, 4)), toFighter(createStarter(KANTO, KANTO.rivalPick[4]))] });
   return { state, tutorial: createTutorial(1) };
 }
 

@@ -1,7 +1,8 @@
-// The world map: Kanto in pixel art (render/kanto-map.ts), the cities as buttons on it, joined by routes. The
+// The world map: the region in pixel art (render/region-map.ts), the cities as buttons on it, joined by routes. The
 // d-pad moves between cities by direction (spatial navigation), the side panel describes the focused one, A travels.
 
-import { kantoPicture } from '../../render/kanto-map';
+import type { Region } from '../../data/regions';
+import { regionPicture } from '../../render/region-map';
 import { h } from '../dom';
 import { mount } from '../focus';
 import { icon } from '../icons';
@@ -24,6 +25,8 @@ export interface MapCity {
 
 export interface MapView {
   title: string;
+  /** Whose map (its land, mountains and forests are its data). */
+  region: Region;
   cities: MapCity[];
   routes: [string, string][];
   back: ButtonSpec;
@@ -36,7 +39,8 @@ const H = 60;
 /** The pixel-art map (render/kanto-map.ts), with the roads open or not. */
 function drawKanto(view: MapView) {
   const at = new Map(view.cities.map(c => [c.id, c]));
-  const canvas = kantoPicture(
+  const canvas = regionPicture(
+    view.region,
     view.cities.map(c => ({ id: c.id, x: c.x, y: c.y, open: c.open })),
     view.routes.map(([from, to]) => ({ from, to, open: (at.get(from)?.open ?? false) && (at.get(to)?.open ?? false) })),
   );

@@ -41,15 +41,19 @@ export const usableFromBag = (id: ItemId) => ITEMS[id].kind === 'potion' || ITEM
 
 export type UseCheck = { ok: true } | { ok: false; reason: 'fainted' | 'fullHp' | 'noEffect' };
 
-/** Whether this item would do something to this Pokémon (and why not). */
-export function checkUse(id: ItemId, pokemon: Pokemon): UseCheck {
+/**
+ * Whether this item would do something to this Pokémon (and why not). `last`: the region's Pokédex ends there, and
+ * nothing evolves past it (a Gen 4 evolution doesn't exist in Hoenn).
+ */
+export function checkUse(id: ItemId, pokemon: Pokemon, last = Infinity): UseCheck {
   const item = ITEMS[id];
   if (item.kind === 'potion') {
     if (canUsePotion(pokemon)) return { ok: true };
     return { ok: false, reason: pokemon.hp === 0 ? 'fainted' : 'fullHp' };
   }
   if (item.kind === 'evolution') {
-    if (itemEvolution(pokemon, id as Parameters<typeof itemEvolution>[1])) return { ok: true };
+    const evolution = itemEvolution(pokemon, id as Parameters<typeof itemEvolution>[1]);
+    if (evolution && evolution.to <= last) return { ok: true };
     return { ok: false, reason: pokemon.hp === 0 && itemEvolution({ ...pokemon, hp: 1 }, id as Parameters<typeof itemEvolution>[1]) ? 'fainted' : 'noEffect' };
   }
   return { ok: false, reason: 'noEffect' };

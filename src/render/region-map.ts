@@ -1,8 +1,9 @@
-// The world map as pixel art, painted by code (an original drawing of the region, in the spirit of the handheld
-// games' town maps): the sea with its surf and shallows, beaches, grass, forests, mountain ranges with snowy peaks,
-// a lake and a river, the roads between the cities (sea routes dotted over the water), and each city as a little
-// town. 300×180 art pixels: three per unit of the map's 100×60 box (data/art.ts KANTO_MAP).
+// A region's world map as pixel art, painted by code (original drawings, in the spirit of the handheld games' town
+// maps): the sea with its surf and shallows, beaches, grass, forests, mountain ranges with snowy peaks, lakes and
+// rivers, the roads between the places (sea routes dotted over the water), and each place as a little town. 300×180
+// art pixels: three per unit of the region's 100×60 map box (RegionMap in data/regions/types.ts).
 
+import type { Region, RegionMap } from '../data/regions';
 import { bayer, clumps, mix, noise, Pixels, rgb, smooth, tone, type RGB } from './pixel';
 
 export const MAP_W = 300;
@@ -22,62 +23,6 @@ export interface MapRoad {
   to: string;
   open: boolean;
 }
-
-// The land: the mainland and Cinnabar Island (shapes made for this map, roughly the region's), in map-box units.
-const MAINLAND = 'M5 7 Q18 1 36 4 Q52 1 66 4 Q84 3 89 13 Q94 26 88 38 Q82 49 66 48 Q58 55 46 56 Q36 55 32 49 L18 49 Q8 46 8 32 Q3 18 5 7 Z';
-const ISLANDS: { x: number; y: number; r: number }[] = [
-  { x: 21, y: 55.5, r: 4.4 },
-  // A few islets, for the sea routes to pass by.
-  { x: 33, y: 57.5, r: 1.2 },
-  { x: 95, y: 44, r: 1.4 },
-  { x: 3, y: 52, r: 1.6 },
-];
-const LAKE = { x: 67, y: 9.5, rx: 4.2, ry: 2.2 };
-/** The river from the lake to the north shore. */
-const RIVER: [number, number][] = [
-  [67, 9],
-  [71, 7.5],
-  [74, 6],
-  [77, 4.5],
-  [80, 3],
-];
-
-/** Mountain ranges: [x, y (foot), size]. Mt. Moon, the Rock Tunnel, Victory Road and the plateau, and a few hills. */
-const MOUNTAINS: [number, number, number][] = [
-  // Mt. Moon
-  [34, 11, 1.1],
-  [38, 9.5, 1.3],
-  [41.5, 11.5, 1],
-  [36.5, 13, 0.8],
-  [44, 10, 0.8],
-  // Rock Tunnel
-  [70, 17, 1.2],
-  [73.5, 19, 1],
-  [67.5, 19.5, 0.8],
-  [76, 16.5, 0.8],
-  // Victory Road and the Indigo Plateau
-  [11, 20, 1.2],
-  [14, 22.5, 1],
-  [8.5, 23.5, 0.9],
-  [6.5, 14, 0.8],
-  [16, 6.5, 0.9],
-  [19, 8, 0.7],
-  // The eastern hills
-  [84, 30, 0.8],
-  [86.5, 33, 0.7],
-];
-
-/** Forests: [x, y, radius]. Viridian Forest, the woods around the Safari Zone, groves along the routes. */
-const FORESTS: [number, number, number][] = [
-  [17.5, 22, 5.5],
-  [27, 20, 2.5],
-  [47, 44, 4.5],
-  [39, 47, 2.5],
-  [80, 40, 3],
-  [52, 18, 2.2],
-  [12, 40, 3],
-  [62, 36, 2],
-];
 
 const C = {
   deep: rgb('#1f4fa8'),
@@ -99,15 +44,15 @@ const C = {
 const LEAVES = [rgb('#1f5a34'), rgb('#2f7a40'), rgb('#3f9a48'), rgb('#62b85a'), rgb('#8ed676')];
 
 /** The land as a mask, from the shapes drawn on a small canvas (only this module's own canvas is read). */
-function landMask(): Uint8Array {
+function landMask(map: RegionMap): Uint8Array {
   const canvas = document.createElement('canvas');
   canvas.width = MAP_W;
   canvas.height = MAP_H;
   const ctx = canvas.getContext('2d')!;
   ctx.scale(S, S);
   ctx.fillStyle = '#fff';
-  ctx.fill(new Path2D(MAINLAND));
-  for (const i of ISLANDS) {
+  ctx.fill(new Path2D(map.land));
+  for (const i of map.islands) {
     ctx.beginPath();
     ctx.arc(i.x, i.y, i.r, 0, Math.PI * 2);
     ctx.fill();
@@ -150,22 +95,22 @@ function distances(land: Uint8Array, max: number): Uint8Array {
   return d;
 }
 
-let base: { pixels: Pixels; land: Uint8Array } | null = null;
+const bases = new Map<string, { pixels: Pixels; land: Uint8Array }>();
 
 /** The sea, the land, the lake, the forests and the mountains: the same for every visit, painted once. */
-function paintBase(): { pixels: Pixels; land: Uint8Array } {
+function paintBase(map: RegionMap): { pixels: Pixels; land: Uint8Array } {
   const p = new Pixels(MAP_W, MAP_H);
-  const land = landMask();
+  const land = landMask(map);
   // The lake and the river are water inside the land.
   const water = new Uint8Array(MAP_W * MAP_H);
   for (let y = 0; y < MAP_H; y++) {
     for (let x = 0; x < MAP_W; x++) {
-      if (((x / S - LAKE.x) / LAKE.rx) ** 2 + ((y / S - LAKE.y) / LAKE.ry) ** 2 < 1) water[y * MAP_W + x] = 1;
+      if (map.lakes.some(lake => ((x / S - lake.x) / lake.rx) ** 2 + ((y / S - lake.y) / lake.ry) ** 2 < 1)) water[y * MAP_W + x] = 1;
     }
   }
-  for (let i = 0; i < RIVER.length - 1; i++) {
-    const [ax, ay] = RIVER[i];
-    const [bx, by] = RIVER[i + 1];
+  for (const river of map.rivers) for (let i = 0; i < river.length - 1; i++) {
+    const [ax, ay] = river[i];
+    const [bx, by] = river[i + 1];
     for (let t = 0; t <= 1; t += 0.02) {
       const x = Math.round((ax + (bx - ax) * t) * S);
       const y = Math.round((ay + (by - ay) * t) * S + Math.sin(t * Math.PI * 2) * 1.5);
@@ -208,7 +153,7 @@ function paintBase(): { pixels: Pixels; land: Uint8Array } {
 
   // Forests: little round trees, back to front.
   const trees: [number, number][] = [];
-  for (const [fx, fy, r] of FORESTS) {
+  for (const [fx, fy, r] of map.forests) {
     for (let y = -r; y <= r; y += 1.1) {
       for (let x = -r; x <= r; x += 1.3) {
         const tx = (fx + x + (noise(Math.round(x * 10), Math.round(y * 10), fx) - 0.5) * 0.8) * S;
@@ -227,7 +172,7 @@ function paintBase(): { pixels: Pixels; land: Uint8Array } {
   }
 
   // Mountains, back to front.
-  for (const [mx, my, size] of [...MOUNTAINS].sort((a, b) => a[1] - b[1])) mountain(p, mx * S, my * S, size);
+  for (const [mx, my, size] of [...map.mountains].sort((a, b) => a[1] - b[1])) mountain(p, mx * S, my * S, size);
 
   // A compass rose in the sea.
   compass(p, 282, 160);
@@ -307,8 +252,12 @@ function compass(p: Pixels, cx: number, cy: number) {
 }
 
 /** The world map for this visit: the base picture, plus the roads and the towns (which change as cities open). */
-export function kantoPicture(places: readonly MapPlace[], roads: readonly MapRoad[]): HTMLCanvasElement {
-  base ??= paintBase();
+export function regionPicture(region: Region, places: readonly MapPlace[], roads: readonly MapRoad[]): HTMLCanvasElement {
+  let base = bases.get(region.id);
+  if (!base) {
+    base = paintBase(region.map);
+    bases.set(region.id, base);
+  }
   const p = new Pixels(MAP_W, MAP_H);
   p.data.set(base.pixels.data);
   const land = base.land;

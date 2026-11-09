@@ -1,10 +1,11 @@
 // Gyms (plan.md §3): the leader's team, what beating them pays, and who can challenge them.
 
 import { speciesBySlug } from '../data/pokedex';
-import { GYMS, type Gym } from '../data/regions/kanto';
+import type { Gym } from '../data/regions';
 import { createPokemon, type Pokemon } from './pokemon';
 
-export const BADGE_COUNT = GYMS.length;
+/** Every region has 8 gyms. */
+export const BADGE_COUNT = 8;
 
 export function gymTeam(gym: Gym): Pokemon[] {
   return gym.team.map(([slug, level]) => createPokemon(speciesBySlug(slug).id, level));

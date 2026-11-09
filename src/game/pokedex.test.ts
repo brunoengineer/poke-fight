@@ -4,15 +4,16 @@
 import { describe, expect, it } from 'vitest';
 import { species, speciesBySlug } from '../data/pokedex';
 import { dexLanguages, dexText } from '../data/dex-text';
+import { KANTO } from '../data/regions/kanto';
 import { canRelease, release } from './box';
 import { createPokemon } from './pokemon';
-import { DEX_RANGES, dexNumbers, dexStatus, dexTypes, evolutionChain, filterDex, isFiltered, NO_FILTER, ownedCount, whereToFind } from './pokedex';
+import { dexNumbers, dexRanges, dexStatus, dexTypes, evolutionChain, filterDex, isFiltered, NO_FILTER, ownedCount, whereToFind } from './pokedex';
 
 const id = (slug: string) => speciesBySlug(slug).id;
 
 describe('the Pokédex', () => {
   it('lists the 151 in order, each with its page (genus, size, entry)', () => {
-    const numbers = dexNumbers();
+    const numbers = dexNumbers(151);
     expect(numbers).toHaveLength(151);
     expect(numbers[0]).toBe(1);
     expect(numbers[150]).toBe(151);
@@ -30,29 +31,35 @@ describe('the Pokédex', () => {
     expect(dexStatus(dex, 16)).toBe('caught');
   });
 
-  it("evolutions as this game does them: levels, stones, and the Link Cable for trades (later generations' left out)", () => {
+  it('evolutions as this game does them: levels, stones, the Link Cable for trades, the Soothe Bell for friendship', () => {
     expect(evolutionChain(id('charmeleon'))).toEqual([
       [{ speciesId: 4, by: null }],
       [{ speciesId: 5, by: { kind: 'level', level: 16 } }],
       [{ speciesId: 6, by: { kind: 'level', level: 36 } }],
     ]);
     expect(evolutionChain(id('kadabra'))[2]).toEqual([{ speciesId: 65, by: { kind: 'item', item: 'link-cable' } }]);
-    // Eevee: three stones (no Espeon, Umbreon… in Kanto's data); Golbat stops there (no Crobat).
+    // Eevee: three stones and two friendship evolutions (Leafeon and Glaceon evolve by place: not in this game).
     expect(evolutionChain(id('eevee'))[1].map(s => s.by)).toEqual([
       { kind: 'item', item: 'water-stone' },
       { kind: 'item', item: 'thunder-stone' },
       { kind: 'item', item: 'fire-stone' },
+      { kind: 'item', item: 'soothe-bell' },
+      { kind: 'item', item: 'soothe-bell' },
     ]);
-    expect(evolutionChain(id('zubat'))).toHaveLength(2);
+    expect(evolutionChain(id('zubat'))[2]).toEqual([{ speciesId: id('crobat'), by: { kind: 'item', item: 'soothe-bell' } }]);
     expect(evolutionChain(id('tauros'))).toEqual([[{ speciesId: id('tauros'), by: null }]]);
+    // Happiny becomes Chansey in a way the game can't do: Chansey's family starts at Chansey (and includes Blissey).
+    expect(evolutionChain(id('chansey'))[0]).toEqual([{ speciesId: id('chansey'), by: null }]);
+    expect(evolutionChain(id('chansey')).flat().map(s => s.speciesId)).toContain(id('blissey'));
+    expect(evolutionChain(id('mr-mime')).flat().map(s => s.speciesId)).toContain(id('mr-mime'));
   });
 
   it('where to find it: Pidgey in the grass from Pallet; Magikarp with the Old Rod; Tauros in the Safari Zone', () => {
-    const pidgey = whereToFind(id('pidgey'));
+    const pidgey = whereToFind(id('pidgey'), KANTO);
     expect(pidgey[0]).toMatchObject({ cityId: 'pallet', where: 'grass', rod: null });
-    expect(whereToFind(id('magikarp')).find(f => f.where === 'water')).toMatchObject({ rod: 'old-rod' });
-    expect(whereToFind(id('tauros'))).toEqual([expect.objectContaining({ cityId: 'fuchsia', where: 'safari' })]);
-    expect(whereToFind(id('bulbasaur'))).toEqual([]);
+    expect(whereToFind(id('magikarp'), KANTO).find(f => f.where === 'water')).toMatchObject({ rod: 'old-rod' });
+    expect(whereToFind(id('tauros'), KANTO)).toEqual([expect.objectContaining({ cityId: 'fuchsia', where: 'safari' })]);
+    expect(whereToFind(id('bulbasaur'), KANTO)).toEqual([]);
   });
 });
 
@@ -68,7 +75,7 @@ describe('releasing', () => {
 });
 
 describe('Pokédex filters', () => {
-  const all = dexNumbers();
+  const all = dexNumbers(151);
   const none = () => false;
 
   it('no filter: all 151', () => {
@@ -88,17 +95,18 @@ describe('Pokédex filters', () => {
   });
 
   it('the type list covers every species, and the ranges cover 1–151 without gaps', () => {
-    const types = dexTypes();
+    const types = dexTypes(151);
     expect(types).toContain('fire');
     expect(all.every(id => species(id).types.every(t => types.includes(t)))).toBe(true);
-    expect(DEX_RANGES.flatMap(([a, b]) => Array.from({ length: b - a + 1 }, (_, i) => a + i))).toEqual(all);
+    expect(dexRanges(151).flatMap(([a, b]) => Array.from({ length: b - a + 1 }, (_, i) => a + i))).toEqual(all);
   });
 });
 
 describe('the Pokédex in every language', () => {
   it('every species has its kind and entry translated (Portuguese is this game\'s own translation)', () => {
+    // Every region's Pokédex: all 493.
     for (const language of dexLanguages()) {
-      for (const n of dexNumbers()) {
+      for (const n of dexNumbers(493)) {
         const text = dexText(n, language);
         const english = species(n).dex;
         expect(text.genus).not.toBe('');
@@ -108,9 +116,10 @@ describe('the Pokédex in every language', () => {
     }
     expect(dexText(25, 'pt').genus).toBe('Pokémon Rato');
     expect(dexText(25, 'en').genus).toBe('Mouse Pokémon');
+    expect(dexText(155, 'pt').entry).not.toMatch(/[A-Z]{4,}/);
   });
 
   it("Red's all-caps POKéMON is written Pokémon", () => {
-    expect(dexNumbers().some(n => species(n).dex.entry.includes('POKéMON'))).toBe(false);
+    expect(dexNumbers(151).some(n => species(n).dex.entry.includes('POKéMON'))).toBe(false);
   });
 });

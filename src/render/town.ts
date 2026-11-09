@@ -4,6 +4,7 @@
 // pixels. It is the city's backdrop in the menus: the main row of buildings sits in the top band, which the city
 // screen's cards leave visible.
 
+import { townPlan, type TownFeature, type TownPlan } from '../data/regions';
 import { bayer, clumps, hash, mix, noise, Pixels, rgb, seeded, smooth, tone, type Ball, type RGB } from './pixel';
 
 const W = 480;
@@ -16,22 +17,9 @@ const ROAD_BOTTOM = 126;
 const ROW_B = 196;
 
 // ── Each city ────────────────────────────────────────────────────────────────────────────────────────────────────
+// What each town looks like is its region's data (TownPlan in data/regions/types.ts); here, how to paint it.
 
-type Ground = 'grass' | 'rock' | 'sand' | 'paved';
-type Feature =
-  | 'house'
-  | 'center'
-  | 'mart'
-  | 'gym'
-  | 'lab'
-  | 'museum'
-  | 'tower'
-  | 'store'
-  | 'tall'
-  | 'skyscraper'
-  | 'gate'
-  | 'league'
-  | 'volcano';
+type Feature = TownFeature;
 
 interface Light {
   /** Multiplies every color (dusk, night); null in daylight. */
@@ -40,35 +28,21 @@ interface Light {
   lit: boolean;
 }
 
-interface Plan {
-  ground: Ground;
-  /** The main row, left to right (houses fill the gaps). */
-  row: Feature[];
-  /** Water: the sea along the bottom or the right, a river on the right, a pond in the second row. */
-  water: ('seaBottom' | 'seaRight' | 'river' | 'pond')[];
-  light: Light;
-  /** Greens (or the rocky / sandy ground's colors) a little different per city. */
-  grass?: string;
-}
+type Plan = Omit<TownPlan, 'light'> & { light: Light };
 
-const DAY: Light = { tint: null, lit: false };
-const SUNSET: Light = { tint: [1.03, 0.93, 0.84], lit: true };
-const DUSK: Light = { tint: [0.68, 0.6, 0.92], lit: true };
-const NIGHT: Light = { tint: [0.42, 0.48, 0.86], lit: true };
-
-const PLANS: Record<string, Plan> = {
-  pallet: { ground: 'grass', row: ['house', 'lab', 'house'], water: ['seaBottom'], light: DAY, grass: '#78c850' },
-  viridian: { ground: 'grass', row: ['house', 'center', 'mart', 'house', 'gym'], water: ['pond'], light: DAY, grass: '#5fb54a' },
-  pewter: { ground: 'rock', row: ['house', 'museum', 'center', 'mart', 'gym'], water: [], light: DAY },
-  cerulean: { ground: 'grass', row: ['house', 'center', 'gym', 'mart'], water: ['river', 'pond'], light: DAY, grass: '#6cc55a' },
-  vermilion: { ground: 'grass', row: ['center', 'mart', 'gym', 'house'], water: ['seaRight'], light: SUNSET, grass: '#7cc455' },
-  lavender: { ground: 'grass', row: ['house', 'tower', 'center', 'mart'], water: [], light: DUSK, grass: '#7aa86a' },
-  celadon: { ground: 'grass', row: ['house', 'store', 'center', 'gym', 'tall'], water: ['pond'], light: DAY, grass: '#58b35a' },
-  fuchsia: { ground: 'grass', row: ['gate', 'center', 'mart', 'gym'], water: ['pond'], light: DAY, grass: '#86c24a' },
-  saffron: { ground: 'paved', row: ['tall', 'skyscraper', 'center', 'gym', 'mart', 'tall'], water: [], light: DAY },
-  cinnabar: { ground: 'sand', row: ['center', 'mart', 'gym', 'volcano'], water: ['seaBottom'], light: SUNSET },
-  indigo: { ground: 'grass', row: ['center', 'league', 'mart'], water: [], light: NIGHT, grass: '#5f9e5a' },
+const LIGHTS: Record<TownPlan['light'], Light> = {
+  day: { tint: null, lit: false },
+  sunset: { tint: [1.03, 0.93, 0.84], lit: true },
+  dusk: { tint: [0.68, 0.6, 0.92], lit: true },
+  night: { tint: [0.42, 0.48, 0.86], lit: true },
 };
+
+const FALLBACK: TownPlan = { ground: 'grass', row: ['house', 'center', 'mart', 'house'], water: [], light: 'day' };
+
+function planOf(placeId: string): Plan {
+  const plan = townPlan(placeId) ?? FALLBACK;
+  return { ...plan, light: LIGHTS[plan.light] };
+}
 
 const cache = new Map<string, HTMLCanvasElement>();
 
@@ -99,8 +73,8 @@ interface Palette {
 }
 
 function paletteOf(plan: Plan): Palette {
-  const grass = rgb(plan.grass ?? (plan.ground === 'rock' ? '#a2a06a' : plan.ground === 'sand' ? '#9bc25a' : '#68b850'));
-  const leaves = rgb(plan.ground === 'rock' ? '#4f8a48' : plan.ground === 'sand' ? '#4fa04a' : '#3f9a48');
+  const grass = rgb(plan.grass ?? (plan.ground === 'rock' ? '#a2a06a' : plan.ground === 'sand' ? '#9bc25a' : plan.ground === 'snow' ? '#dfe8f4' : '#68b850'));
+  const leaves = rgb(plan.ground === 'rock' ? '#4f8a48' : plan.ground === 'sand' ? '#4fa04a' : plan.ground === 'snow' ? '#2f6a5a' : '#3f9a48');
   return {
     grass: [tone(grass, -0.22), grass, tone(grass, 0.22), tone(grass, -0.45)],
     path: plan.ground === 'rock' ? [rgb('#9c8a70'), rgb('#c9b796'), rgb('#e0d2b4')] : [rgb('#b88f5a'), rgb('#dcc08a'), rgb('#efdcae')],
@@ -762,7 +736,7 @@ function ship(x: number, base: number): Thing {
 // ── The town ─────────────────────────────────────────────────────────────────────────────────────────────────────
 
 function paintTown(cityId: string): Pixels {
-  const plan = PLANS[cityId] ?? PLANS.pallet;
+  const plan = planOf(cityId);
   const pal = paletteOf(plan);
   const seed = hash(cityId);
   const random = seeded(seed);

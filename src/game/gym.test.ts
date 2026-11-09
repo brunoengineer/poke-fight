@@ -2,7 +2,10 @@
 
 import { describe, expect, it } from 'vitest';
 import { species, speciesBySlug } from '../data/pokedex';
-import { city, GYMS, isUnlocked, KANTO } from '../data/regions/kanto';
+import { city, isUnlocked } from '../data/regions';
+import { KANTO } from '../data/regions/kanto';
+
+const GYMS = KANTO.gyms;
 import { tableForAreas } from './encounters';
 import { BADGE_COUNT, canChallenge, gymTeam, leaderPrize } from './gym';
 import { createPokemon } from './pokemon';
@@ -50,7 +53,7 @@ describe('gyms', () => {
   });
 
   it('each badge opens more of Kanto', () => {
-    const open = (badges: number) => KANTO.filter(c => isUnlocked(c, badges)).length;
+    const open = (badges: number) => KANTO.cities.filter(c => isUnlocked(c, badges)).length;
     expect([0, 1, 2, 3, 8].map(open)).toEqual([3, 4, 5, 7, 11]);
   });
 });
@@ -84,6 +87,6 @@ describe('Safari Zone', () => {
     const table = tableForAreas(city('fuchsia').safari ?? [], 'walk');
     const found = new Set(table.map(e => species(e.speciesId).slug));
     for (const slug of ['chansey', 'kangaskhan', 'tauros']) expect(found, slug).toContain(slug);
-    expect(KANTO.filter(c => c.safari).map(c => c.id)).toEqual(['fuchsia']);
+    expect(KANTO.cities.filter(c => c.safari).map(c => c.id)).toEqual(['fuchsia']);
   });
 });

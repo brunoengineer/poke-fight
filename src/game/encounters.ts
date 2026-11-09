@@ -1,9 +1,9 @@
 // Wild encounters: the real Red/Blue tables of a city's hunting grounds. Red and Blue are merged, so both versions'
 // exclusives can appear.
 
-import { allSpecies } from '../data/pokedex';
+import { wildEncounters } from '../data/pokedex';
 import { RODS, type RodId } from '../data/items';
-import { KANTO, type City, type HuntKind } from '../data/regions/kanto';
+import { regionOf, type City, type HuntKind } from '../data/regions';
 import type { Rng } from '../engine/rng';
 import { createPokemon, type Pokemon } from './pokemon';
 import type { Stats } from './stats';
@@ -19,17 +19,18 @@ export interface EncounterEntry {
 /** How a hunting ground is searched: walking (grass, cave) or fishing with a rod. */
 export type Method = 'walk' | RodId;
 
-/** area → method → entries, built once from the species data. */
+/**
+ * area → method → entries, built once from every region's tables (Kanto: its species' Red/Blue encounters; later
+ * regions: their own games' tables, which also have older species, like Pidgey on Johto's routes).
+ */
 const INDEX = (() => {
   const index = new Map<string, Map<string, EncounterEntry[]>>();
-  for (const s of allSpecies()) {
-    for (const e of s.encounters) {
-      const byMethod = index.get(e.area) ?? new Map<string, EncounterEntry[]>();
-      index.set(e.area, byMethod);
-      const list = byMethod.get(e.method) ?? [];
-      byMethod.set(e.method, list);
-      list.push({ speciesId: s.id, minLevel: e.minLevel, maxLevel: e.maxLevel, weight: e.chance });
-    }
+  for (const e of wildEncounters()) {
+    const byMethod = index.get(e.area) ?? new Map<string, EncounterEntry[]>();
+    index.set(e.area, byMethod);
+    const list = byMethod.get(e.method) ?? [];
+    byMethod.set(e.method, list);
+    list.push({ speciesId: e.speciesId, minLevel: e.minLevel, maxLevel: e.maxLevel, weight: e.chance });
   }
   return index;
 })();
@@ -127,11 +128,12 @@ function citySpecies(city: City): number[] {
 
 const OLD_FACES = new Map<string, Set<number>>();
 
-/** The species that already lived in a city before this one, in story order. */
+/** The species that already lived in a city before this one, in its region's story order. */
 export function oldFaces(cityId: string): Set<number> {
   let faces = OLD_FACES.get(cityId);
   if (!faces) {
-    faces = new Set(KANTO.slice(0, Math.max(0, KANTO.findIndex(c => c.id === cityId))).flatMap(citySpecies));
+    const cities = regionOf(cityId).cities;
+    faces = new Set(cities.slice(0, Math.max(0, cities.findIndex(c => c.id === cityId))).flatMap(citySpecies));
     OLD_FACES.set(cityId, faces);
   }
   return faces;

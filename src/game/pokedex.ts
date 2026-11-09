@@ -1,9 +1,9 @@
 // The Pokédex's rules: what the player knows about each species (unseen, seen, caught), how many they own now, how
 // a species evolves in this game, and where in Kanto it lives. Pure: the screen (ui/screens/pokedex.ts) only shows it.
 
-import { RODS, type EvolutionItemId, type RodId } from '../data/items';
+import { EVOLUTION_ITEMS, RODS, type EvolutionItemId, type RodId } from '../data/items';
 import { allSpecies, hasSpecies, species, type Evolution } from '../data/pokedex';
-import { KANTO, type HuntKind } from '../data/regions/kanto';
+import type { HuntKind, Region } from '../data/regions';
 import { encounterTable, tableForAreas } from './encounters';
 import type { Pokemon } from './pokemon';
 
@@ -14,8 +14,8 @@ export interface DexRecord {
   caught: readonly number[];
 }
 
-/** Every species the game has, in Pokédex order. */
-export const dexNumbers = (): number[] => allSpecies().map(s => s.id).sort((a, b) => a - b);
+/** A region's Pokédex, in order: every species up to its last (each region's Pokédex includes the earlier ones). */
+export const dexNumbers = (last: number): number[] => allSpecies().map(s => s.id).filter(id => id <= last).sort((a, b) => a - b);
 
 export function dexStatus(dex: DexRecord, id: number): DexStatus {
   if (dex.caught.includes(id)) return 'caught';
@@ -29,12 +29,19 @@ export const ownedCount = (team: { party: readonly Pokemon[]; box: readonly Poke
 /** How an evolution happens in this game: a level, a stone, or the Link Cable (trading, decided). */
 export type EvolveBy = { kind: 'level'; level: number } | { kind: 'item'; item: EvolutionItemId };
 
-/** The evolutions this game supports (into species it has, by level, stone, or trade without a held item). */
+/**
+ * The evolutions this game supports (into species it has): by level, by a stone sold in shops, by trading (any trade,
+ * holding an item or not: the Link Cable) or by friendship (the Soothe Bell). The rest ("other") can't happen.
+ */
 export function evolveBy(e: Evolution): EvolveBy | null {
   if (!hasSpecies(e.to)) return null;
   if (e.kind === 'level') return { kind: 'level', level: e.level };
-  if (e.kind === 'item') return { kind: 'item', item: e.item as EvolutionItemId };
-  if (e.kind === 'trade' && !e.item) return { kind: 'item', item: 'link-cable' };
+  if (e.kind === 'item') {
+    const item = e.item as EvolutionItemId;
+    return EVOLUTION_ITEMS.includes(item) ? { kind: 'item', item } : null;
+  }
+  if (e.kind === 'trade') return { kind: 'item', item: 'link-cable' };
+  if (e.kind === 'friendship') return { kind: 'item', item: 'soothe-bell' };
   return null;
 }
 
@@ -46,8 +53,15 @@ export interface ChainStage {
 
 /** The whole family, stage by stage (stage 0 is the basic one; Eevee's stage 1 has three Pokémon). */
 export function evolutionChain(id: number): ChainStage[][] {
+  // Walk back only through evolutions this game does: a baby that evolves in a way the game can't (Happiny into
+  // Chansey) isn't part of the family shown here, or the Pokémon itself would be missing from its own chain.
   let root = species(id);
-  while (root.evolvesFrom !== null && hasSpecies(root.evolvesFrom)) root = species(root.evolvesFrom);
+  while (root.evolvesFrom !== null && hasSpecies(root.evolvesFrom)) {
+    const parent = species(root.evolvesFrom);
+    const step = parent.evolutions.find(e => e.to === root.id);
+    if (!step || !evolveBy(step)) break;
+    root = parent;
+  }
   const stages: ChainStage[][] = [[{ speciesId: root.id, by: null }]];
   for (;;) {
     const next = stages[stages.length - 1].flatMap(stage =>
@@ -72,8 +86,8 @@ export interface FoundAt {
   maxLevel: number;
 }
 
-/** Every hunting ground in Kanto where it appears (with the levels), in story order. */
-export function whereToFind(id: number): FoundAt[] {
+/** Every hunting ground in a region where it appears (with the levels), in story order. */
+export function whereToFind(id: number, region: Region): FoundAt[] {
   const found: FoundAt[] = [];
   const add = (cityId: string, where: Habitat, rod: RodId | null, table: { speciesId: number; minLevel: number; maxLevel: number }[]) => {
     const entries = table.filter(e => e.speciesId === id);
@@ -81,7 +95,7 @@ export function whereToFind(id: number): FoundAt[] {
     found.push({ cityId, where, rod, minLevel: Math.min(...entries.map(e => e.minLevel)), maxLevel: Math.max(...entries.map(e => e.maxLevel)) });
     return true;
   };
-  for (const city of KANTO) {
+  for (const city of region.cities) {
     for (const kind of ['grass', 'cave'] as const) if (city.hunts[kind]) add(city.id, kind, null, encounterTable(city, kind, null));
     if (city.hunts.water) for (const rod of RODS) if (add(city.id, 'water', rod, encounterTable(city, 'water', rod))) break;
     if (city.safari) add(city.id, 'safari', null, tableForAreas(city.safari, 'walk'));
@@ -103,17 +117,18 @@ export interface DexFilter {
 
 export const NO_FILTER: DexFilter = { owned: false, type: null, legendary: false, mythical: false, range: null };
 
-/** The number ranges to pick from (30 at a time). */
-export const DEX_RANGES: readonly (readonly [number, number])[] = [
-  [1, 30],
-  [31, 60],
-  [61, 90],
-  [91, 120],
-  [121, 151],
-];
+/** The number ranges to pick from: 30 at a time up to the region's last (the last range takes what is left). */
+export function dexRanges(last: number): (readonly [number, number])[] {
+  const ranges: [number, number][] = [];
+  for (let from = 1; from <= last; from += 30) ranges.push([from, Math.min(last, from + 29)]);
+  // A tiny last range (Kanto's 151) joins the one before.
+  const tail = ranges[ranges.length - 1];
+  if (ranges.length > 1 && tail[1] - tail[0] < 5) ranges.splice(-2, 2, [ranges[ranges.length - 2][0], tail[1]]);
+  return ranges;
+}
 
-/** Every type some species has, alphabetically. */
-export const dexTypes = (): string[] => [...new Set(allSpecies().flatMap(s => s.types))].sort();
+/** Every type some species of a region's Pokédex has, alphabetically. */
+export const dexTypes = (last: number): string[] => [...new Set(allSpecies().filter(s => s.id <= last).flatMap(s => s.types))].sort();
 
 export const isFiltered = (filter: DexFilter) =>
   filter.owned || filter.type !== null || filter.legendary || filter.mythical || filter.range !== null;

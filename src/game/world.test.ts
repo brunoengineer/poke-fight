@@ -3,7 +3,10 @@
 import { describe, expect, it } from 'vitest';
 import { ITEMS, RODS, type RodId } from '../data/items';
 import { species, speciesBySlug } from '../data/pokedex';
-import { city, isUnlocked, KANTO, type HuntKind } from '../data/regions/kanto';
+import { city, isUnlocked, type HuntKind } from '../data/regions';
+import { KANTO as KANTO_REGION } from '../data/regions/kanto';
+
+const KANTO = KANTO_REGION.cities;
 import { createRng } from '../engine/rng';
 import { HP_UNITS } from '../fight/constants';
 import { addCaught, canSendToBox, canTakeFromBox, sendToBox, swapInParty, takeFromBox } from './box';

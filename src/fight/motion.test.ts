@@ -70,6 +70,13 @@ describe('motion + attack: the free elemental special', () => {
     expect(r.events).toEqual([{ type: 'special', fighter: 0, slot: 'elemental', frame: 3 }]);
   });
 
+  it('a hit during its charge cancels it, and gives back nothing (it cost nothing)', () => {
+    const r = run(30, MOTION_RIGHT, (f: number) => (f === 3 ? Physical : 0), setup(40));
+    expect(r.events.some(e => e.type === 'hit' && e.defender === 0)).toBe(true);
+    expect(r.frames.every(s => s.projectiles.length === 0)).toBe(true);
+    expect(r.final.fighters[0].pp).toBe(PP_START);
+  });
+
   it('works with an empty PP bar', () => {
     const r = run(40, MOTION_RIGHT, 0, setup(300, 'projectile', [0, 50]));
     expect(at(r, 3).fighters[0]).toMatchObject({ action: 'elemental', pp: 0 });

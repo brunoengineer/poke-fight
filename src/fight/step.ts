@@ -92,6 +92,7 @@ function readInput(f: Fighter, mask: InputMask) {
 // ── 2. Actions ────────────────────────────────────────────────────────────────────────────────────────────────────
 
 function setAction(f: Fighter, action: ActionKind, length = 0) {
+  refundUnfired(f);
   f.action = action;
   f.actionFrame = 1;
   f.actionLength = length;
@@ -174,8 +175,9 @@ function think(f: Fighter, opponentX: number, events: FightEvent[]) {
 }
 
 /**
- * PP is spent when the charge starts: a hit during the charge cancels the special and the PP is lost.
- * `free`: the elemental special from the motion, which spends no PP (and earns none when it lands).
+ * PP is spent when the charge starts (the bar drops at once); if the special never comes out (a hit during the
+ * charge cancels it), refundUnfired gives it back. `free`: the elemental special from the motion, which spends no PP
+ * (and earns none when it lands).
  */
 function startSpecial(f: Fighter, slot: SpecialSlot, events: FightEvent[], free = false) {
   const airborne = f.y > 0 || f.vy > 0;
@@ -186,6 +188,16 @@ function startSpecial(f: Fighter, slot: SpecialSlot, events: FightEvent[], free 
   // In the air it lasts until landing, like the air attack.
   setAction(f, slot, airborne ? 0 : moveLength(moveOf(slot, f.loadout)!));
   events.push({ type: 'special', fighter: f.id, slot });
+}
+
+/**
+ * PP pays only for a special that comes out (decided after milestone 12: losing it to a hit during the charge felt
+ * like a bug). Called whenever an action is replaced: a special still in its startup was cut short, so its PP returns.
+ */
+function refundUnfired(f: Fighter) {
+  if ((f.action !== 'elemental' && f.action !== 'big') || f.freeSpecial) return;
+  if (f.actionFrame > moveOf(f.action, f.loadout)!.startup) return;
+  f.pp = Math.min(PP_MAX, f.pp + (f.action === 'elemental' ? ELEMENTAL_COST : PP_MAX));
 }
 
 /** A horizontal speed, adjusted by the Pokémon's speed (mobility %). Frame data never changes. */
@@ -278,12 +290,17 @@ function move(f: Fighter) {
   f.x = clampToStage(f.x);
 }
 
-/** Touching the floor ends any air action (an air special still charging is lost). */
+/**
+ * Touching the floor ends any air action, except an air special still charging: it goes on from the ground and fires
+ * there (it used to be lost with its PP, so a special pressed late in a jump seemed to vanish).
+ */
 function land(f: Fighter) {
   f.y = 0;
   f.vy = 0;
   f.vx = 0;
-  if (f.action === 'airHitstun') setAction(f, 'land', AIR_HIT.knockdown);
+  const special = f.action === 'elemental' ? moveOf(f.action, f.loadout)! : null;
+  if (special && f.actionFrame <= special.startup) f.actionLength = moveLength(special);
+  else if (f.action === 'airHitstun') setAction(f, 'land', AIR_HIT.knockdown);
   else if (f.action !== 'ko') setAction(f, 'land', JUMP.landing);
 }
 

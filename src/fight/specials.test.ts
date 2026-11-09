@@ -96,11 +96,22 @@ describe('elemental special (K)', () => {
     expect(run(40, on(Special, 1), 0, setup(250, 'beam', 'beam')).events.filter(e => e.type === 'hit')).toEqual([]);
   });
 
-  it('a hit during the charge cancels it, and the PP is lost', () => {
+  it('a hit during the charge cancels it, and the PP comes back (PP pays only for a special that comes out)', () => {
     const r = run(60, on(Special, 1), on(Physical, 1), setup(40, 'projectile', 'beam'));
+    expect(at(r, 1).fighters[0].pp).toBe(PP_START - ELEMENTAL_COST);
     expect(r.frames.every(s => s.projectiles.length === 0)).toBe(true);
     expect(r.events.filter(e => e.type === 'hit').map(e => (e.type === 'hit' ? e.attacker : -1))).toEqual([1]);
-    expect(r.final.fighters[0].pp).toBe(PP_START - ELEMENTAL_COST);
+    expect(r.final.fighters[0].pp).toBe(PP_START);
+  });
+
+  it('once it has come out, a hit no longer gives the PP back', () => {
+    // A beam out on frame 15 trades with a tackle landing on that same frame: both hit, and the PP stays spent.
+    const r = run(60, on(Special, 1), on(Physical, 10), setup(40, 'beam', 'beam'));
+    expect(r.events.filter(e => e.type === 'hit').map(e => (e.type === 'hit' ? [e.frame, e.attacker] : []))).toEqual([
+      [15, 0],
+      [15, 1],
+    ]);
+    expect(r.final.fighters[0].pp).toBe(PP_START - ELEMENTAL_COST + ELEMENTAL.beam.hit.ppGain);
   });
 
   it('works in the air (one air move per jump), fired at the jump height', () => {
@@ -111,11 +122,23 @@ describe('elemental special (K)', () => {
     expect(shot.y1).toBeGreaterThan(px(18));
   });
 
-  it('in the air, landing before the end of the charge loses the special', () => {
-    // Special on frame 30: the charge would end on frame 44, but the jump lands on frame 40.
-    const r = run(60, f => (f === 1 ? Up : f === 30 ? Special : 0), 0, setup(300, 'projectile', 'beam'));
-    expect(at(r, 40).fighters[0].action).toBe('land');
-    expect(r.frames.every(s => s.projectiles.length === 0)).toBe(true);
+  it('in the air, landing before the end of the charge finishes it from the ground (it is never lost)', () => {
+    // Special on frame 30: the jump lands on frame 40, the charge goes on and it fires on frame 44, at ground height.
+    const r = run(70, f => (f === 1 ? Up : f === 30 ? Special : 0), 0, setup(300, 'projectile', 'beam'));
+    expect(at(r, 40).fighters[0]).toMatchObject({ action: 'elemental', y: 0 });
+    expect(at(r, 43).projectiles).toHaveLength(0);
+    expect(at(r, 44).projectiles[0]).toMatchObject({ owner: 0, y1: px(18) });
+    // The whole move on the ground: free again once its 33 frames are over.
+    expect(at(r, 30 + moveLength(ELEMENTAL.projectile) - 1).fighters[0].action).toBe('elemental');
+    expect(at(r, 30 + moveLength(ELEMENTAL.projectile)).fighters[0].action).toBe('idle');
+    expect(r.final.fighters[0].pp).toBe(PP_START - ELEMENTAL_COST);
+  });
+
+  it('pressed on any of the last frames before landing, it still fires', () => {
+    for (const press of [36, 37, 38, 39]) {
+      const r = run(70, f => (f === 1 ? Up : f === press ? Special : 0), 0, setup(300, 'projectile', 'beam'));
+      expect(r.frames.some(s => s.projectiles.length > 0), `pressed on frame ${press}`).toBe(true);
+    }
   });
 
   it('only one air move per jump: an air attack then a special does nothing more', () => {
@@ -137,6 +160,13 @@ describe('big special (I)', () => {
     expect(at(run(1, Big, 0, fightAt(200, { pp: [PP_MAX - 1, 50] })), 1).fighters[0].action).toBe('idle');
     const r = run(1, Big, 0, fightAt(200, { pp: [PP_MAX, 50] }));
     expect(at(r, 1).fighters[0]).toMatchObject({ action: 'big', pp: 0 });
+  });
+
+  it('a hit during the charge cancels it and gives the full bar back', () => {
+    const r = run(60, on(Big, 1), on(Physical, 1), setup(40, 'projectile', 'beam', { pp: [PP_MAX, 50] }));
+    expect(at(r, 1).fighters[0].pp).toBe(0);
+    expect(r.frames.every(s => s.projectiles.length === 0)).toBe(true);
+    expect(r.final.fighters[0].pp).toBe(PP_MAX);
   });
 
   it('cannot be used in the air', () => {

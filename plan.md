@@ -137,8 +137,8 @@ with the debug overlay:
 |------|---------|--------|----------|--------|-------|
 | Physical (ground) | 5 | 4 | 12 | knockback, short hitstun | Moves the attacker forward (the lunge) |
 | Physical (air) | 4 | 6 | lands | hits jumping-in | |
-| Elemental special | 14 (charge) | depends on shape | 18 | depends on shape | Costs ¼ PP; vulnerable during charge; a hit cancels it |
-| Big special | 40 (charge) | depends on shape | 30 | big knockback, long hitstop | The full PP bar is spent when the charge starts: get hit while charging and it's wasted |
+| Elemental special | 14 (charge) | depends on shape | 18 | depends on shape | Costs ¼ PP; vulnerable during charge; a hit cancels it (the PP comes back) |
+| Big special | 40 (charge) | depends on shape | 30 | big knockback, long hitstop | The full PP bar is spent when the charge starts; a hit during the charge cancels it and gives the PP back |
 | Jump | 3 (pre-jump) | ~36 airborne | 2 (landing) | — | **Can be steered in the air** (left/right) |
 | Guard | 1 | while held | 3 (release) | blockstun, chip damage on specials | Blocks everything (no lows yet) |
 | Dash (fwd / back) | 2 | ~14 moving | 4 | — | **Back dash: invincible on frames 1–6**, then hittable until it ends (so it can be punished) |
@@ -155,7 +155,7 @@ with the debug overlay:
   - The motion is checked on the frame the attack is pressed, with the facing of that frame, then buffered like any
     press (6 frames). A plain attack, a wrong order, or walking back then forward without ↓ is a tackle.
   - **Also in the air**, like the K special: it uses the jump's one air move, and landing before the charge ends
-    loses it.
+    finishes it from the ground.
   - The directions of the last 28 frames live in the fighter's state (`Fighter.directions`, `fight/motion.ts`), so
     replays stay exact. The CPU doesn't use it.
 - **Hitstop**: both fighters freeze for 4–8 frames on hit (bigger for super effective hits). This is the "impact"
@@ -193,11 +193,13 @@ with the debug overlay:
   frames. No air guard. Blocked hits give no PP. The tackle is **−1 on block**.
 - **Chip damage**: specials do ¼ of their damage through a guard, and chip can finish a Pokémon.
 - **PP bar**: 100, starts at 50. Elemental special −25, big special −100 (needs a full bar), paid when the charge
-  starts (lost if hit during the charge). Landing: tackle / air attack +15, elemental +5, big +0. A press without
+  starts; a special that never comes out (hit during the charge) gives it back (decided after milestone 12: losing it
+  felt like a bug). Landing: tackle / air attack +15, elemental +5, big +0. A press without
   enough PP does nothing. The motion input's free elemental special (above) costs 0 and earns 0.
 - **Elemental special**: 14-frame charge. Projectile: fired on frame 15 at 4 px/frame, 33 frames in total.
   Beam: hits on frames 15–20, up to ~230 px. Also in the air (shares the one air move per jump); landing before the
-  charge ends loses it.
+  charge ends doesn't lose it: the charge goes on from the ground and it fires there (decided after milestone 12: a
+  special pressed late in a jump used to vanish with its PP).
 - **Big special**: 40-frame charge, ground only, launches the opponent, 14 frames of hitstop and a white flash.
   Projectile (6 px/frame), full-screen beam, or Rush (9 px/frame for 24 frames, passes through).
 - **Projectiles**: two elemental ones that meet cancel out; a big one goes through a small one.
@@ -228,7 +230,8 @@ Together with the tackle (J), every Pokémon has a close attack, a range attack 
   big special +0%.
 - Not shared: in a 6 vs 6 battle, each Pokémon comes in with its own half-full bar.
 - Why PP **and** a charge: PP controls *how often* (no spamming projectiles from across the screen), the charge
-  adds the *risk* (the opponent can see it coming and hit you first; for the big special the PP is then lost).
+  adds the *risk* (the opponent can see it coming and hit you first: you take the hit and lose the moment; the PP
+  comes back, since PP only pays for a special that comes out).
 
 Other rules:
 
@@ -790,7 +793,7 @@ and fast to test.
 
 - **Frame data tests**: "physical attack hits on frame 6 and recovers on frame 21", "a press buffered during recovery
   fires on the first free frame", "a hit on back-dash frame 6 misses, on frame 7 it lands", "a hit during the big
-  special's charge cancels it and the PP is lost", "the big special can't start without a full PP bar",
+  special's charge cancels it and gives the PP back", "the big special can't start without a full PP bar",
   "the elemental special can't start below ¼ PP", "a landed tackle adds PP, being hit doesn't".
 - **Input latency test**: press on frame N → state shows the action starting on frame N (target 0, at most 1 frame).
 - **Replay / golden tests**: recorded input logs + seed → final state hash. Any engine change that alters a result
@@ -865,7 +868,7 @@ sprites won't save it.
 | Capture | No performance bonus; the Gen 8 formula's shape (catch rate, ball, difficulty) with a fixed HP term of 0.6 (0.2 was far too hard) and no low-level bonus: a typical Pokémon takes 3–5 Great Balls; Safari Balls ×2 |
 | Specials | Two slots: elemental (K, always a range attack, ¼ PP) and big (I, full PP bar + long charge) |
 | Motion input | Back, down, forward + J: the elemental special with no PP spent and none earned (20-frame motion, attack within 8 frames), also in the air |
-| PP bar | Replaces the Power gauge. One per Pokémon, starts half full, fills only when your hits land |
+| PP bar | Replaces the Power gauge. One per Pokémon, starts half full, fills only when your hits land. PP pays only for a special that comes out: a hit during the charge gives it back, and an air special still charging on landing fires from the ground |
 | Big dash | A shape of the big special: physical moves become a Rush that passes through the opponent |
 | Dash through | The dash passes through the opponent (no push box), to attack from behind |
 | Sprites | Loaded by URL (no local copy) |

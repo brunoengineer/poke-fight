@@ -3679,13 +3679,15 @@ kbd,
 
 /* ── Pokédex ─────────────────────────────────────────────────────────────────────────────────────────────────── */
 
+/* The list: the filter bar over a grid of every matching species. */
 .dex-screen {
-  grid-template-columns: minmax(0, 1fr) 70cqh;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   grid-template-areas:
-    'head head'
-    'grid page'
-    'foot foot';
+    'head'
+    'filters'
+    'grid'
+    'foot';
 }
 
 .dex-head-row {
@@ -3694,31 +3696,120 @@ kbd,
   justify-content: space-between;
 }
 
-.dex-foot {
-  grid-area: foot;
+.dex-filters {
+  grid-area: filters;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1cqh;
 }
 
-/* All 151, scrolling with the focus. */
+.dex-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9cqh;
+  min-height: 4.6cqh;
+  padding: 0 1.8cqh;
+  border: 1px solid var(--line-strong);
+  border-radius: 99px;
+  background: rgba(14, 16, 38, 0.6);
+  color: inherit;
+  font: 700 1.9cqh/1 var(--body);
+  cursor: pointer;
+  transition:
+    transform 140ms var(--ease-pop),
+    background 140ms;
+}
+
+.dex-filter b {
+  font-weight: 800;
+  color: var(--gold);
+}
+
+/* A switch's box: empty, or ticked when on. */
+.dex-check {
+  display: grid;
+  place-items: center;
+  width: 2cqh;
+  height: 2cqh;
+  border: 0.25cqh solid currentColor;
+  border-radius: 0.5cqh;
+  opacity: 0.7;
+}
+
+.dex-filter.on {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--theme) 75%, transparent);
+}
+
+.dex-filter.on .dex-check {
+  opacity: 1;
+  background: #fff;
+}
+
+.dex-filter.on .dex-check::after {
+  content: '';
+  width: 0.5cqh;
+  height: 1cqh;
+  margin-top: -0.3cqh;
+  border: solid var(--ink);
+  border-width: 0 0.3cqh 0.3cqh 0;
+  rotate: 45deg;
+}
+
+.dex-filter.on b {
+  color: #fff;
+}
+
+.dex-filter:focus {
+  outline: none;
+  background: #fff;
+  color: var(--ink);
+  transform: scale(1.05);
+  box-shadow: 0 0 0 0.4cqh color-mix(in srgb, var(--theme) 65%, white);
+}
+
+.dex-filter:focus b {
+  color: var(--ink);
+}
+
+.dex-shown {
+  margin-left: auto;
+  font: 700 1.8cqh/1 var(--body);
+  color: var(--dim);
+}
+
 .dex-grid {
   grid-area: grid;
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-auto-rows: 11cqh;
-  gap: 0.9cqh;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-auto-rows: 15cqh;
+  gap: 1cqh;
   padding: 1.6cqh;
   min-height: 0;
   overflow: auto;
   scrollbar-width: none;
 }
 
+.dex-empty {
+  grid-area: grid;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font: 600 italic 2.2cqh/1.4 var(--body);
+  color: var(--dim);
+}
+
 .dex-tile {
   position: relative;
   display: grid;
-  place-items: center;
-  padding: 0;
+  grid-template-rows: 1fr auto;
+  justify-items: center;
+  padding: 0.6cqh 0.4cqh 0.9cqh;
   border: 1px solid var(--line);
   border-radius: 1.4cqh;
   background: rgba(255, 255, 255, 0.05);
+  color: inherit;
   cursor: pointer;
   transition:
     transform 140ms var(--ease-pop),
@@ -3742,8 +3833,21 @@ kbd,
 }
 
 .dex-tile-sprite {
-  width: 10cqh;
-  height: 10cqh;
+  width: 11cqh;
+  height: 11cqh;
+  margin: -0.6cqh 0 -1.4cqh;
+}
+
+.dex-tile-name {
+  max-width: 100%;
+  overflow: hidden;
+  font: 700 1.6cqh/1 var(--body);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dex-tile.unseen .dex-tile-name {
+  opacity: 0.5;
 }
 
 /* Caught: a little Poké Ball in the corner (grey once none is left with you). */
@@ -3778,69 +3882,128 @@ kbd,
   filter: brightness(0) opacity(0.35);
 }
 
-/* The page of the focused species. */
-.dex-page {
-  --c: var(--theme);
-  grid-area: page;
-  display: flex;
-  flex-direction: column;
-  gap: 1.6cqh;
-  padding: 2.2cqh 2.6cqh;
-  min-height: 0;
-  overflow: auto;
-  scrollbar-width: none;
-  background:
-    radial-gradient(60% 40% at 20% 0%, color-mix(in srgb, var(--c) 35%, transparent), transparent),
-    var(--glass-strong);
+/* A filter's choices (types, number ranges), in a sheet. */
+.dex-picker {
+  width: 92cqh;
 }
 
-.dex-head {
-  display: flex;
+.dex-choices {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9cqh;
+}
+
+.dex-choice {
+  min-height: 5cqh;
+  border: 1px solid var(--line);
+  border-radius: 1.2cqh;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font: 700 1.9cqh/1 var(--body);
+  cursor: pointer;
+}
+
+.dex-choice.selected {
+  background: color-mix(in srgb, var(--theme) 60%, transparent);
+}
+
+.dex-choice:focus {
+  outline: none;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 0 0 0.4cqh color-mix(in srgb, var(--theme) 65%, white);
+}
+
+/* A species' page: its card on the left, the text on the right (it scrolls). */
+.dex-entry-screen {
+  grid-template-columns: 54cqh minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'head head'
+    'card body'
+    'foot foot';
+}
+
+.dex-entry-head {
+  grid-area: head;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 2cqh;
+}
+
+.dex-entry-head .btn:first-child {
+  justify-self: start;
+}
+
+.dex-entry-head .btn:first-child .icon {
+  transform: scaleX(-1);
+}
+
+.dex-entry-head .dex-next {
+  justify-self: end;
+  flex-direction: row-reverse;
+}
+
+.dex-foot {
+  grid-area: foot;
+}
+
+.dex-card {
+  --c: var(--theme);
+  grid-area: card;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1cqh;
+  padding: 2.4cqh;
+  text-align: center;
+  background:
+    radial-gradient(70% 45% at 50% 20%, color-mix(in srgb, var(--c) 40%, transparent), transparent),
+    var(--glass-strong);
 }
 
 .dex-stage-art {
   display: grid;
   place-items: center;
-  flex: none;
-  width: 19cqh;
-  height: 19cqh;
+  width: 30cqh;
+  height: 30cqh;
   border-radius: 50%;
   background: radial-gradient(closest-side, color-mix(in srgb, var(--c) 45%, transparent), transparent);
 }
 
 .dex-sprite {
-  width: 19cqh;
-  height: 19cqh;
-}
-
-.dex-title {
-  display: grid;
-  gap: 0.7cqh;
-  min-width: 0;
+  width: 30cqh;
+  height: 30cqh;
 }
 
 .dex-number {
-  font: 800 italic 2.2cqh/1 var(--display);
+  font: 800 italic 2.4cqh/1 var(--display);
   color: var(--dim);
 }
 
-.dex-title strong {
-  font-size: 4.6cqh;
+.dex-name {
+  font-size: 5cqh;
   line-height: 1;
 }
 
 .dex-genus {
-  font: 600 1.9cqh/1.2 var(--body);
+  font: 600 2cqh/1.2 var(--body);
   color: var(--dim);
+}
+
+.dex-legend {
+  padding: 0.4cqh 1.2cqh;
+  border-radius: 99px;
+  background: linear-gradient(135deg, #ffe08a, #e39b22);
+  color: var(--ink);
+  font: 800 1.6cqh/1 var(--body);
 }
 
 .dex-status {
   display: inline-flex;
   align-items: center;
   gap: 0.6cqh;
-  width: fit-content;
   padding: 0.5cqh 1.2cqh;
   border-radius: 99px;
   background: rgba(255, 255, 255, 0.08);
@@ -3857,33 +4020,57 @@ kbd,
   height: 1.8cqh;
 }
 
-.dex-entry {
-  display: grid;
-  gap: 0.8cqh;
-  margin: 0;
-  padding: 1.4cqh 1.8cqh;
-  border-left: 0.5cqh solid var(--c);
-  border-radius: 0 1.2cqh 1.2cqh 0;
-  background: rgba(0, 0, 0, 0.22);
-  font: 500 italic 1.95cqh/1.45 var(--body);
+.dex-size {
+  font: 700 1.8cqh/1 var(--body);
+  color: var(--dim);
 }
 
-.dex-entry small {
-  font-style: normal;
-  font-weight: 700;
-  color: var(--dim);
+/* The text. It has the focus, so the d-pad scrolls it; a soft ring says so. */
+.dex-body {
+  grid-area: body;
+  display: flex;
+  flex-direction: column;
+  gap: 2.2cqh;
+  min-height: 0;
+  padding: 2.4cqh 2.8cqh;
+  overflow: auto;
+  border-radius: 2.4cqh;
+  background: var(--glass-strong);
+  scrollbar-width: thin;
+}
+
+.dex-body:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 0.3cqh color-mix(in srgb, var(--theme) 55%, transparent);
 }
 
 .dex-section {
   display: grid;
-  gap: 0.9cqh;
+  gap: 1cqh;
+}
+
+.dex-entry {
+  margin: 0;
+  padding: 1.6cqh 2cqh;
+  border-left: 0.5cqh solid var(--theme);
+  border-radius: 0 1.2cqh 1.2cqh 0;
+  background: rgba(0, 0, 0, 0.22);
+  font: 500 italic 2.2cqh/1.5 var(--body);
+}
+
+.dex-unknown {
+  margin: auto 0;
+  font: 600 italic 2.2cqh/1.5 var(--body);
+  color: var(--dim);
+  text-align: center;
 }
 
 /* The family: stage → stage, with how each one evolves above it. */
 .dex-chain {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1cqh;
+  gap: 1.2cqh;
 }
 
 .dex-stage {
@@ -3891,50 +4078,49 @@ kbd,
   gap: 0.6cqh;
 }
 
+.dex-stage:has(.dex-evo:nth-child(3)) {
+  grid-template-columns: repeat(3, auto);
+}
+
 .dex-arrow .icon {
-  width: 2.2cqh;
-  height: 2.2cqh;
+  width: 2.4cqh;
+  height: 2.4cqh;
   opacity: 0.6;
 }
 
 .dex-evo {
   display: grid;
   justify-items: center;
-  min-width: 11cqh;
-  padding: 0.6cqh 0.8cqh;
+  min-width: 13cqh;
+  padding: 0.8cqh 1cqh;
   border-radius: 1.2cqh;
   background: rgba(255, 255, 255, 0.05);
-  font-size: 1.6cqh;
+  font-size: 1.8cqh;
 }
 
 .dex-evo.current {
-  background: color-mix(in srgb, var(--c) 30%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 70%, white);
+  background: color-mix(in srgb, var(--theme) 30%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--theme) 70%, white);
 }
 
 .dex-how {
-  font: 700 1.4cqh/1 var(--body);
+  font: 700 1.5cqh/1 var(--body);
   color: var(--gold);
 }
 
 .dex-evo-sprite {
-  width: 7.5cqh;
-  height: 7.5cqh;
+  width: 9cqh;
+  height: 9cqh;
   margin: -0.6cqh 0;
-}
-
-/* Eevee's three: smaller, so the family fits. */
-.dex-stage:has(.dex-evo:nth-child(3)) {
-  grid-template-columns: repeat(3, auto);
 }
 
 .dex-where {
   display: grid;
-  gap: 0.5cqh;
+  gap: 0.6cqh;
   margin: 0;
   padding: 0;
   list-style: none;
-  font: 600 1.75cqh/1.3 var(--body);
+  font: 600 1.95cqh/1.3 var(--body);
 }
 
 .dex-where li::before {
@@ -3944,27 +4130,23 @@ kbd,
   height: 0.8cqh;
   margin-right: 1cqh;
   border-radius: 50%;
-  background: var(--c);
+  background: var(--theme);
   vertical-align: middle;
 }
 
 .dex-stats {
+  display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.6cqh 2.6cqh;
-}
-
-.dex-stats h3,
-.dex-stats .dex-catch {
-  grid-column: 1 / -1;
+  gap: 0.8cqh 3cqh;
 }
 
 .dex-stats .mini-stat {
-  grid-template-columns: 7cqh 1fr 3.6cqh;
+  grid-template-columns: 9cqh 1fr 4cqh;
+  font-size: 1.8cqh;
 }
 
 .dex-catch {
-  margin-top: 0.4cqh;
-  font: 700 1.6cqh/1 var(--body);
+  font: 700 1.8cqh/1 var(--body);
   color: var(--dim);
 }
 

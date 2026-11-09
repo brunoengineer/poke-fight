@@ -88,3 +88,47 @@ export function whereToFind(id: number): FoundAt[] {
   }
   return found;
 }
+
+// ── Filters (the Pokédex screen's bar) ─────────────────────────────────────────────────────────────────────────────
+
+export interface DexFilter {
+  /** Only the species caught at some point ("owned", as the games' Pokédex says; released ones count). */
+  owned: boolean;
+  type: string | null;
+  legendary: boolean;
+  mythical: boolean;
+  /** A range of Pokédex numbers (inclusive). */
+  range: readonly [number, number] | null;
+}
+
+export const NO_FILTER: DexFilter = { owned: false, type: null, legendary: false, mythical: false, range: null };
+
+/** The number ranges to pick from (30 at a time). */
+export const DEX_RANGES: readonly (readonly [number, number])[] = [
+  [1, 30],
+  [31, 60],
+  [61, 90],
+  [91, 120],
+  [121, 151],
+];
+
+/** Every type some species has, alphabetically. */
+export const dexTypes = (): string[] => [...new Set(allSpecies().flatMap(s => s.types))].sort();
+
+export const isFiltered = (filter: DexFilter) =>
+  filter.owned || filter.type !== null || filter.legendary || filter.mythical || filter.range !== null;
+
+/**
+ * The species that pass the filter, in Pokédex order. Every condition must hold, except Legendary and Mythical: with
+ * both on, either one will do (they never overlap).
+ */
+export function filterDex(ids: readonly number[], filter: DexFilter, owned: (id: number) => boolean): number[] {
+  return ids.filter(id => {
+    const s = species(id);
+    if (filter.owned && !owned(id)) return false;
+    if (filter.type && !s.types.includes(filter.type)) return false;
+    if ((filter.legendary || filter.mythical) && !((filter.legendary && s.legendary) || (filter.mythical && s.mythical))) return false;
+    if (filter.range && (id < filter.range[0] || id > filter.range[1])) return false;
+    return true;
+  });
+}

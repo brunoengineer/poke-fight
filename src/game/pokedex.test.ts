@@ -3,9 +3,10 @@
 
 import { describe, expect, it } from 'vitest';
 import { species, speciesBySlug } from '../data/pokedex';
+import { dexLanguages, dexText } from '../data/dex-text';
 import { canRelease, release } from './box';
 import { createPokemon } from './pokemon';
-import { dexNumbers, dexStatus, evolutionChain, ownedCount, whereToFind } from './pokedex';
+import { DEX_RANGES, dexNumbers, dexStatus, dexTypes, evolutionChain, filterDex, isFiltered, NO_FILTER, ownedCount, whereToFind } from './pokedex';
 
 const id = (slug: string) => speciesBySlug(slug).id;
 
@@ -63,5 +64,53 @@ describe('releasing', () => {
     expect(release(one, 'box', 0)).toEqual({ party: one.party, box: [] });
     const two = { party: [createPokemon(4, 5), createPokemon(16, 3)], box: [] };
     expect(release(two, 'party', 0).party.map(p => p.speciesId)).toEqual([16]);
+  });
+});
+
+describe('Pokédex filters', () => {
+  const all = dexNumbers();
+  const none = () => false;
+
+  it('no filter: all 151', () => {
+    expect(filterDex(all, NO_FILTER, none)).toHaveLength(151);
+    expect(isFiltered(NO_FILTER)).toBe(false);
+  });
+
+  it('owned, type, legendary, mythical, number range; all at once must all hold', () => {
+    expect(filterDex(all, { ...NO_FILTER, owned: true }, id => id === 25 || id === 4)).toEqual([4, 25]);
+    expect(filterDex(all, { ...NO_FILTER, type: 'dragon' }, none)).toEqual([147, 148, 149]);
+    expect(filterDex(all, { ...NO_FILTER, legendary: true }, none)).toEqual([144, 145, 146, 150]);
+    expect(filterDex(all, { ...NO_FILTER, mythical: true }, none)).toEqual([151]);
+    expect(filterDex(all, { ...NO_FILTER, legendary: true, mythical: true }, none)).toEqual([144, 145, 146, 150, 151]);
+    expect(filterDex(all, { ...NO_FILTER, range: [1, 30] }, none)).toHaveLength(30);
+    expect(filterDex(all, { ...NO_FILTER, range: [1, 30], type: 'fire' }, none)).toEqual([4, 5, 6]);
+    expect(filterDex(all, { ...NO_FILTER, legendary: true, type: 'ice' }, none)).toEqual([144]);
+  });
+
+  it('the type list covers every species, and the ranges cover 1–151 without gaps', () => {
+    const types = dexTypes();
+    expect(types).toContain('fire');
+    expect(all.every(id => species(id).types.every(t => types.includes(t)))).toBe(true);
+    expect(DEX_RANGES.flatMap(([a, b]) => Array.from({ length: b - a + 1 }, (_, i) => a + i))).toEqual(all);
+  });
+});
+
+describe('the Pokédex in every language', () => {
+  it('every species has its kind and entry translated (Portuguese is this game\'s own translation)', () => {
+    for (const language of dexLanguages()) {
+      for (const n of dexNumbers()) {
+        const text = dexText(n, language);
+        const english = species(n).dex;
+        expect(text.genus).not.toBe('');
+        expect(text.entry).not.toBe('');
+        expect(text.entry).not.toBe(english.entry);
+      }
+    }
+    expect(dexText(25, 'pt').genus).toBe('Pokémon Rato');
+    expect(dexText(25, 'en').genus).toBe('Mouse Pokémon');
+  });
+
+  it("Red's all-caps POKéMON is written Pokémon", () => {
+    expect(dexNumbers().some(n => species(n).dex.entry.includes('POKéMON'))).toBe(false);
   });
 });

@@ -21,7 +21,22 @@ import { addCaught, canRelease, canSendToBox, canTakeFromBox, release, sendToBox
 import { catchValue, throwBall } from './game/capture';
 import { buy, canUsePotion, countOf, MAX_MONEY, moneyAfterLoss, prizeMoney, removeItem, usePotion } from './game/economy';
 import { cpuProfile, type Controller } from './game/ai';
-import { dexNumbers, dexStatus, evolutionChain, ownedCount, whereToFind, type EvolveBy, type FoundAt } from './game/pokedex';
+import {
+  DEX_RANGES,
+  dexNumbers,
+  dexStatus,
+  dexTypes,
+  evolutionChain,
+  filterDex,
+  isFiltered,
+  NO_FILTER,
+  ownedCount,
+  whereToFind,
+  type DexFilter,
+  type EvolveBy,
+  type FoundAt,
+} from './game/pokedex';
+import { dexText } from './data/dex-text';
 import { bestRod, encounterTable, rollEncounter, tableForAreas, wildPokemon } from './game/encounters';
 import { canChallenge, gymTeam, leaderPrize } from './game/gym';
 import { canEnterLeague, LEAGUE_SIZE, leagueOpponent, leaguePrize, type LeagueOpponent } from './game/league';
@@ -57,7 +72,7 @@ import { renderMart } from './ui/screens/mart';
 import { renderStarter } from './ui/screens/starter';
 import { renderDialog } from './ui/screens/dialog';
 import { renderCapture } from './ui/screens/capture';
-import { renderPokedex } from './ui/screens/pokedex';
+import { renderDexEntry, renderDexList } from './ui/screens/pokedex';
 import { renderEvolution } from './ui/screens/evolution';
 import { renderOptions } from './ui/screens/options';
 import { renderTitle, type TitleOption } from './ui/screens/title';
@@ -576,75 +591,161 @@ export function startApp(elements: AppElements, options: TestOptions) {
   }
 
   // ── The Pokédex ───────────────────────────────────────────────────────────────────────────────────────────────
+  /** The Pokédex's filters (kept while the game runs, so going back to the list keeps them). */
+  let dexFilter: DexFilter = NO_FILTER;
+  const dexNumber = (id: number) => `#${String(id).padStart(3, '0')}`;
+  /** One decimal, written the language's way (1.3 / 1,3). */
+  const decimal = (n: number) => n.toLocaleString(language() === 'pt' ? 'pt-BR' : 'en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+  /** The species in the list, with the filters on ("Owned", as in the games' Pokédex: caught at some point). */
+  const dexList = (s: Save) => filterDex(dexNumbers(), dexFilter, id => s.dex.caught.includes(id));
+
   function showPokedex(focusId?: number) {
     if (!save) return;
     const s = save;
     scene = 'menu';
     show();
     indoors('#e04a40');
-    const number = (id: number) => `#${String(id).padStart(3, '0')}`;
+    const ids = dexList(s);
+    const status = (id: number) => dexStatus(s.dex, id);
+    const setFilter = (change: Partial<DexFilter>, focus?: number) => {
+      dexFilter = { ...dexFilter, ...change };
+      showPokedex(focus);
+    };
+    const rangeLabel = ([a, b]: readonly [number, number]) => `${dexNumber(a)}–${dexNumber(b)}`;
+    const typeName = (type: string) => t(`type.${type}` as MessageKey);
+    // Start on the species just viewed, else the last one seen, else the first in the list.
+    const start = focusId ?? [...s.dex.seen].filter(id => ids.includes(id)).sort((a, b) => b - a)[0] ?? ids[0] ?? null;
+    renderDexList(overlayRoot, {
+      title: t('dex.title'),
+      counts: t('dex.counts', { seen: s.dex.seen.length, caught: s.dex.caught.length, total: dexNumbers().length }),
+      filters: [
+        { kind: 'toggle', label: t('dex.filterOwned'), testid: 'filter-owned', on: dexFilter.owned, onToggle: () => setFilter({ owned: !dexFilter.owned }) },
+        {
+          kind: 'choice',
+          label: t('dex.filterType'),
+          value: dexFilter.type ? typeName(dexFilter.type) : t('dex.all'),
+          testid: 'filter-type',
+          active: dexFilter.type !== null,
+          title: t('dex.filterType'),
+          choices: [
+            { label: t('dex.all'), testid: 'type-all', selected: dexFilter.type === null, onPick: () => setFilter({ type: null }) },
+            ...dexTypes()
+              .map(type => ({ type, label: typeName(type) }))
+              .sort((a, b) => a.label.localeCompare(b.label, language()))
+              .map(({ type, label }) => ({ label, testid: `type-${type}`, selected: dexFilter.type === type, onPick: () => setFilter({ type }) })),
+          ],
+        },
+        { kind: 'toggle', label: t('dex.filterLegendary'), testid: 'filter-legendary', on: dexFilter.legendary, onToggle: () => setFilter({ legendary: !dexFilter.legendary }) },
+        { kind: 'toggle', label: t('dex.filterMythical'), testid: 'filter-mythical', on: dexFilter.mythical, onToggle: () => setFilter({ mythical: !dexFilter.mythical }) },
+        {
+          kind: 'choice',
+          label: t('dex.filterNumber'),
+          value: dexFilter.range ? rangeLabel(dexFilter.range) : t('dex.all'),
+          testid: 'filter-range',
+          active: dexFilter.range !== null,
+          title: t('dex.filterNumber'),
+          choices: [
+            { label: t('dex.all'), testid: 'range-all', selected: dexFilter.range === null, onPick: () => setFilter({ range: null }) },
+            ...DEX_RANGES.map((range, i) => ({
+              label: rangeLabel(range),
+              testid: `range-${i}`,
+              selected: dexFilter.range?.[0] === range[0],
+              // Jump to the start of the range.
+              onPick: () => setFilter({ range }, range[0]),
+            })),
+          ],
+        },
+      ],
+      clear: isFiltered(dexFilter) ? { label: t('dex.clear'), testid: 'filter-clear', onClick: () => setFilter(NO_FILTER, start ?? undefined) } : null,
+      shown: t('dex.shown', { count: ids.length }),
+      empty: t('dex.empty'),
+      tiles: ids.map(id => ({
+        id,
+        number: dexNumber(id),
+        name: status(id) === 'unseen' ? t('dex.unknown') : species(id).name,
+        sprite: spriteUrl(id),
+        status: status(id),
+        owned: ownedCount(s, id) > 0,
+      })),
+      start,
+      onOpen: id => showDexEntry(id),
+      cancel: t('party.cancel'),
+      back: { label: t('menu.back'), testid: 'back', onClick: goCity },
+      hints: [{ pad: 'a', key: 'Enter', label: t('dex.open') }, hints.back],
+    });
+  }
+
+  /** A species' page (from the list; LB / RB walk through the list as it is filtered). */
+  function showDexEntry(id: number) {
+    if (!save) return;
+    const s = save;
+    const list = dexList(s);
+    const at = list.indexOf(id);
+    const status = (n: number) => dexStatus(s.dex, n);
+    const st = status(id);
+    const sp = species(id);
+    const known = st !== 'unseen';
+    const caught = st === 'caught';
+    const owned = ownedCount(s, id);
+    const text = dexText(id, language());
     const evolveText = (by: EvolveBy) => (by.kind === 'level' ? t('dex.level', { level: by.level }) : itemName(by.item));
     const placeName = (f: FoundAt) => t(f.where === 'safari' ? 'place.safari' : (`place.${f.where}` as MessageKey));
-    const ids = dexNumbers();
-    const status = (id: number) => dexStatus(s.dex, id);
-    // Start on the last species seen (or the first).
-    const start = focusId ?? [...s.dex.seen].sort((a, b) => b - a)[0] ?? ids[0];
-    renderPokedex(overlayRoot, {
-      title: t('dex.title'),
-      counts: t('dex.counts', { seen: s.dex.seen.length, caught: s.dex.caught.length, total: ids.length }),
-      tiles: ids.map(id => ({ id, number: number(id), sprite: spriteUrl(id), status: status(id), owned: ownedCount(s, id) > 0 })),
-      start,
-      page: id => {
-        const sp = species(id);
-        const st = status(id);
-        const known = st !== 'unseen';
-        const caught = st === 'caught';
-        const owned = ownedCount(s, id);
-        const stats = sp.stats;
-        return {
-          number: number(id),
-          name: known ? sp.name : t('dex.unknown'),
-          sprite: spriteUrl(id),
-          status: st,
-          statusText: caught ? (owned > 0 ? t('dex.caughtOwned', { count: owned }) : t('dex.caughtNone')) : t(known ? 'dex.seen' : 'dex.unseen'),
-          color: known ? typeColor(sp.types[0]) : '#5d6385',
-          genus: known ? sp.dex.genus : null,
-          types: known ? sp.types.map(type => ({ type, label: t(`type.${type}` as MessageKey) })) : [],
-          size: caught ? t('dex.size', { height: sp.dex.heightM.toFixed(1), weight: sp.dex.weightKg.toFixed(1) }) : null,
-          entry: caught ? sp.dex.entry : null,
-          chain: known
-            ? evolutionChain(id).map(stage =>
-                stage.map(mon => ({
-                  sprite: spriteUrl(mon.speciesId),
-                  name: status(mon.speciesId) === 'unseen' ? t('dex.unknown') : species(mon.speciesId).name,
-                  known: status(mon.speciesId) !== 'unseen',
-                  how: mon.by ? evolveText(mon.by) : null,
-                  current: mon.speciesId === id,
-                })),
-              )
-            : [],
-          where: known
-            ? whereToFind(id).map(f => {
-                const params = { city: t(cityKey(f.cityId)), place: placeName(f), min: f.minLevel, max: f.maxLevel };
-                return f.rod ? t('dex.whereRod', { ...params, rod: itemName(f.rod) }) : t('dex.where', params);
-              })
-            : [],
-          stats: caught
-            ? [
-                { label: t('stat.hp'), value: stats.hp },
-                { label: t('stat.atk'), value: stats.atk },
-                { label: t('stat.def'), value: stats.def },
-                { label: t('stat.spa'), value: stats.spa },
-                { label: t('stat.spd'), value: stats.spd },
-                { label: t('stat.spe'), value: stats.spe },
-              ]
-            : null,
-          catchRate: caught ? t('dex.catchRate', { rate: sp.captureRate }) : null,
-        };
+    const stats = sp.stats;
+    const neighbour = (n: number | undefined, key: 'dex.previous' | 'dex.next', testid: string) =>
+      n === undefined ? null : { label: t(key, { number: dexNumber(n) }), testid, onClick: () => showDexEntry(n) };
+    renderDexEntry(overlayRoot, {
+      page: {
+        id,
+        number: dexNumber(id),
+        name: known ? sp.name : t('dex.unknown'),
+        sprite: spriteUrl(id),
+        status: st,
+        statusText: caught ? (owned > 0 ? t('dex.caughtOwned', { count: owned }) : t('dex.caughtNone')) : t(known ? 'dex.seen' : 'dex.unseen'),
+        color: known ? typeColor(sp.types[0]) : '#5d6385',
+        genus: known ? text.genus : null,
+        types: known ? sp.types.map(type => ({ type, label: t(`type.${type}` as MessageKey) })) : [],
+        legend: known && sp.legendary ? t('dex.legendary') : known && sp.mythical ? t('dex.mythical') : null,
+        size: caught ? t('dex.size', { height: decimal(sp.dex.heightM), weight: decimal(sp.dex.weightKg) }) : null,
+        entry: caught ? text.entry : null,
+        chain: known
+          ? evolutionChain(id).map(stage =>
+              stage.map(mon => ({
+                sprite: spriteUrl(mon.speciesId),
+                name: status(mon.speciesId) === 'unseen' ? t('dex.unknown') : species(mon.speciesId).name,
+                known: status(mon.speciesId) !== 'unseen',
+                how: mon.by ? evolveText(mon.by) : null,
+                current: mon.speciesId === id,
+              })),
+            )
+          : [],
+        where: known
+          ? whereToFind(id).map(f => {
+              const params = { city: t(cityKey(f.cityId)), place: placeName(f), min: f.minLevel, max: f.maxLevel };
+              return f.rod ? t('dex.whereRod', { ...params, rod: itemName(f.rod) }) : t('dex.where', params);
+            })
+          : [],
+        stats: caught
+          ? (['hp', 'atk', 'def', 'spa', 'spd', 'spe'] as const).map(stat => ({ label: t(`stat.${stat}`), value: stats[stat] }))
+          : null,
+        catchRate: caught ? t('dex.catchRate', { rate: sp.captureRate }) : null,
       },
-      labels: { family: t('dex.family'), where: t('dex.whereTitle'), stats: t('dex.stats'), nowhere: t('dex.nowhere') },
-      back: { label: t('menu.back'), testid: 'back', onClick: goCity },
-      hints: [hints.back],
+      labels: {
+        entry: t('dex.entry'),
+        family: t('dex.family'),
+        where: t('dex.whereTitle'),
+        stats: t('dex.stats'),
+        nowhere: t('dex.nowhere'),
+        unknown: t('dex.unknownText'),
+      },
+      previous: at > 0 ? neighbour(list[at - 1], 'dex.previous', 'dex-previous') : null,
+      next: at >= 0 && at < list.length - 1 ? neighbour(list[at + 1], 'dex.next', 'dex-next') : null,
+      back: { label: t('dex.backToList'), testid: 'back', onClick: () => showPokedex(id) },
+      hints: [
+        { pad: 'lb', key: 'Q', label: t('dex.previousHint') },
+        { pad: 'rb', key: 'E', label: t('dex.nextHint') },
+        { pad: 'b', key: 'Esc', label: t('dex.backToList') },
+      ],
     });
   }
 

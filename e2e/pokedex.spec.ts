@@ -6,43 +6,123 @@ import { expect, fixture, openGame, save, step, test, winBattle } from './helper
 const team = () => fixture('save-v4-team.json') as { dex: { seen: number[]; caught: number[] }; party: { speciesId: number }[]; box: unknown[] };
 
 test.describe('the Pokédex', () => {
-  test('opens from the city; pages grow with what you know (unseen, seen, caught)', async ({ page }) => {
-    const data = team();
-    data.dex = { seen: [5, 64, 67, 63, 74], caught: [5, 64, 67, 63] };
+  const opened = async (page: import('@playwright/test').Page, language?: 'pt') => {
+    const data = team() as ReturnType<typeof team> & { settings: { language: string } };
+    data.dex = { seen: [5, 64, 67, 63, 74, 144, 16], caught: [5, 64, 67, 63, 16] };
+    if (language) data.settings = { ...data.settings, language };
     await openGame(page, { scene: 'city' }, { save: data });
-    await expect(page.getByTestId('city-dex')).toHaveText('5 seen · 4 caught');
     await page.getByTestId('city-dex').click();
-    await expect(page.getByTestId('dex-counts')).toHaveText('5 seen · 4 caught · 151');
+  };
+
+  test('the list, then a page per species that grows with what you know (unseen, seen, caught)', async ({ page }) => {
+    await opened(page);
+    await expect(page.getByTestId('dex-counts')).toHaveText('7 seen · 5 caught · 151');
     await expect(page.locator('.dex-tile')).toHaveCount(151);
+    await expect(page.getByTestId('dex-150')).toHaveAccessibleName('#150 ???');
 
     // Caught and with you: everything, with its family (Abra → Kadabra at Lv. 16 → Alakazam with the Link Cable).
-    await page.getByTestId('dex-64').focus();
+    await page.getByTestId('dex-64').click();
     await expect(page.getByTestId('dex-name')).toHaveText('Kadabra');
+    await expect(page.getByTestId('dex-genus')).toHaveText('Psi Pokémon');
     await expect(page.getByTestId('dex-status')).toHaveText('Caught · you have 1');
-    await expect(page.getByTestId('dex-entry')).toContainText('Height 1.3 m · Weight 56.5 kg');
+    await expect(page.getByTestId('dex-size')).toHaveText('Height 1.3 m · Weight 56.5 kg');
+    await expect(page.getByTestId('dex-entry')).toContainText('alpha waves');
     await expect(page.getByTestId('dex-chain')).toContainText('Lv. 16');
     await expect(page.getByTestId('dex-chain')).toContainText('Link Cable');
     // Alakazam hasn't been seen: its name stays hidden.
     await expect(page.getByTestId('dex-chain')).toContainText('???');
 
-    // Caught once, none with you now.
-    await page.getByTestId('dex-63').focus();
-    await expect(page.getByTestId('dex-status')).toHaveText('Caught before · none with you now');
+    // RB: the next one in the list (Alakazam, never seen: only its number).
+    await page.keyboard.press('e');
+    await expect(page.getByTestId('dex-entry-heading')).toHaveText('#065 ???');
+    await expect(page.getByTestId('dex-status')).toHaveText('Not seen yet');
+    await expect(page.getByTestId('dex-entry')).toHaveCount(0);
+
+    // B: back to the list, on the one we were looking at.
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('dex-65')).toBeFocused();
 
     // Seen only: name and where it lives, no entry.
-    await page.getByTestId('dex-74').focus();
+    await page.getByTestId('dex-74').click();
     await expect(page.getByTestId('dex-name')).toHaveText('Geodude');
     await expect(page.getByTestId('dex-status')).toHaveText('Seen');
     await expect(page.getByTestId('dex-where')).toContainText('Pewter City · Cave');
     await expect(page.getByTestId('dex-entry')).toHaveCount(0);
 
-    // Never seen: only the number.
-    await page.getByTestId('dex-150').focus();
-    await expect(page.getByTestId('dex-name')).toHaveText('???');
-    await expect(page.getByTestId('dex-status')).toHaveText('Not seen yet');
-
+    await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('city')).toBeVisible();
+  });
+
+  test('a long page scrolls with the d-pad (the arrows), a step at a time', async ({ page }) => {
+    await opened(page);
+    // Pidgey lives almost everywhere: a long page. (The layout scales with the screen, so a shorter box stands in
+    // for a page longer than the screen.)
+    await page.addStyleTag({ content: '.dex-body { max-height: 30cqh; }' });
+    await page.getByTestId('dex-16').click();
+    const body = page.getByTestId('dex-body');
+    await expect(body).toBeFocused();
+    const scrollTop = () => body.evaluate(element => element.scrollTop);
+    expect(await scrollTop()).toBe(0);
+    await page.keyboard.press('ArrowDown');
+    await expect.poll(scrollTop).toBeGreaterThan(0);
+    // The text keeps the focus while there is more to scroll; at the end, the focus moves on.
+    await expect(body).toBeFocused();
+    for (let i = 0; i < 20 && (await body.evaluate(element => element === document.activeElement)); i++) await page.keyboard.press('ArrowDown');
+    expect(await body.evaluate(element => Math.ceil(element.scrollTop + element.clientHeight) >= element.scrollHeight)).toBe(true);
+  });
+
+  test('filters: owned, type, legendary, mythical, number; they add up and can be cleared', async ({ page }) => {
+    await opened(page);
+    // Owned: caught at some point (Abra counts, though it was released).
+    await page.getByTestId('filter-owned').click();
+    await expect(page.getByTestId('dex-shown')).toHaveText('5 shown');
+    await expect(page.getByTestId('filter-owned')).toBeFocused();
+
+    await page.getByTestId('filter-type').click();
+    await expect(page.getByTestId('filter-type-picker')).toBeVisible();
+    await page.getByTestId('type-psychic').click();
+    await expect(page.getByTestId('filter-type')).toContainText('Psychic');
+    await expect(page.locator('.dex-tile')).toHaveCount(2);
+    await expect(page.getByTestId('dex-63')).toBeVisible();
+    await expect(page.getByTestId('dex-64')).toBeVisible();
+
+    await page.getByTestId('filter-clear').click();
+    await expect(page.getByTestId('dex-shown')).toHaveText('151 shown');
+
+    await page.getByTestId('filter-legendary').click();
+    await expect(page.getByTestId('dex-shown')).toHaveText('4 shown');
+    await page.getByTestId('filter-mythical').click();
+    await expect(page.getByTestId('dex-shown')).toHaveText('5 shown');
+    await page.getByTestId('filter-clear').click();
+
+    await page.getByTestId('filter-range').click();
+    await page.getByTestId('range-4').click();
+    await expect(page.getByTestId('filter-range')).toContainText('#121–#151');
+    await expect(page.locator('.dex-tile')).toHaveCount(31);
+    await expect(page.getByTestId('dex-121')).toBeFocused();
+
+    // Nothing matches: a message instead of the grid.
+    await page.getByTestId('filter-owned').click();
+    await expect(page.getByTestId('dex-empty')).toHaveText('No Pokémon match these filters.');
+
+    // Within a filtered list, RB / LB walk through the list as filtered.
+    await page.getByTestId('filter-clear').click();
+    await page.getByTestId('filter-owned').click();
+    await page.getByTestId('dex-5').click();
+    await page.keyboard.press('e');
+    await expect(page.getByTestId('dex-name')).toHaveText('Pidgey');
+    await page.keyboard.press('e');
+    await expect(page.getByTestId('dex-name')).toHaveText('Abra');
+  });
+
+  test('in Portuguese: the kind, the entry and the numbers too', async ({ page }) => {
+    await opened(page, 'pt');
+    await page.getByTestId('dex-64').click();
+    await expect(page.getByTestId('dex-genus')).toHaveText('Pokémon Psi');
+    await expect(page.getByTestId('dex-entry')).toContainText('ondas alfa');
+    await expect(page.getByTestId('dex-size')).toHaveText('Altura 1,3 m · Peso 56,5 kg');
+    await expect(page.getByTestId('dex-status')).toHaveText('Capturado · você tem 1');
   });
 
   test('X opens it from the city, too', async ({ page }) => {

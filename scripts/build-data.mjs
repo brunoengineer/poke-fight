@@ -145,7 +145,7 @@ async function build() {
         ),
     );
 
-    // The Pokédex entry from the region's own games (Red's), as one line of plain text.
+    // The Pokédex entry from the region's own games (Red's), as one line of plain text ("POKéMON" → "Pokémon").
     const entry = info.flavor_text_entries.find(f => f.language.name === 'en' && f.version.name === source.versions[0])
       ?? info.flavor_text_entries.find(f => f.language.name === 'en');
 
@@ -170,7 +170,7 @@ async function build() {
         // PokeAPI: decimetres and hectograms.
         heightM: pokemon.height / 10,
         weightKg: pokemon.weight / 10,
-        entry: (entry?.flavor_text ?? '').replace(/[\n\f\u00ad]+/g, ' ').replace(/\s+/g, ' ').trim(),
+        entry: (entry?.flavor_text ?? '').replace(/[\n\f\u00ad]+/g, ' ').replace(/\s+/g, ' ').replace(/POKéMON/g, 'Pokémon').trim(),
       },
     };
   });

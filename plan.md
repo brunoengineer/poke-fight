@@ -395,15 +395,26 @@ More archetypes can come later (status effects: paralysis = slower, burn = damag
   from the box screen (X / Delete), after a "Keep it / Release" question with Keep it focused; any boxed Pokémon,
   or a party one as long as one stays in the party. The Pokédex still counts a released Pokémon as caught.
 - **Money**: from trainer, gym and League wins. Wild battles give little or none.
-- **Pokédex** (a screen since milestone 11's follow-ups; `game/pokedex.ts`, `ui/screens/pokedex.ts`): all 151 in a
-  grid (unseen ones as silhouettes, a Poké Ball on caught ones: in color while you have one, grey once none is left),
-  opened from the city's "seen · caught" chip or X. A page shows what you know:
-  - unseen: only the number;
-  - seen: name, types, kind ("Seed Pokémon"), its family (stage by stage, with how each one evolves *in this game*:
-    a level, a stone, or the Link Cable for trades; later generations' evolutions are left out) and where it lives
-    in Kanto (each city's grass, cave, water with the weakest rod that hooks it, the Safari Zone, with the levels);
-  - caught: also height and weight, Red's Pokédex entry, base stats and catch rate, and how many you have now.
-  The kind, size and entry come from PokeAPI through `npm run data` (in English, like the names).
+- **Pokédex** (a screen since milestone 11's follow-ups; `game/pokedex.ts`, `ui/screens/pokedex.ts`), opened from the
+  city's "seen · caught" chip or X. Two screens:
+  - **The list**: all 151 in a grid (unseen ones as silhouettes named "???", a Poké Ball on caught ones: in color
+    while you have one, grey once none is left). A filter bar on top: **Owned** (caught at some point, as the games'
+    Pokédex says "owned"; released ones count), **Type** (a picker), **Legendary**, **Mythical** (with both on,
+    either), **No.** (a range of 30 numbers, which also jumps there), and Clear. Filters add up, stay while the game
+    runs, and the list says how many are shown.
+  - **A species' page** (A on a tile): a card (sprite, number, name, kind, types, legendary / mythical, what you know,
+    size) and the text, which takes the focus so the **d-pad scrolls it** while there is more to read
+    (`data-scroll` in `ui/focus.ts`), then moves on. LB / RB (Q / E) go to the previous / next species *in the list
+    as filtered*; B goes back to the list, on that species. What a page shows grows with what you know:
+    - unseen: only the number;
+    - seen: name, types, kind ("Seed Pokémon"), its family (stage by stage, with how each one evolves *in this game*:
+      a level, a stone, or the Link Cable for trades; later generations' evolutions are left out) and where it lives
+      in Kanto (each city's grass, cave, water with the weakest rod that hooks it, the Safari Zone, with the levels);
+    - caught: also height and weight, the Pokédex entry, base stats and catch rate, and how many you have now.
+  - **Languages**: the kind and the entry come from PokeAPI in English (Red's Pokédex, through `npm run data`;
+    "POKéMON" written "Pokémon"). PokeAPI has no Portuguese for them, so `data/dex-pt.json` is this game's own
+    translation (`data/dex-text.ts` picks the language; a test checks every species has one). Heights and weights
+    use the language's decimal mark (1.3 / 1,3).
 - **The wild fight's Poké Ball**: in wild and Safari fights, a small Poké Ball left of the opponent's name: in color
   if you have that species now (party or box), grey if not, so you don't spend balls on one you have. Not shown
   against trainers (their Pokémon can't be caught).
@@ -773,7 +784,7 @@ sprites won't save it.
 | Look | Console style (milestone 11): a 16:9 frame, the place's art behind glass menus and bright cards, Barlow Condensed + Inter |
 | Art | Trainers, characters and backgrounds from Pokémon Showdown; items and badges from PokeAPI; all by URL, painted stand-ins until they load |
 | Menus and controller | Spatial navigation (by direction), focus kept on redraw, hint glyphs for the device in use, Y opens the party |
-| Pokédex | A screen (grid + page) that reveals more as you see and catch; releasing is in the box, the dex keeps "caught"; wild fights show a Poké Ball (color: you have it) by the name |
+| Pokédex | A list with filters (owned, type, legendary, mythical, number) and a page per species that reveals more as you see and catch, scrolls with the d-pad, and walks the filtered list with LB / RB; Portuguese texts are the game's own translation; releasing is in the box, the dex keeps "caught"; wild fights show a Poké Ball (color: you have it) by the name |
 | Party order | Reorder in the party screen (pick up, then swap); the first Pokémon leads. The two slots glide into each other's places; a screen redrawn after a change doesn't play its entrance again |
 | Switching | Once mid-round (Tab / View), again only after a faint; after every faint the player picks the next fighter. A mid-round switch continues the same round from where everyone stood |
 | CPU per Pokémon | Skill from who controls it (wild clumsy, trainers at their difficulty) plus its evolution stage and level; style from its stats; a new seed every fight |

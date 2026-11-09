@@ -46,10 +46,23 @@ export function moveFocus(root: HTMLElement, direction: Direction) {
     if (start) focus(start);
     return;
   }
+  if (scrollInstead(current, direction)) return;
   const wrap = current.closest('[data-nav-wrap]') !== null;
   const rects = items.map(item => item.getBoundingClientRect());
   const next = pickInDirection(current.getBoundingClientRect(), rects, direction, wrap);
   if (next !== -1) focus(items[next]);
+}
+
+/**
+ * A long text that has the focus (`data-scroll`, a Pokédex page): up and down scroll it while there is more to see,
+ * a page at a time (40% of its height); at its ends the focus moves on as usual.
+ */
+function scrollInstead(current: HTMLElement, direction: Direction): boolean {
+  if (!current.hasAttribute('data-scroll') || (direction !== 'up' && direction !== 'down')) return false;
+  const room = direction === 'down' ? current.scrollHeight - current.clientHeight - current.scrollTop : current.scrollTop;
+  if (room <= 1) return false;
+  current.scrollBy({ top: (direction === 'down' ? 1 : -1) * Math.max(24, current.clientHeight * 0.4), behavior: document.documentElement.dataset.test === undefined ? 'smooth' : 'auto' });
+  return true;
 }
 
 /** A controller's A: the focused button, or the main one. */

@@ -3687,39 +3687,41 @@ kbd,
 .tool-button {
   display: grid;
   place-items: center;
-  width: 8.4cqh;
   height: 8.4cqh;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.22), var(--glass) 70%);
-  backdrop-filter: blur(1.4cqh);
+  padding: 0 0.6cqh;
+  border: 0;
+  border-radius: 1.6cqh;
+  background: none;
   cursor: pointer;
-  transition:
-    transform 140ms var(--ease-pop),
-    box-shadow 140ms;
-}
-
-/* The picture: 32×32 pixel art, scaled crisp. */
-.tool-image {
-  width: 6.4cqh;
-  height: 6.4cqh;
-  image-rendering: pixelated;
-  filter: drop-shadow(0 0.4cqh 0.4cqh rgba(0, 0, 0, 0.45));
   transition: transform 140ms var(--ease-pop);
 }
 
+/* Just the picture: hand-placed pixel art (render/gear.ts), scaled crisp, standing on a soft shadow. */
+.tool-image {
+  /* A bit taller than the bar: they stand up out of it. */
+  height: 10.4cqh;
+  margin-top: -2cqh;
+  width: auto;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0.5cqh 0.3cqh rgba(0, 0, 0, 0.55));
+  transition:
+    transform 160ms var(--ease-pop),
+    filter 160ms;
+}
+
+/* Focused: it hops up, with a white glow around its outline. */
 .tool-button:focus {
   outline: none;
-  transform: translateY(-0.4cqh);
-  box-shadow:
-    0 0 0 0.4cqh #fff,
-    0 0 0 0.9cqh color-mix(in srgb, var(--theme) 50%, transparent);
 }
 
 .tool-button:focus .tool-image,
 .tool-button:hover .tool-image {
-  transform: scale(1.12) rotate(-4deg);
+  transform: translateY(-0.8cqh) scale(1.1);
+  filter:
+    drop-shadow(0 0 0.3cqh #fff)
+    drop-shadow(0 0 0.3cqh #fff)
+    drop-shadow(0 0 1.2cqh color-mix(in srgb, var(--theme) 80%, white))
+    drop-shadow(0 1.2cqh 0.5cqh rgba(0, 0, 0, 0.45));
 }
 
 /* ── Bag ─────────────────────────────────────────────────────────────────────────────────────────────────────── */

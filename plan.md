@@ -401,9 +401,10 @@ More archetypes can come later (status effects: paralysis = slower, burn = damag
   effect"), and A uses it (an evolution plays its animation, then back to the bag). Balls and rods say where they are
   used instead. The party screen can still use items too.
 - **The city's bottom bar**: the party, then the **Pokédex** (X) and the **Bag** (RB / B) as round buttons showing
-  just their picture (the Pokédex's "seen · caught" chip at the top moved into its name and tooltip). PokeAPI has no
-  Pokédex or bag sprite, so both are 32×32 pixel art drawn by code (`render/gear.ts`): the classic red Pokédex and a
-  yellow backpack.
+  just their picture, no background (the Pokédex's "seen · caught" chip at the top moved into its name and tooltip).
+  PokeAPI has no Pokédex or bag sprite, so both are hand-placed pixel art in the GBA games' style (`render/gear.ts`,
+  one letter per pixel with a palette): an opened red Pokédex (lens, lights, screens, keypad, hinge) and a yellow
+  backpack (lobes, flap and buckle, side pockets, navy outlines), drawn from scratch after reference pictures.
 - **Pokédex** (a screen since milestone 11's follow-ups; `game/pokedex.ts`, `ui/screens/pokedex.ts`). Two screens:
   - Opened from the city's bottom bar (X). **The list**: all 151 in a grid (unseen ones as silhouettes named "???", a Poké Ball on caught ones: in color
     while you have one, grey once none is left). A filter bar on top: **Owned** (caught at some point, as the games'

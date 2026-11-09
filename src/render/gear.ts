@@ -1,111 +1,148 @@
-// The player's gear as little pixel-art pictures (32×32, drawn by code with render/pixel.ts; PokeAPI has no Pokédex
-// or bag sprite): the Pokédex (the classic red device: a big blue lens, three lights, a hinge, a green screen) and
-// the bag (a yellow backpack: a handle, a flap with a buckle, a front pocket). The city's bottom bar shows them.
+// The player's gear as hand-placed pixel art (PokeAPI has no Pokédex or bag sprite), in the style of the GBA games:
+// one character per pixel, '.' for transparent, each letter a color of the sprite's palette.
+//   - the bag: a yellow backpack (two rolled-up lobes on top, a cream flap with a grey buckle, side pockets with a
+//     strap and a red tag, a front panel between two seams, a grey base), navy outlines;
+//   - the Pokédex, opened: the left half with its big blue lens, three lights, a screen, a d-pad; the hinge; the right
+//     half with a small screen, a blue keypad and two buttons; a darker band below for its thickness.
+// Drawn for this game (the art was made from scratch, after reference pictures the player liked). The city's bottom
+// bar shows them.
 
-import { Pixels, rgb, shape, tone, type RGB } from './pixel';
+import { Pixels, rgb } from './pixel';
 
 export type Gear = 'pokedex' | 'bag';
 
-const SIZE = 32;
+interface Sprite {
+  rows: readonly string[];
+  palette: Readonly<Record<string, string>>;
+}
+
+const SPRITES: Record<Gear, Sprite> = {
+  bag: {
+    palette: {
+      O: '#36366e', // outline (navy)
+      H: '#fff8cc', // highlight
+      L: '#fbe58a', // light
+      Y: '#f4c94c', // base yellow
+      S: '#d9a23a', // shade
+      D: '#a8742a', // deep shade
+      g: '#d6d6e2', // grey, lit
+      G: '#9a9ab0', // grey
+      K: '#5c5c7a', // grey, dark
+      R: '#f0663a', // the tag
+      r: '#b8401f',
+    },
+    rows: [
+    '................................',
+    '........OOO..........OOO........',
+    '.......OYYYO........OYYYO.......',
+    '......OSLHHLO......OLHHLSO......',
+    '.....OYSLHLLLO....OLLHLLSYO.....',
+    '.....OYSLLLLLO....OLLLLLSYO.....',
+    '.....OYSYYYYYOOOOOOYYYYYSYO.....',
+    '.....OYSYYYYYYYYYYYYYYYYSYO.....',
+    '......OSSSSSSSSSSSSSSSSSSO......',
+    '.....OYSLHHHHHHHHHHHHHHLSYO.....',
+    '.....OYSLHHHHHHHHHHHHHHLSYO.....',
+    '.....OYSLHHHHKggggKHHHHLSYO.....',
+    '.....OYSLLLLLgGLLGgLLLLLSYO.....',
+    '.....OYSLLLLLGGYYGGLLLLLSYO.....',
+    '....OOYSYYYYYKKYYKKYYYYYSYOOOO..',
+    '...OYYYOOOOOOOOKKOOOOOOOOYYYRRO.',
+    '..OLLLYSSSSSSSSSSSSSSSSSDYLLLRrO',
+    '..OLLLYLLYSLYYYYYYYYYSYSDYLLLrO.',
+    '..OSYYYLLYSLYYYYYYYYYSYSDYYYSO..',
+    '.OKGGGKLLYSLYYYYYYYYYSYSDKGGGKO.',
+    '..OSYYYLLYSLYYYYYYYYYSYSDYYYSO..',
+    '..OSYYYLLYSLYYYYYYYYYSYSDYYYSO..',
+    '..OSSSYLLYSLYYYYYYYYYSYSDYSSSO..',
+    '..OSSSYLLYSLYYYYYYYYYSYSDYSSSO..',
+    '...OSSYSSSDSSSSSSSSSSDSSDYSSO...',
+    '....OOYOOOOOOOOOOOOOOOOOOYOO....',
+    '......OgggGGGGGGGGGGGGGGKO......',
+    '......OKKKKKKKKKKKKKKKKKKO......',
+    '.......OOOOOOOOOOOOOOOOOO.......',
+    '................................',
+    '................................',
+    '................................',
+    ],
+  },
+  pokedex: {
+    palette: {
+      O: '#2a1020', // outline
+      H: '#ff9c98', // highlight
+      L: '#ff6a6a', // light red
+      R: '#e3343c', // red
+      S: '#b42230', // shade
+      D: '#7a1428', // the thickness
+      h: '#e3343c',
+      W: '#ffffff',
+      B: '#2f86e0', // blue (the lens, the keys)
+      b: '#8fd0ff',
+      r: '#ff5a5a', // the three lights
+      Y: '#ffd84a',
+      G: '#5ee36a',
+      K: '#3a2a44', // screen frames, the d-pad
+      k: '#d8d0e0', // buttons, lit
+      C: '#7cc0dc', // screen
+      c: '#bfe8f4', // screen, lit
+    },
+    rows: [
+    '........................................',
+    '...OOOOOOOOOOOOOO.......................',
+    '..OLOOOOLLLLLLLLLO......................',
+    '.OLOWWWWOLLLLLLLLSO.....................',
+    'OLLWBbBBWRRrRYRGRSSO....................',
+    'OLOWbWBBWORSRSRSRSSO....................',
+    'OLLWBBBBWRRRRRRRRSSO....OOOOOOOOOOOOO...',
+    'OLLOWWWWORRRRRRRRSSOOO.OLLLLLLLLLLLLLO..',
+    'OLLROOOORRRRRRRRRSSODOOLLLLLLLLLLLLLLSO.',
+    'OLSSSSSSSSSSSSSSSSSHLSLLRRRRRRRRRRRRRSSO',
+    'OLHHHHHHHHHHHHHHHLSHLSLLKKKKKKKKKKKKKSSO',
+    'OLLRRRRRRRRRRRRRRSSHSSLLKWWWccccccccKSSO',
+    'OLLKKKKKKKKKKKKKRSSHLSLLKcccccccccccKSSO',
+    'OLLKcWWccccccccKRSSHLSLLKcccccccccccKSSO',
+    'OLLKcWcccccccccKRSSHSSLLKKKKKKKKKKKKKSSO',
+    'OLLKCCCCCCCcCCCKRSSHLSLLRRRRRRRRRRRRRSSO',
+    'OLLKCCCCCCCCcCCKRSSHLSLLRBbRBbRBbRBbRSSO',
+    'OLLKCCCCCCCCCcCKRSSHSSLLRRRRRRRRRRRRRSSO',
+    'OLLKCCCCCCCCCCCKRSSHLSLLRBbRBbRBbRBbRSSO',
+    'OLLKCCCCCCCCCCCKRSSHLSLLRRRRRRRRRRRRRSSO',
+    'OLLKKKKKKKKKKKKKRSSHSSLLRkkkkRRRkkkkRSSO',
+    'OLLRRRRRRRRRRRRRRSSHLSLLKKKKKKRKKKKKKSSO',
+    'OLLRKRRRRRRRRRRkkSSHLSLLRRRRRRRRRRRRRSSO',
+    'OLLKKKRRGGGGGRRKKSSHSSLLRYYRRRRRRRRRRSSO',
+    'OLSSKSSSSSSSSSSSSSSHLSLSSSSSSSSSSSSSSSSO',
+    '.ODDDDDDDDDDDDDDDDOHLSODDDDDDDDDDDDDDDO.',
+    '..ODDDDDDDDDDDDDDOOHLSOODDDDDDDDDDDDDO..',
+    '...OOOOOOOOOOOOOO.ODDDO.OOOOOOOOOOOOO...',
+    '...................OOO..................',
+    '........................................',
+    ],
+  },
+};
+
 const cache = new Map<Gear, string>();
 
-/** The picture as an image URL (painted once). */
+/** The picture as an image URL (painted once), on a transparent background. */
 export function gearPicture(gear: Gear): string {
   let url = cache.get(gear);
   if (!url) {
-    const p = new Pixels(SIZE, SIZE);
-    (gear === 'pokedex' ? paintPokedex : paintBag)(p);
-    url = p.toCanvas().toDataURL('image/png');
+    url = paint(SPRITES[gear]).toCanvas().toDataURL('image/png');
     cache.set(gear, url);
   }
   return url;
 }
 
-/** A rectangle with its corners cut (rounded, in pixels). */
-const rounded = (x0: number, y0: number, x1: number, y1: number, cut = 2) => (x: number, y: number) => {
-  if (x < x0 || x > x1 || y < y0 || y > y1) return false;
-  const dx = Math.min(x - x0, x1 - x);
-  const dy = Math.min(y - y0, y1 - y);
-  return dx + dy >= cut;
-};
-
-const disc = (cx: number, cy: number, r: number) => (x: number, y: number) => (x - cx) ** 2 + (y - cy) ** 2 <= r * r;
-
-/** Lit on the left, shaded on the right and along the bottom. */
-const lit = (base: RGB, x0: number, x1: number, y1: number) => (x: number, y: number) => {
-  if (x <= x0 + 1) return tone(base, 0.28);
-  if (x >= x1 - 2 || y >= y1 - 1) return tone(base, -0.25);
-  return base;
-};
-
-function paintPokedex(p: Pixels) {
-  const outline = rgb('#2a1218');
-  const red = rgb('#e3343c');
-  // The body.
-  shape(p, 6, 2, 25, 29, rounded(6, 2, 25, 29, 3), lit(red, 6, 25, 29), outline);
-  // The hinge, between the lid (lens and lights) and the screen.
-  for (let x = 7; x <= 24; x++) p.set(x, 12, tone(red, -0.45));
-  for (let x = 7; x <= 24; x++) p.set(x, 13, tone(red, 0.2));
-  // The big blue lens: a white ring, blue glass, a glint.
-  shape(p, 7, 3, 15, 11, disc(11, 7, 3.6), () => rgb('#f4f6ff'), outline);
-  shape(p, 8, 4, 14, 10, disc(11, 7, 2.3), (x, y) => (x + y < 17 ? rgb('#8fd0ff') : rgb('#2f86e0')), null);
-  p.set(10, 6, rgb('#ffffff'));
-  // Three small lights: red, yellow, green.
-  ([
-    [17, '#ff4a4a'],
-    [20, '#ffd84a'],
-    [23, '#5ee36a'],
-  ] as const).forEach(([x, color]) => {
-    p.set(x, 5, rgb(color));
-    p.set(x, 4, outline);
-    p.set(x, 6, outline);
-  });
-  // The screen.
-  shape(p, 9, 15, 22, 23, rounded(9, 15, 22, 23, 1), (_x, y) => (y === 16 ? rgb('#d8f4c8') : y % 2 ? rgb('#a6dc96') : rgb('#9ad08a')), outline);
-  for (let x = 11; x <= 17; x++) p.set(x, 19, rgb('#5f9a52'));
-  for (let x = 11; x <= 15; x++) p.set(x, 21, rgb('#5f9a52'));
-  // A d-pad and two buttons.
-  for (const [x, y] of [
-    [10, 26],
-    [11, 25],
-    [11, 26],
-    [11, 27],
-    [12, 26],
-  ]) p.set(x, y, rgb('#2a2230'));
-  p.set(19, 26, rgb('#2a2230'));
-  p.set(22, 26, rgb('#2a2230'));
-  p.set(19, 25, tone(red, 0.4));
-  p.set(22, 25, tone(red, 0.4));
-}
-
-function paintBag(p: Pixels) {
-  const outline = rgb('#3a2410');
-  const yellow = rgb('#f2b23a');
-  const flap = rgb('#d98a1e');
-  // The handle.
-  shape(p, 11, 2, 20, 9, (x, y) => {
-    const d = Math.hypot(x - 15.5, (y - 8) * 1.2);
-    return y <= 8 && d <= 5.2 && d >= 3;
-  }, () => rgb('#8a5a2a'), outline);
-  // The body.
-  shape(p, 5, 7, 26, 29, rounded(5, 7, 26, 29, 4), lit(yellow, 5, 26, 29), outline);
-  // The flap: darker, with a rounded lower edge, and its buckle.
-  shape(
-    p,
-    6,
-    8,
-    25,
-    17,
-    (x, y) => rounded(5, 7, 26, 29, 4)(x, y) && y >= 8 && y <= 15 + (Math.abs(x - 15.5) < 5 ? 2 : Math.abs(x - 15.5) < 8 ? 1 : 0),
-    lit(flap, 6, 25, 17),
-    null,
+function paint(sprite: Sprite): Pixels {
+  const p = new Pixels(sprite.rows[0].length, sprite.rows.length);
+  sprite.rows.forEach((row, y) =>
+    [...row].forEach((char, x) => {
+      const color = sprite.palette[char];
+      if (color) p.set(x, y, rgb(color));
+    }),
   );
-  for (let x = 7; x <= 24; x++) {
-    const bottom = 15 + (Math.abs(x - 15.5) < 5 ? 2 : Math.abs(x - 15.5) < 8 ? 1 : 0);
-    p.set(x, bottom + 1, tone(flap, -0.5));
-  }
-  shape(p, 13, 15, 18, 20, rounded(13, 15, 18, 20, 1), (_x, y) => (y === 16 ? rgb('#f4f0e0') : rgb('#bdb6a4')), outline);
-  // The front pocket, with stitches.
-  shape(p, 9, 21, 22, 27, rounded(9, 21, 22, 27, 1), () => tone(yellow, 0.12), tone(yellow, -0.45));
-  for (let x = 11; x <= 20; x += 2) p.set(x, 23, tone(yellow, -0.3));
+  return p;
 }
+
+/** For the tests: every pixel's letter has a color, and every row is as wide as the first. */
+export const gearSprites = (): Record<Gear, Sprite> => SPRITES;

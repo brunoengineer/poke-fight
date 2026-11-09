@@ -1,7 +1,10 @@
-// The arena's backgrounds, painted by code (no image files): one look per kind of place. The still layers are drawn
-// once into an offscreen canvas and reused; the moving parts (clouds, light rays, water, crystals, spotlights,
-// stars, the crowd) are drawn every frame from a frame counter.
+// The arena's backgrounds. Since milestone 11 a place shows its picture (a Showdown battle background, data/art.ts),
+// graded so the fighters stand out; until it loads (or offline, or in the browser tests) the place is painted by
+// code: one look per kind of place, the still layers drawn once into an offscreen canvas, the moving parts (clouds,
+// light rays, water, crystals, spotlights, stars, the crowd) every frame from a frame counter.
 
+import { backdropUrl, type Backdrop } from '../data/art';
+import { getImage } from './images';
 import { VIEW_H, VIEW_W } from './screen';
 
 export const FLOOR_Y = 230;
@@ -12,6 +15,8 @@ export interface StageSpec {
   id: StageId;
   /** The gym's type color (the walls and the emblem take it). */
   tint?: string;
+  /** The place's picture (drawn instead of the painted stage once it has loaded). */
+  backdrop?: Backdrop;
 }
 
 /** A small, repeatable random sequence (the same scenery every time). */
@@ -26,6 +31,8 @@ function seeded(seed: number) {
 const cache = new Map<string, HTMLCanvasElement>();
 
 export function drawStage(ctx: CanvasRenderingContext2D, spec: StageSpec, frame: number): void {
+  const picture = spec.backdrop ? getImage(backdropUrl(spec.backdrop)) : null;
+  if (picture) return drawPicture(ctx, picture, spec);
   const key = `${spec.id}:${spec.tint ?? ''}`;
   let still = cache.get(key);
   if (!still) {
@@ -38,6 +45,41 @@ export function drawStage(ctx: CanvasRenderingContext2D, spec: StageSpec, frame:
   }
   ctx.drawImage(still, 0, 0);
   ANIMATE[spec.id]?.(ctx, spec, frame);
+}
+
+/**
+ * The place's picture, covering the arena with its bottom edge on the screen's bottom (the ground of a battle
+ * background is in its lower half, where the fighters stand). Then a soft grade: darker toward the bottom and the
+ * sides, a little of the gym's color, so the sprites and the HUD read well over any picture.
+ */
+function drawPicture(ctx: CanvasRenderingContext2D, image: HTMLImageElement, spec: StageSpec) {
+  const scale = Math.max(VIEW_W / image.naturalWidth, VIEW_H / image.naturalHeight);
+  const width = image.naturalWidth * scale;
+  const height = image.naturalHeight * scale;
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(image, (VIEW_W - width) / 2, VIEW_H - height, width, height);
+  ctx.restore();
+  const shade = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+  shade.addColorStop(0, 'rgba(10, 12, 30, 0.35)');
+  shade.addColorStop(0.35, 'rgba(10, 12, 30, 0)');
+  shade.addColorStop(0.8, 'rgba(10, 12, 30, 0.08)');
+  shade.addColorStop(1, 'rgba(10, 12, 30, 0.45)');
+  ctx.fillStyle = shade;
+  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+  const sides = ctx.createRadialGradient(VIEW_W / 2, VIEW_H * 0.6, VIEW_H * 0.35, VIEW_W / 2, VIEW_H * 0.6, VIEW_W * 0.62);
+  sides.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  sides.addColorStop(1, 'rgba(0, 0, 0, 0.42)');
+  ctx.fillStyle = sides;
+  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+  if (spec.tint) {
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = spec.tint;
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    ctx.restore();
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────────────────────────────────────────

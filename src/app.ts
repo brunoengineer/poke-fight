@@ -4,7 +4,8 @@
 import { BALLS, EVOLUTION_ITEMS, ITEMS, type BallId, type ItemId, type PotionId } from './data/items';
 import { move, species } from './data/pokedex';
 import { nextRegion } from './data/regions';
-import { city, gymIn, isUnlocked, KANTO, LEAGUE_CITY, type Gym, type HuntKind } from './data/regions/kanto';
+import { backdropUrl, badgeArt, BADGE_ORDER, CHANSEY, cityArt, HUNT_BACKDROPS, trainerClassFor, KANTO_MAP, KANTO_ROUTES, ELITE_SPRITES, itemUrl, LEADER_SPRITES, PEOPLE, trainerUrl, typeBackdrop } from './data/art';
+import { city, ELITE_FOUR, gymIn, isUnlocked, KANTO, LEAGUE_CITY, type Gym, type HuntKind } from './data/regions/kanto';
 import { createSilentAudio, createWebAudio } from './audio/audio';
 import { fightCues, freshCues, type SoundId } from './audio/cues';
 import type { SongId } from './audio/music';
@@ -16,22 +17,25 @@ import { createRng } from './engine/rng';
 import type { Style } from './fight/ai/profiles';
 import type { TeamMember } from './fight/battle';
 import { afterBattle, type ReportLine } from './game/after-battle';
-import { addCaught, canSendToBox, canTakeFromBox, sendToBox, takeFromBox } from './game/box';
+import { addCaught, canSendToBox, canTakeFromBox, sendToBox, swapInParty, takeFromBox } from './game/box';
 import { catchValue, throwBall } from './game/capture';
 import { buy, canUsePotion, countOf, MAX_MONEY, moneyAfterLoss, prizeMoney, removeItem, usePotion } from './game/economy';
 import { bestRod, encounterTable, rollEncounter, tableForAreas, wildPokemon } from './game/encounters';
 import { canChallenge, gymTeam, leaderPrize } from './game/gym';
 import { canEnterLeague, LEAGUE_SIZE, leagueOpponent, leaguePrize, type LeagueOpponent } from './game/league';
-import { displayHp, maxHpOf, toFighter, type Pokemon } from './game/pokemon';
+import { bigShape, elementalShape } from './game/moves';
+import { displayHp, maxHpOf, statsOf, toFighter, type Pokemon } from './game/pokemon';
 import { evolve, heal, itemEvolution, setSpecial, specialOptions } from './game/progress';
 import { SAFARI_BALLS, SAFARI_ENTRANCE, SAFARI_SECONDS } from './game/safari';
 import { cleanName, createStarter, DEFAULT_NAMES, MAX_NAME_LENGTH, RIVAL_PICK, STARTERS, STARTER_GIFTS, trainingOpponents } from './game/story';
 import { MAX_LEVEL, xpForLevel } from './game/xp';
-import { detectLanguage, isLanguage, language, LANGUAGE_NAMES, LANGUAGES, setKeyNames, setLanguage, t, type Language, type MessageKey } from './i18n';
+import { detectLanguage, language, LANGUAGE_NAMES, LANGUAGES, setKeyNames, setLanguage, t, type Language, type MessageKey } from './i18n';
 import { createRenderer } from './render/renderer';
 import type { StageSpec } from './render/stage';
+import type { Direction } from './ui/spatial';
 import { typeColor } from './render/colors';
 import { leaderLook, LOOKS, type TrainerLook } from './screens/entrance';
+import { preloadImages } from './render/images';
 import { preloadSprites, spriteUrl } from './render/sprites';
 import { createSandbox, isOpponent, type Banner, type Director, type Opponent, type Sandbox } from './screens/sandbox';
 import { OPPONENT_TEAM, PLAYER_TEAM } from './screens/sandbox-teams';
@@ -40,13 +44,27 @@ import { newSave, type Save } from './state/save';
 import { ACTIONS, bindingsOf, createSettingsStore, DEFAULT_KEYS, keyLabel, keyNames, rebind, type Action, type Settings } from './state/settings';
 import { createSaveStore } from './state/store';
 import { installTestHooks, type TestOptions } from './test/hooks';
-import { moveFocus, pressBack, pressFocused } from './ui/navigation';
-import { pressPrimary, renderDialog, renderMenu, renderParty, renderResults, renderStarter, renderTitle, type Button } from './ui/screens';
+import { createBackdrop } from './ui/backdrop';
+import type { IconName } from './ui/icons';
+import type { Hint, Pad } from './ui/kit';
+import { renderCenter } from './ui/screens/center';
+import { renderBox, type BoxMon } from './ui/screens/box';
+import { renderCity, type PlaceCard } from './ui/screens/city';
+import { renderMap } from './ui/screens/map';
+import { renderMart } from './ui/screens/mart';
+import { renderStarter } from './ui/screens/starter';
+import { renderDialog } from './ui/screens/dialog';
+import { renderOptions } from './ui/screens/options';
+import { renderTitle, type TitleOption } from './ui/screens/title';
+import { moveFocus, pressBack, pressFocused, pressShortcut, trackInput } from './ui/focus';
+import { renderHallOfFame, renderLeague, renderPage, renderSafari } from './ui/screens/journey';
+import { renderResults, type ReportKind } from './ui/screens/results';
+import { renderParty, type MoveInfo, type PartyMember } from './ui/screens/party';
 
 /** A text to show: a translation key and its values. */
 type Line = { key: MessageKey; params: Record<string, string | number> };
 /** A line of the story, said by someone. */
-type Said = Line & { speaker: string };
+type Said = Line & { speaker: string; /** The speaker's sprite (Showdown name). */ portrait?: string };
 
 /**
  * Fights: the demo (Training without a journey: Lv. 30 demo teams, no XP), trainers (the battle field: XP and prize
@@ -77,9 +95,19 @@ function safeStorage(): Storage | null {
 const nameOf = (p: Pokemon) => species(p.speciesId).name;
 const cityKey = (location: string) => `city.${location}` as MessageKey;
 const itemName = (id: ItemId) => t(`item.${id}` as MessageKey);
-const typeNames = (types: readonly string[]) => types.map(type => t(`type.${type}` as MessageKey)).join(' / ');
 
-export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, options: TestOptions) {
+/** The page's parts (index.html): the 16:9 frame, the fight canvas, the menus' layer and the backdrop. */
+export interface AppElements {
+  frame: HTMLElement;
+  canvas: HTMLCanvasElement;
+  overlay: HTMLElement;
+  backdrop: HTMLElement;
+}
+
+export function startApp(elements: AppElements, options: TestOptions) {
+  const { frame, canvas, overlay: overlayRoot } = elements;
+  const backdrop = createBackdrop(elements.backdrop);
+  const input = trackInput(frame, overlayRoot);
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('2D canvas not supported');
   const renderer = createRenderer(ctx);
@@ -121,7 +149,8 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
   };
   const toggleMute = () => {
     applySettings({ ...settings, muted: !settings.muted });
-    if (scene === 'title') goTitle();
+    // The Options screen shows the sound setting: redraw it.
+    overlayRoot.querySelector<HTMLButtonElement>('[data-testid="sound"]')?.classList.toggle('on', !settings.muted);
   };
   const update = (change: (s: Save) => Save) => {
     if (!save) return;
@@ -138,18 +167,12 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     setLanguage(next);
     document.documentElement.lang = next === 'pt' ? 'pt-BR' : 'en';
   };
-  applyLanguage(save?.settings.language ?? detectLanguage(navigator.language));
-  const languagePicker = (refresh: () => void) => ({
-    label: t('party.language'),
-    options: LANGUAGES.map(l => ({ value: l, label: LANGUAGE_NAMES[l] })),
-    value: language(),
-    onChange: (value: string) => {
-      if (!isLanguage(value)) return;
-      applyLanguage(value);
-      update(s => ({ ...s, settings: { ...s.settings, language: value } }));
-      refresh();
-    },
-  });
+  applyLanguage(save?.settings.language ?? settings.language ?? detectLanguage(navigator.language));
+  const chooseLanguage = (next: Language) => {
+    applyLanguage(next);
+    applySettings({ ...settings, language: next });
+    update(s => ({ ...s, settings: { ...s.settings, language: next } }));
+  };
 
   // ── Scenes ────────────────────────────────────────────────────────────────────────────────────────────────────
   let scene: Scene = 'title';
@@ -184,22 +207,58 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     results = null;
   };
 
+  /** The hint bar's usual entries. */
+  const hints = {
+    get select(): Hint {
+      return { pad: 'a', key: 'Enter', label: t('hint.select') };
+    },
+    get back(): Hint {
+      return { pad: 'b', key: 'Esc', label: t('hint.back') };
+    },
+    get party(): Hint {
+      return { pad: 'y', key: 'P', label: t('hint.party') };
+    },
+  };
+
+  /** Two Pokémon facing off on the title screen (a different pair each visit; always the first in tests). */
+  const DUELS: [number, number][] = [
+    [6, 9],
+    [25, 150],
+    [3, 149],
+    [94, 65],
+    [130, 59],
+    [68, 143],
+  ];
+  const duel = DUELS[options.enabled ? 0 : Math.floor(Math.random() * DUELS.length)];
+
   function goTitle() {
     leaveFight();
     scene = 'title';
     show();
-    const buttons = [];
-    if (save) buttons.push({ label: t('title.continue'), testid: 'continue-game', primary: true, onClick: continueGame });
-    buttons.push({ label: t('title.new'), testid: 'new-game', primary: !save, onClick: newGame });
-    buttons.push({ label: t('title.training'), testid: 'training', onClick: startDemo });
-    buttons.push({ label: t('title.controls'), testid: 'controls', onClick: () => showControls(goTitle) });
-    buttons.push({ label: t(settings.muted ? 'sound.off' : 'sound.on'), testid: 'sound', onClick: toggleMute });
+    backdrop.set({ image: 'space', theme: '#8f6bff', mode: 'scene' });
+    const choices: TitleOption[] = [];
+    if (save) {
+      choices.push({ label: t('title.continue'), description: t('title.continueText'), testid: 'continue-game', icon: 'arrow', primary: true, onClick: continueGame });
+    }
+    choices.push({ label: t('title.new'), description: t('title.newText'), testid: 'new-game', icon: 'star', primary: !save, onClick: () => newGame() });
+    choices.push({ label: t('title.training'), description: t('title.trainingText'), testid: 'training', icon: 'battle', onClick: startDemo });
+    choices.push({ label: t('title.options'), description: t('title.optionsText'), testid: 'options', icon: 'gear', onClick: () => showOptions(goTitle) });
     renderTitle(overlayRoot, {
-      title: 'Poké Fight',
       subtitle: t(notice ?? 'title.subtitle'),
-      continueInfo: save ? t('title.continueWho', { player: save.player.name, place: t(cityKey(save.location)) }) : undefined,
-      buttons,
-      language: languagePicker(goTitle),
+      duel: [spriteUrl(duel[0]), spriteUrl(duel[1])],
+      options: choices,
+      journey: save
+        ? {
+            label: t('title.continue'),
+            player: save.player.name,
+            place: t(cityKey(save.location)),
+            badges: t('city.badgesLabel', { count: save.badges.length }),
+            party: save.party.map(p => spriteUrl(p.speciesId)),
+            trainer: trainerUrl(PEOPLE.player),
+          }
+        : null,
+      footer: t('title.footer'),
+      hints: [hints.select],
     });
   }
 
@@ -207,12 +266,16 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
   function tell(lines: Said[], then: () => void, index = 0) {
     if (index >= lines.length) return then();
     scene = 'story';
+    // After a fight, the place shows clearly again behind the words.
+    backdrop.mode('scene');
     show();
     const line = lines[index];
     renderDialog(overlayRoot, {
       speaker: line.speaker,
+      portrait: line.portrait ? trainerUrl(line.portrait) : null,
       text: t(line.key, line.params),
-      button: { label: t('dialog.next'), testid: 'dialog-next', onClick: () => tell(lines, then, index + 1) },
+      buttons: [{ label: t('dialog.next'), testid: 'dialog-next', onClick: () => tell(lines, then, index + 1) }],
+      hints: [{ pad: 'a', key: 'Enter', label: t('dialog.next') }],
     });
   }
 
@@ -222,18 +285,43 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     show();
     renderDialog(overlayRoot, {
       speaker: t('speaker.professor'),
+      portrait: trainerUrl(PEOPLE.professor),
       text: t(key),
       input: { label: t('dialog.name'), value: fallback, maxLength: MAX_NAME_LENGTH },
-      button: { label: t('dialog.ok'), testid: 'dialog-ok', onClick: typed => then(cleanName(typed, fallback)) },
+      buttons: [{ label: t('dialog.ok'), testid: 'dialog-ok', onClick: typed => then(cleanName(typed, fallback)) }],
+      hints: [{ pad: 'a', key: 'Enter', label: t('dialog.ok') }],
     });
   }
 
-  const professor = (key: MessageKey, values: Line['params'] = {}): Said => ({ speaker: t('speaker.professor'), key, params: values });
+  /** A yes / no question (B / Esc answers no). */
+  function confirm(speaker: string, portrait: string | null, key: MessageKey, yes: () => void, no: () => void) {
+    scene = 'story';
+    show();
+    renderDialog(overlayRoot, {
+      speaker,
+      portrait: portrait ? trainerUrl(portrait) : null,
+      text: t(key),
+      buttons: [
+        { label: t('dialog.yes'), testid: 'dialog-yes', onClick: yes },
+        { label: t('dialog.no'), testid: 'dialog-no', back: true, onClick: no },
+      ],
+      hints: [hints.select, hints.back],
+    });
+  }
+
+  const professor = (key: MessageKey, values: Line['params'] = {}): Said => ({
+    speaker: t('speaker.professor'),
+    portrait: PEOPLE.professor,
+    key,
+    params: values,
+  });
 
   // ── The prologue ──────────────────────────────────────────────────────────────────────────────────────────────
-  function newGame() {
-    if (save && !window.confirm(t('title.confirmNew'))) return;
+  function newGame(confirmed = false) {
+    if (save && !confirmed) return confirm(t('speaker.professor'), PEOPLE.professor, 'title.confirmNew', () => newGame(true), goTitle);
     notice = null;
+    const pallet = cityArt('pallet');
+    backdrop.set({ image: pallet.backdrop, theme: pallet.color, mode: 'scene' });
     // The starters' sprites load while the Professor talks.
     preloadSprites([...STARTERS]);
     tell([professor('story.welcome'), professor('story.live')], () =>
@@ -247,16 +335,24 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     tell([professor('story.choose', { player })], () => {
       scene = 'starter';
       show();
+      const stats = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'] as const;
       renderStarter(overlayRoot, {
         title: t('starter.title'),
-        starters: STARTERS.map(id => ({
-          id,
-          name: species(id).name,
-          types: typeNames(species(id).types),
-          sprite: spriteUrl(id),
-          testid: `starter-${species(id).slug}`,
-          onClick: () => pickStarter(id, player, rival),
-        })),
+        subtitle: t('starter.subtitle'),
+        professor: trainerUrl(PEOPLE.professor),
+        starters: STARTERS.map(id => {
+          const sp = species(id);
+          return {
+            name: sp.name,
+            sprite: spriteUrl(id),
+            color: typeColor(sp.types[0]),
+            types: sp.types.map(type => ({ type, label: t(`type.${type}` as MessageKey) })),
+            stats: stats.map(stat => ({ label: t(`stat.${stat}`), value: sp.stats[stat] })),
+            testid: `starter-${sp.slug}`,
+            onClick: () => pickStarter(id, player, rival),
+          };
+        }),
+        hints: [hints.select],
       });
     });
   }
@@ -270,7 +366,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     tell(
       [
         professor('story.gift', { pokemon: species(id).name, move: gift.name, type: t(`type.${gift.type}` as MessageKey) }),
-        { speaker: rival, key: 'story.rivalPick', params: { pokemon: species(rivalId).name, player } },
+        { speaker: rival, portrait: PEOPLE.rival, key: 'story.rivalPick', params: { pokemon: species(rivalId).name, player } },
         professor('story.tutorial'),
       ],
       startTutorial,
@@ -290,7 +386,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     tutorial = createTutorialDirector(seed, save.rival.name, move(save.party[0].specials.elemental).name);
     enterFight('tutorial', save.party.map(toFighter), [toFighter(rival)], {
       director: tutorial,
-      stage: { id: 'route' },
+      stage: { id: 'route', backdrop: 'route' },
       rivalLook: LOOKS.rival,
     });
   }
@@ -303,7 +399,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     update(current => ({ ...current, prologue: 'done', location: 'viridian', party: current.party.map(heal) }));
     tell(
       [
-        { speaker: s.rival.name, key: lost ? 'story.rivalWon' : 'story.rivalLost', params: { player: s.player.name } },
+        { speaker: s.rival.name, portrait: PEOPLE.rival, key: lost ? 'story.rivalWon' : 'story.rivalLost', params: { player: s.player.name } },
         ...(lost ? [professor('story.rested')] : []),
         professor('story.depart'),
       ],
@@ -312,7 +408,6 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
   }
 
   // ── The city and its menus ────────────────────────────────────────────────────────────────────────────────────
-  const moneyLine = (s: Save) => t('city.money', { money: s.money });
   const ownsRod = (s: Save) => bestRod(rod => countOf(s.bag, rod) > 0);
 
   function goCity() {
@@ -322,179 +417,294 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     show();
     const s = save;
     const here = city(s.location);
+    const art = cityArt(here.id);
+    backdrop.set({ image: art.backdrop, theme: art.color, mode: 'scene' });
     // Everything that can appear here (and the party) starts loading now, so a hunt starts with its sprites ready.
     const rod = ownsRod(s);
     const possible = (['grass', 'cave', 'water'] as HuntKind[]).flatMap(kind => encounterTable(here, kind, rod).map(e => e.speciesId));
     preloadSprites([...new Set([...possible, ...s.party.map(p => p.speciesId)])]);
-    const hunts: Button[] = (['grass', 'cave', 'water'] as HuntKind[])
+
+    const huntColors: Record<HuntKind, string> = { grass: '#3fae5a', cave: '#9a6b45', water: '#2f8fe0' };
+    const huntIcons: Record<HuntKind, IconName> = { grass: 'grass', cave: 'cave', water: 'rod' };
+    const adventure: PlaceCard[] = (['grass', 'cave', 'water'] as HuntKind[])
       .filter(kind => here.hunts[kind])
       .map(kind => {
-        if (kind === 'water') {
-          return rod
-            ? { label: t('hunt.water', { rod: itemName(rod) }), testid: 'hunt-water', onClick: () => startHunt('water') }
-            : { label: t('hunt.waterNoRod'), testid: 'hunt-water', disabled: true, onClick: () => {} };
-        }
-        return { label: t(`hunt.${kind}`), testid: `hunt-${kind}`, onClick: () => startHunt(kind) };
+        // Water shows what the best rod could catch; without a rod, what an Old Rod would.
+        const table = encounterTable(here, kind, kind === 'water' ? (rod ?? 'old-rod') : null);
+        const ids = [...new Set([...table].sort((a, b) => b.weight - a.weight).map(e => e.speciesId))];
+        const min = Math.min(...table.map(e => e.minLevel));
+        const max = Math.max(...table.map(e => e.maxLevel));
+        const noRod = kind === 'water' && !rod;
+        return {
+          testid: `hunt-${kind}`,
+          title: t(`place.${kind}`),
+          subtitle: noRod ? t('place.noRod') : kind === 'water' ? `${t('place.rod', { rod: itemName(rod!) })} · ${t('place.levels', { min, max, count: ids.length })}` : t('place.levels', { min, max, count: ids.length }),
+          color: huntColors[kind],
+          icon: huntIcons[kind],
+          locked: noRod,
+          chip: noRod ? { text: t('place.needsRod'), icon: 'lock', tone: 'lock' } : undefined,
+          art: { pokemon: ids.slice(0, 5).map(id => ({ url: spriteUrl(id), seen: s.dex.seen.includes(id) })) },
+          onClick: () => startHunt(kind),
+        } satisfies PlaceCard;
       });
-    if (hunts[0]) hunts[0].primary = true;
     const g = gymIn(here.id);
-    const gymButton: Button[] = !g
-      ? []
-      : s.badges.includes(g.badge)
-        ? [{ label: t('city.gymBeaten', { badge: t(`badge.${g.badge}` as MessageKey) }), testid: 'city-gym', disabled: true, onClick: () => {} }]
-        : canChallenge(g, s.badges)
-          ? [{ label: t('city.gym', { leader: g.leader, type: t(`type.${g.type}` as MessageKey) }), testid: 'city-gym', onClick: () => startGym(g) }]
-          : [{ label: t('city.gymLocked', { badges: g.badges }), testid: 'city-gym', disabled: true, onClick: () => {} }];
-    const leagueButton: Button[] =
-      here.id !== LEAGUE_CITY
-        ? []
-        : canEnterLeague(s.badges)
-          ? [{ label: t('city.league'), testid: 'city-league', onClick: startLeague }]
-          : [{ label: t('city.leagueLocked'), testid: 'city-league', disabled: true, onClick: () => {} }];
-    const safariButton: Button[] = here.safari
-      ? [{ label: t('city.safari', { price: SAFARI_ENTRANCE }), testid: 'city-safari', disabled: s.money < SAFARI_ENTRANCE, onClick: enterSafari }]
-      : [];
-    renderMenu(overlayRoot, {
-      title: t(cityKey(s.location)),
-      testid: 'city',
-      info: [
-        moneyLine(s),
-        t('city.dex', { seen: s.dex.seen.length, caught: s.dex.caught.length }),
-        t('city.badges', { count: s.badges.length }),
-        ...(s.champion ? [t('city.champion')] : []),
+    if (g) {
+      const beaten = s.badges.includes(g.badge);
+      const open = !beaten && canChallenge(g, s.badges);
+      adventure.push({
+        testid: 'city-gym',
+        title: t('place.gym'),
+        subtitle: t('place.gymLeader', { leader: g.leader, type: t(`type.${g.type}` as MessageKey) }),
+        color: typeColor(g.type),
+        icon: 'gym',
+        locked: !open,
+        chip: beaten
+          ? { text: t('place.beaten'), icon: 'check', tone: 'ok' }
+          : open
+            ? undefined
+            : { text: t('place.badgesNeeded', { badges: g.badges }), icon: 'lock', tone: 'lock' },
+        art: { people: [trainerUrl(LEADER_SPRITES[g.badge])], badge: beaten ? badgeArt(g.badge) : undefined },
+        onClick: () => startGym(g),
+      });
+    }
+    if (here.id === LEAGUE_CITY) {
+      const open = canEnterLeague(s.badges);
+      adventure.push({
+        testid: 'city-league',
+        title: t('place.league'),
+        subtitle: t('place.leagueText'),
+        color: '#7b5cff',
+        icon: 'crown',
+        locked: !open,
+        chip: open ? undefined : { text: t('place.badgesNeeded', { badges: 8 }), icon: 'lock', tone: 'lock' },
+        art: { people: [trainerUrl(ELITE_SPRITES.lance), trainerUrl(ELITE_SPRITES.agatha)] },
+        onClick: startLeague,
+      });
+    }
+    if (here.safari) {
+      adventure.push({
+        testid: 'city-safari',
+        title: t('place.safari'),
+        subtitle: t('place.safariText', { price: SAFARI_ENTRANCE }),
+        color: '#8fae3a',
+        icon: 'safari',
+        locked: s.money < SAFARI_ENTRANCE,
+        art: { item: itemUrl('safari-ball') },
+        onClick: enterSafari,
+      });
+    }
+    adventure.push({
+      testid: 'city-training',
+      title: t('place.training'),
+      subtitle: t('place.trainingText'),
+      color: '#e8573f',
+      icon: 'battle',
+      art: { people: [trainerUrl('acetrainer'), trainerUrl('acetrainerf')] },
+      onClick: startTrainer,
+    });
+    // The first open adventure is where the focus starts.
+    const first = adventure.find(place => !place.locked);
+    if (first) first.primary = true;
+
+    const services: PlaceCard[] = [
+      {
+        testid: 'city-center',
+        title: t('place.center'),
+        subtitle: t('place.centerText'),
+        color: '#ef6f9b',
+        icon: 'heal',
+        art: { people: [trainerUrl(PEOPLE.nurse)] },
+        onClick: () => showCenter(null),
+      },
+      ...(here.shop
+        ? [
+            {
+              testid: 'city-shop',
+              title: t(here.id === 'saffron' ? 'place.mall' : 'place.shop'),
+              subtitle: t('place.shopText', { count: here.shop.length }),
+              color: '#3f7cf0',
+              icon: 'mart',
+              art: { people: [trainerUrl(PEOPLE.clerk)] },
+              onClick: () => showShop(null),
+            } satisfies PlaceCard,
+          ]
+        : []),
+      { testid: 'city-box', title: t('place.box'), subtitle: t('place.boxText', { count: s.box.length }), color: '#2fa9a0', icon: 'pc', onClick: showBox },
+      { testid: 'city-map', title: t('place.map'), subtitle: t('place.mapText'), color: '#c99b4a', icon: 'map', onClick: showMap },
+    ];
+
+    renderCity(overlayRoot, {
+      region: 'Kanto',
+      name: t(cityKey(s.location)),
+      tagline: t(`city.${s.location}.tagline` as MessageKey),
+      theme: art.color,
+      money: t('city.money', { money: s.money }),
+      dex: t('city.dex', { seen: s.dex.seen.length, caught: s.dex.caught.length }),
+      badges: BADGE_ORDER.map(badge => ({ url: badgeArt(badge), earned: s.badges.includes(badge), name: t(`badge.${badge}` as MessageKey) })),
+      badgeCount: t('city.badges', { count: s.badges.length }),
+      champion: s.champion ? t('city.champion') : null,
+      adventure,
+      services,
+      party: s.party.map(p => ({ url: spriteUrl(p.speciesId), level: t('party.level', { level: p.level }), hp: p.hp, maxHp: maxHpOf(p), fainted: p.hp === 0 })),
+      partyLabel: t('city.party'),
+      onParty: toggleParty,
+      system: [
+        { label: t('city.options'), testid: 'city-options', icon: 'gear', onClick: () => showOptions(goCity) },
+        { label: t('city.title'), testid: 'to-title', icon: 'exit', onClick: goTitle },
       ],
-      sections: [],
-      buttons: [
-        ...hunts,
-        ...gymButton,
-        ...leagueButton,
-        ...safariButton,
-        { label: t('city.training'), testid: 'city-training', onClick: startTrainer },
-        { label: t('city.center'), testid: 'city-center', onClick: () => showCenter(null) },
-        ...(here.shop ? [{ label: t('city.shop'), testid: 'city-shop', onClick: () => showShop(null) }] : []),
-        { label: t('city.box'), testid: 'city-box', onClick: showBox },
-        { label: t('city.party'), testid: 'city-party', onClick: toggleParty },
-        { label: t('city.map'), testid: 'city-map', onClick: showMap },
-        { label: t('title.controls'), testid: 'city-controls', onClick: () => showControls(goCity) },
-        { label: t('city.title'), testid: 'to-title', onClick: goTitle },
-      ],
+      hints: [hints.select, hints.party],
     });
   }
 
-  /** The keyboard controls: pick an action, press its new key (Esc cancels). `from` is where Back goes. */
-  function showControls(from: () => void, waiting: Action | null = null, notice: MessageKey | null = null) {
+  /** Options: sound, language, keys. `from` is where Back goes; `waiting` is the action waiting for a new key. */
+  function showOptions(from: () => void, waiting: Action | null = null, notice: MessageKey | null = null) {
     scene = 'menu';
     show();
-    renderMenu(overlayRoot, {
-      title: t('controls.title'),
-      testid: 'controls',
-      info: [t(waiting ? 'controls.waiting' : (notice ?? 'controls.info')), t('controls.pad')],
-      sections: [
-        {
-          rows: ACTIONS.map(action => ({
-            label: t(`action.${action}` as MessageKey),
-            key: keyLabel(settings.keys[action]),
-            testid: `bind-${action}`,
-            active: waiting === action,
-            buttons: [{ label: t('controls.change'), testid: `change-${action}`, onClick: () => waitForKey(from, action) }],
-          })),
-        },
-      ],
-      buttons: [
-        {
+    const pads: { pad: Pad; label: MessageKey }[] = [
+      { pad: 'a', label: 'action.up' },
+      { pad: 'x', label: 'action.physical' },
+      { pad: 'y', label: 'action.special' },
+      { pad: 'b', label: 'action.big' },
+      { pad: 'rb', label: 'action.guard' },
+      { pad: 'lb', label: 'action.dash' },
+    ];
+    renderOptions(overlayRoot, {
+      title: t('options.title'),
+      info: t(waiting ? 'controls.waiting' : (notice ?? 'controls.info')),
+      sound: { label: t('options.sound'), value: t(settings.muted ? 'options.off' : 'options.on'), on: !settings.muted, onClick: () => {
+        applySettings({ ...settings, muted: !settings.muted });
+        showOptions(from);
+      } },
+      language: {
+        label: t('party.language'),
+        options: LANGUAGES.map(l => ({
+          value: l,
+          label: LANGUAGE_NAMES[l],
+          selected: l === language(),
+          onClick: () => {
+            chooseLanguage(l);
+            showOptions(from);
+          },
+        })),
+      },
+      keyboard: {
+        label: t('options.keyboard'),
+        rows: ACTIONS.map(action => ({
+          action,
+          label: t(`action.${action}` as MessageKey),
+          key: keyLabel(settings.keys[action]),
+          waiting: waiting === action,
+          changeLabel: t('controls.change'),
+          onChange: () => waitForKey(from, action),
+        })),
+        reset: {
           label: t('controls.reset'),
           testid: 'controls-reset',
           onClick: () => {
             applySettings({ ...settings, keys: DEFAULT_KEYS });
-            showControls(from);
+            showOptions(from);
           },
         },
-        { label: t('menu.back'), testid: 'back', back: true, primary: !waiting, onClick: from },
-      ],
+      },
+      pad: { label: t('options.controller'), rows: pads.map(p => ({ pad: p.pad, label: t(p.label) })), move: t('options.padMove') },
+      back: { label: t('menu.back'), testid: 'back', onClick: from },
+      hints: [hints.select, hints.back],
     });
   }
 
   function waitForKey(from: () => void, action: Action) {
-    showControls(from, action);
+    showOptions(from, action);
     // Before the game's own key handling, so the key only rebinds.
     const listener = (event: KeyboardEvent) => {
       window.removeEventListener('keydown', listener, true);
       // The player left the screen without pressing a key.
-      if (!overlayRoot.querySelector('[data-testid="controls"]')) return;
+      if (!overlayRoot.querySelector('[data-testid="options"]')) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (event.code === 'Escape') return showControls(from);
+      if (event.code === 'Escape') return showOptions(from);
       const next = rebind(settings.keys, action, event.code);
-      if (!next) return showControls(from, null, 'controls.reserved');
+      if (!next) return showOptions(from, null, 'controls.reserved');
       applySettings({ ...settings, keys: next });
-      showControls(from);
+      showOptions(from);
     };
     window.addEventListener('keydown', listener, true);
   }
 
-  const back: () => Button = () => ({ label: t('menu.back'), testid: 'back', back: true, onClick: goCity });
+  /** An indoor screen: the city's picture, blurred, in the room's color. */
+  const indoors = (color: string) => backdrop.set({ image: cityArt(save?.location ?? 'pallet').backdrop, theme: color, mode: 'interior' });
 
   function showCenter(message: MessageKey | null) {
-    if (!save) return;
-    scene = 'menu';
-    show();
-    renderMenu(overlayRoot, {
-      title: t('city.center'),
-      testid: 'center',
-      info: message ? [t(message)] : [],
-      sections: [],
-      buttons: [
-        {
-          label: t('center.heal'),
-          testid: 'center-heal',
-          primary: true,
-          onClick: () => {
-            update(s => ({ ...s, party: s.party.map(heal) }));
-            showCenter('center.healed');
-          },
-        },
-        back(),
-      ],
-    });
-  }
-
-  function showShop(message: string | null) {
     if (!save) return;
     const s = save;
     scene = 'menu';
     show();
-    renderMenu(overlayRoot, {
-      title: t('city.shop'),
-      testid: 'shop',
-      info: [moneyLine(s), ...(message ? [message] : [])],
-      sections: [
-        {
-          rows: (city(s.location).shop ?? []).map(id => {
-            const item = ITEMS[id];
-            const owned = countOf(s.bag, id);
-            const rodOwned = item.kind === 'rod' && owned > 0;
-            return {
-              label: itemName(id),
-              detail: t('shop.owned', { count: owned }),
-              testid: `item-${id}`,
-              buttons: [
-                {
-                  label: rodOwned ? t('shop.ownedRod') : t('shop.buy', { price: item.price }),
-                  testid: `buy-${id}`,
-                  disabled: rodOwned,
-                  onClick: () => {
-                    const result = buy(s.money, s.bag, id);
-                    if (!result.ok) return showShop(t('shop.noMoney'));
-                    update(current => ({ ...current, money: result.money, bag: result.bag }));
-                    showShop(t('shop.bought', { item: itemName(id) }));
-                  },
-                },
-              ],
-            };
-          }),
+    indoors('#ff7fb0');
+    renderCenter(overlayRoot, {
+      title: t('place.center'),
+      nurseName: t('center.nurse'),
+      nurse: trainerUrl(PEOPLE.nurse),
+      helper: spriteUrl(CHANSEY),
+      message: t(message ?? 'center.welcome'),
+      healed: message === 'center.healed',
+      partyLabel: t('center.party'),
+      party: s.party.map(p => ({
+        name: nameOf(p),
+        sprite: spriteUrl(p.speciesId),
+        level: t('party.level', { level: p.level }),
+        hp: p.hp,
+        maxHp: maxHpOf(p),
+        hpText: t('party.hp', { hp: displayHp(p.hp), max: displayHp(maxHpOf(p)) }),
+      })),
+      heal: {
+        label: t('center.heal'),
+        testid: 'center-heal',
+        icon: 'heal',
+        onClick: () => {
+          update(current => ({ ...current, party: current.party.map(heal) }));
+          audio.play('levelUp');
+          showCenter('center.healed');
         },
-      ],
-      buttons: [{ ...back(), primary: true }],
+      },
+      back: { label: t('menu.back'), testid: 'back', onClick: goCity },
+      hints: [hints.select, hints.back],
+    });
+  }
+
+  function showShop(message: string | null, bought: ItemId | null = null) {
+    if (!save) return;
+    const s = save;
+    scene = 'menu';
+    show();
+    indoors('#4f8dff');
+    const here = city(s.location);
+    renderMart(overlayRoot, {
+      title: t(here.id === 'saffron' ? 'place.mall' : 'place.shop'),
+      clerkName: t('shop.clerk'),
+      clerk: trainerUrl(PEOPLE.clerk),
+      message: message ?? t('shop.welcome'),
+      money: t('city.money', { money: s.money }),
+      focus: bought,
+      items: (here.shop ?? []).map(id => {
+        const item = ITEMS[id];
+        const owned = countOf(s.bag, id);
+        return {
+          id,
+          name: itemName(id),
+          price: t('shop.price', { price: item.price }),
+          owned: t('shop.owned', { count: owned }),
+          sprite: itemUrl(id === 'link-cable' ? 'linking-cord' : id),
+          description: t(`item.${id}.text` as MessageKey),
+          soldOut: item.kind === 'rod' && owned > 0 ? t('shop.ownedRod') : null,
+          onBuy: () => {
+            const result = buy(s.money, s.bag, id);
+            if (!result.ok) return showShop(t('shop.noMoney'), id);
+            update(current => ({ ...current, money: result.money, bag: result.bag }));
+            showShop(t('shop.bought', { item: itemName(id) }), id);
+          },
+        };
+      }),
+      back: { label: t('menu.back'), testid: 'back', onClick: goCity },
+      hints: [{ pad: 'a', key: 'Enter', label: t('shop.buyHint') }, hints.back],
     });
   }
 
@@ -503,52 +713,37 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     const s = save;
     scene = 'menu';
     show();
-    const row = (p: Pokemon) => `${nameOf(p)} · ${t('party.level', { level: p.level })}`;
-    renderMenu(overlayRoot, {
-      title: t('city.box'),
-      testid: 'box',
-      info: s.box.length ? [] : [t('box.empty')],
-      sections: [
-        {
-          title: t('box.party', { count: s.party.length }),
-          rows: s.party.map((p, i) => ({
-            label: row(p),
-            sprite: spriteUrl(p.speciesId),
-            testid: `party-${i}`,
-            buttons: [
-              {
-                label: t('box.toBox'),
-                testid: `to-box-${i}`,
-                disabled: !canSendToBox(s),
-                onClick: () => {
-                  update(current => ({ ...current, ...sendToBox(current, i) }));
-                  showBox();
-                },
-              },
-            ],
-          })),
-        },
-        {
-          title: t('box.box', { count: s.box.length }),
-          rows: s.box.map((p, i) => ({
-            label: row(p),
-            sprite: spriteUrl(p.speciesId),
-            testid: `boxed-${i}`,
-            buttons: [
-              {
-                label: t('box.toParty'),
-                testid: `to-party-${i}`,
-                disabled: !canTakeFromBox(s),
-                onClick: () => {
-                  update(current => ({ ...current, ...takeFromBox(current, i) }));
-                  showBox();
-                },
-              },
-            ],
-          })),
-        },
-      ],
-      buttons: [{ ...back(), primary: true }],
+    indoors('#2fc4b2');
+    const mon = (p: Pokemon, action: string, blocked: boolean, onMove: () => void): BoxMon => ({
+      name: nameOf(p),
+      level: t('party.level', { level: p.level }),
+      sprite: spriteUrl(p.speciesId),
+      hp: p.hp,
+      maxHp: maxHpOf(p),
+      types: species(p.speciesId).types.map(type => ({ type, label: t(`type.${type}` as MessageKey) })),
+      action,
+      blocked,
+      onMove,
+    });
+    renderBox(overlayRoot, {
+      title: t('place.box'),
+      partyLabel: t('box.party', { count: s.party.length }),
+      boxLabel: t('box.box', { count: s.box.length }),
+      empty: t('box.empty'),
+      party: s.party.map((p, i) =>
+        mon(p, canSendToBox(s) ? t('box.toBox') : t('box.keepOne'), !canSendToBox(s), () => {
+          update(current => ({ ...current, ...sendToBox(current, i) }));
+          showBox();
+        }),
+      ),
+      box: s.box.map((p, i) =>
+        mon(p, canTakeFromBox(s) ? t('box.toParty') : t('box.partyFull'), !canTakeFromBox(s), () => {
+          update(current => ({ ...current, ...takeFromBox(current, i) }));
+          showBox();
+        }),
+      ),
+      back: { label: t('menu.back'), testid: 'back', onClick: goCity },
+      hints: [{ pad: 'a', key: 'Enter', label: t('hint.move') }, hints.back],
     });
   }
 
@@ -559,35 +754,40 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     const badges = s.badges.length;
     scene = 'menu';
     show();
-    renderMenu(overlayRoot, {
+    backdrop.set({ image: 'beach', theme: '#4fa3ff', mode: 'interior' });
+    renderMap(overlayRoot, {
       title: 'Kanto',
-      testid: 'map',
-      info: [],
-      sections: [
-        {
-          rows: KANTO.map(c => {
-            const here = c.id === s.location;
-            const open = isUnlocked(c, badges);
-            return {
-              label: t(cityKey(c.id)),
-              detail: here ? t('map.here') : open ? undefined : t('map.locked', { badges: c.badges }),
-              testid: `place-${c.id}`,
-              buttons: [
-                {
-                  label: t('map.go'),
-                  testid: `go-${c.id}`,
-                  disabled: here || !open,
-                  onClick: () => {
-                    update(current => ({ ...current, location: c.id }));
-                    goCity();
-                  },
-                },
-              ],
-            };
-          }),
-        },
-      ],
-      buttons: [{ ...back(), primary: true }],
+      routes: KANTO_ROUTES,
+      cities: KANTO.map(c => {
+        const here = c.id === s.location;
+        const open = isUnlocked(c, badges);
+        const g = gymIn(c.id);
+        return {
+          id: c.id,
+          name: t(cityKey(c.id)),
+          tagline: t(`city.${c.id}.tagline` as MessageKey),
+          ...KANTO_MAP[c.id],
+          here,
+          open,
+          status: here ? t('map.here') : open ? t('map.open') : t('map.locked', { badges: c.badges }),
+          gym: g
+            ? {
+                label: t('place.gym'),
+                leader: g.leader,
+                sprite: trainerUrl(LEADER_SPRITES[g.badge]),
+                type: g.type,
+                typeLabel: t(`type.${g.type}` as MessageKey),
+                beaten: s.badges.includes(g.badge),
+              }
+            : null,
+          onGo: () => {
+            update(current => ({ ...current, location: c.id }));
+            goCity();
+          },
+        };
+      }),
+      back: { label: t('menu.back'), testid: 'back', onClick: goCity },
+      hints: [{ pad: 'a', key: 'Enter', label: t('map.go') }, hints.back],
     });
   }
 
@@ -612,6 +812,13 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
   const entranceOn = params.get('entrance') !== '0';
 
   function enterFight(next: FightMode, player: TeamMember[], opponents: TeamMember[], setup: FightSetup = {}) {
+    const stage: StageSpec = setup.stage ?? { id: 'stadium', backdrop: 'spl' };
+    const trainers: [TrainerLook, TrainerLook | null] = [LOOKS.player, setup.rivalLook === undefined ? LOOKS.trainer : setup.rivalLook];
+    backdrop.set({ image: stage.backdrop ?? 'spl', theme: stage.tint ?? '#6c8cff', mode: 'fight' });
+    preloadImages([
+      ...(stage.backdrop ? [backdropUrl(stage.backdrop)] : []),
+      ...trainers.flatMap(look => (look?.sprite ? [trainerUrl(look.sprite)] : [])),
+    ]);
     mode = next;
     scene = 'fight';
     modal = 'none';
@@ -627,8 +834,8 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       style: setup.style,
       roundFrames: setup.roundFrames,
       entrance: entranceOn,
-      stage: setup.stage ?? { id: 'stadium' },
-      trainers: [LOOKS.player, setup.rivalLook === undefined ? LOOKS.trainer : setup.rivalLook],
+      stage,
+      trainers,
       // The training tools (infinite PP, switching the opponent…) are for the practice demo only, never the journey.
       tools: next === 'demo',
     });
@@ -645,7 +852,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
 
   /** Training from the title: the Lv. 30 demo teams, no XP, nothing saved. */
   function startDemo() {
-    enterFight('demo', PLAYER_TEAM, OPPONENT_TEAM);
+    enterFight('demo', PLAYER_TEAM, OPPONENT_TEAM, { stage: { id: 'stadium', backdrop: 'spl' } });
   }
 
   /** The battle field: trainers with your party's level (XP and prize money). */
@@ -657,13 +864,21 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     gym = null;
     update(s => ({ ...s, dex: register(s, opponents.map(p => p.speciesId)) }));
     enterFight('trainer', party.map(toFighter), opponents.map(toFighter), {
+      stage: { id: 'stadium', backdrop: cityArt(save.location).backdrop },
+      rivalLook: { ...LOOKS.trainer, sprite: trainerClassFor(opponents.map(p => p.speciesId)) },
       intro: { step: null, key: 'trainer.challenge', params: {} },
     });
   }
 
   /** Where a hunt happens: the grass (Viridian Forest's trees around Pewter), a cave, or the sea. */
   const huntStage = (location: string, kind: HuntKind): StageSpec =>
-    kind === 'cave' ? { id: 'cave' } : kind === 'water' ? { id: 'sea' } : { id: location === 'pewter' ? 'forest' : 'route' };
+    kind === 'cave'
+      ? { id: 'cave', backdrop: HUNT_BACKDROPS.cave }
+      : kind === 'water'
+        ? { id: 'sea', backdrop: location === 'cerulean' ? 'river' : HUNT_BACKDROPS.water }
+        : location === 'pewter'
+          ? { id: 'forest', backdrop: HUNT_BACKDROPS.forest }
+          : { id: 'route', backdrop: HUNT_BACKDROPS.grass };
 
   /** Hunting: a wild Pokémon from this city's grass, cave or water (fishing with the best rod). */
   function startHunt(kind: HuntKind) {
@@ -687,7 +902,8 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
   /** A gym: the leader's words, then their whole team, one Pokémon at a time, with a CPU style that suits the type. */
   function startGym(g: Gym) {
     if (!save || !canChallenge(g, save.badges)) return;
-    tell([{ speaker: g.leader, key: `leader.${g.badge}.intro` as MessageKey, params: {} }], () => {
+    backdrop.set({ image: typeBackdrop(g.type), theme: typeColor(g.type), mode: 'scene' });
+    tell([{ speaker: g.leader, portrait: LEADER_SPRITES[g.badge], key: `leader.${g.badge}.intro` as MessageKey, params: {} }], () => {
       const party = readyParty();
       const team = gymTeam(g);
       gym = g;
@@ -696,8 +912,8 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       enterFight('gym', party.map(toFighter), team.map(toFighter), {
         opponent: `cpu-${g.ai.difficulty}`,
         style: g.ai.style,
-        stage: { id: 'gym', tint: typeColor(g.type) },
-        rivalLook: leaderLook(typeColor(g.type)),
+        stage: { id: 'gym', tint: typeColor(g.type), backdrop: typeBackdrop(g.type) },
+        rivalLook: leaderLook(typeColor(g.type), false, LEADER_SPRITES[g.badge]),
         intro: { step: null, key: 'gym.challenge', params: { leader: g.leader } },
       });
     });
@@ -717,15 +933,17 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     scene = 'menu';
     show();
     const over = safari.balls === 0;
-    renderMenu(overlayRoot, {
+    backdrop.set({ image: HUNT_BACKDROPS.safari, theme: '#8fae3a', mode: 'scene' });
+    renderSafari(overlayRoot, {
       title: t('safari.title'),
-      testid: 'safari',
       info: [t('safari.balls', { count: safari.balls }), t(over ? 'safari.over' : 'safari.rule')],
-      sections: [],
+      ball: itemUrl('safari-ball'),
+      balls: safari.balls,
       buttons: [
-        ...(over ? [] : [{ label: t('safari.search'), testid: 'safari-search', primary: true, onClick: searchSafari }]),
-        { label: t('safari.leave'), testid: 'safari-leave', primary: over, onClick: leaveSafari },
+        ...(over ? [] : [{ label: t('safari.search'), testid: 'safari-search', icon: 'grass' as const, primary: true, onClick: searchSafari }]),
+        { label: t('safari.leave'), testid: 'safari-leave', icon: 'exit' as const, back: true, primary: over, onClick: leaveSafari },
       ],
+      hints: [hints.select, hints.back],
     });
   }
 
@@ -739,7 +957,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     enterFight('safari', save.party.map(toFighter), [toFighter(found)], {
       opponent: 'cpu-easy',
       roundFrames: SAFARI_SECONDS * 60,
-      stage: { id: 'safari' },
+      stage: { id: 'safari', backdrop: HUNT_BACKDROPS.safari },
       rivalLook: null,
       intro: { step: null, key: 'wild.appeared', params: { name: nameOf(found) } },
     });
@@ -758,6 +976,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       : t('league.champion', { name: opponent.name });
   const leagueLine = (opponent: LeagueOpponent, moment: 'intro' | 'beaten'): Said => ({
     speaker: opponent.name,
+    portrait: opponent.kind === 'champion' ? PEOPLE.champion : ELITE_SPRITES[opponent.id],
     key: (opponent.kind === 'champion' ? `champion.${moment}` : `elite.${opponent.id}.${moment}`) as MessageKey,
     params: { player: save?.player.name ?? '' },
   });
@@ -775,16 +994,34 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     scene = 'menu';
     show();
     const next = leagueOpponent(league.stage, save.rival);
-    renderMenu(overlayRoot, {
+    const stage = league.stage;
+    backdrop.set({ image: 'spl', theme: '#8f7bff', mode: 'scene' });
+    const champion = leagueOpponent(LEAGUE_SIZE - 1, save.rival);
+    renderLeague(overlayRoot, {
       title: t('league.title'),
-      testid: 'league',
-      info: [t('league.progress', { n: league.stage + 1, total: LEAGUE_SIZE }), t('league.next', { who: whoIs(next) }), t('league.hint')],
-      sections: [],
-      buttons: [
-        { label: t('league.challenge'), testid: 'league-next', primary: true, onClick: fightLeague },
-        { label: t('city.party'), testid: 'league-party', onClick: toggleParty },
-        { label: t('league.giveUp'), testid: 'league-leave', onClick: leaveLeague },
+      info: [t('league.progress', { n: stage + 1, total: LEAGUE_SIZE }), t('league.next', { who: whoIs(next) }), t('league.hint')],
+      seats: [
+        ...ELITE_FOUR.map((member, i) => ({
+          name: member.name,
+          title: t('league.eliteTitle'),
+          sprite: trainerUrl(ELITE_SPRITES[member.id]),
+          type: { type: member.type, label: t(`type.${member.type}` as MessageKey) },
+          state: i < stage ? ('beaten' as const) : i === stage ? ('next' as const) : ('waiting' as const),
+        })),
+        {
+          name: champion.name,
+          title: t('league.championTitle'),
+          sprite: trainerUrl(PEOPLE.champion),
+          type: null,
+          state: stage === LEAGUE_SIZE - 1 ? ('next' as const) : ('waiting' as const),
+        },
       ],
+      buttons: [
+        { label: t('league.challenge'), testid: 'league-next', icon: 'battle', primary: true, onClick: fightLeague },
+        { label: t('place.party'), testid: 'league-party', icon: 'party', pad: 'y', onClick: toggleParty },
+        { label: t('league.giveUp'), testid: 'league-leave', icon: 'exit', back: true, onClick: leaveLeague },
+      ],
+      hints: [hints.select, hints.party, { pad: 'b', key: 'Esc', label: t('league.giveUp') }],
     });
   }
 
@@ -799,8 +1036,8 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       enterFight('league', save.party.map(toFighter), opponent.team.map(toFighter), {
         opponent: `cpu-${opponent.ai.difficulty}`,
         style: opponent.ai.style,
-        stage: { id: 'league', tint: opponent.type ? typeColor(opponent.type) : undefined },
-        rivalLook: opponent.kind === 'champion' ? LOOKS.champion : leaderLook(typeColor(opponent.type), true),
+        stage: { id: 'league', tint: opponent.type ? typeColor(opponent.type) : undefined, backdrop: typeBackdrop(opponent.type) },
+        rivalLook: opponent.kind === 'champion' ? LOOKS.champion : leaderLook(typeColor(opponent.type), true, ELITE_SPRITES[opponent.id]),
         intro: { step: null, key: 'league.wants', params: { who: whoIs(opponent) } },
       });
     });
@@ -824,25 +1061,27 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     if (!save) return;
     scene = 'menu';
     show();
+    backdrop.set({ image: 'spl', theme: '#ffcf4a', mode: 'scene' });
     const entry = save.hallOfFame[save.hallOfFame.length - 1];
-    renderMenu(overlayRoot, {
+    renderHallOfFame(overlayRoot, {
       title: t('hof.title'),
-      testid: 'hall-of-fame',
-      info: [t('hof.entry', { n: save.hallOfFame.length })],
-      sections: [{ rows: entry.team.map(m => ({ label: species(m.speciesId).name, sprite: spriteUrl(m.speciesId), detail: t('party.level', { level: m.level }), buttons: [] })) }],
-      buttons: [{ label: t('dialog.next'), testid: 'hof-next', primary: true, onClick: showCredits }],
+      entry: t('hof.entry', { n: save.hallOfFame.length }),
+      team: entry.team.map(m => ({ name: species(m.speciesId).name, level: t('party.level', { level: m.level }), sprite: spriteUrl(m.speciesId) })),
+      next: { label: t('dialog.next'), testid: 'hof-next', icon: 'arrow', onClick: showCredits },
+      hints: [{ pad: 'a', key: 'Enter', label: t('dialog.next') }],
     });
   }
 
   function showCredits() {
     scene = 'menu';
     show();
-    renderMenu(overlayRoot, {
-      title: t('credits.title'),
+    backdrop.set({ image: 'space', theme: '#8f6bff', mode: 'scene' });
+    renderPage(overlayRoot, {
       testid: 'credits',
-      info: [t('credits.study'), t('credits.data'), t('credits.rights')],
-      sections: [],
-      buttons: [{ label: t('dialog.next'), testid: 'credits-next', primary: true, onClick: showNextRegion }],
+      title: t('credits.title'),
+      lines: [t('credits.study'), t('credits.data'), t('credits.art'), t('credits.rights')],
+      buttons: [{ label: t('dialog.next'), testid: 'credits-next', icon: 'arrow', primary: true, onClick: showNextRegion }],
+      hints: [{ pad: 'a', key: 'Enter', label: t('dialog.next') }],
     });
   }
 
@@ -852,15 +1091,15 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     scene = 'menu';
     show();
     const next = nextRegion(save.region);
-    renderMenu(overlayRoot, {
-      title: t('next.title'),
+    renderPage(overlayRoot, {
       testid: 'next-region',
-      info: [t('next.text')],
-      sections: [],
+      title: t('next.title'),
+      lines: [t('next.text')],
       buttons: [
-        { label: t('next.go'), testid: 'next-region-go', disabled: next === null, onClick: () => {} },
-        { label: t('next.stay'), testid: 'next-region-stay', primary: true, onClick: goCity },
+        { label: t('next.go'), testid: 'next-region-go', icon: 'map', disabled: next === null, onClick: () => {} },
+        { label: t('next.stay'), testid: 'next-region-stay', icon: 'pin', primary: true, onClick: goCity },
       ],
+      hints: [hints.select],
     });
   }
 
@@ -880,12 +1119,32 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     return { key: 'results.move', params: { name, move: move(line.move).name } };
   };
 
+  /** Which icon a report line gets (by its text). */
+  const reportKind = (key: MessageKey): ReportKind => {
+    if (key === 'results.xp') return 'xp';
+    if (key === 'results.level') return 'level';
+    if (key === 'results.move') return 'move';
+    if (key === 'results.prize' || key === 'results.whiteout') return 'money';
+    if (key === 'gym.badgeEarned') return 'badge';
+    if (key === 'capture.caught' || key === 'capture.toBox' || key === 'capture.shakes') return 'ball';
+    if (key === 'capture.fled' || key === 'capture.letGone') return 'fled';
+    if (key === 'results.evolved') return 'evolve';
+    return 'info';
+  };
+
   function showResults() {
     if (!results) return;
     const state = results;
     const s = save;
     const title = t(state.outcome === 'win' ? 'results.win' : state.outcome === 'loss' ? 'results.loss' : 'results.draw');
-    const lines = state.lines.length ? state.lines.map(l => t(l.key, l.params)) : [t('results.noXp')];
+    const lines = state.lines.length
+      ? state.lines.map(l => ({
+          text: t(l.key, l.params),
+          kind: reportKind(l.key),
+          image: l.key === 'gym.badgeEarned' && gym ? badgeArt(gym.badge) : undefined,
+        }))
+      : [{ text: t('results.noXp'), kind: 'info' as const }];
+    const base = { title, outcome: state.outcome, lines };
 
     if (state.capture && s) {
       const target = state.capture.pokemon;
@@ -893,18 +1152,19 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       const ballsLeft = (ball: BallId) => (ball === 'safari-ball' ? (safari?.balls ?? 0) : countOf(s.bag, ball));
       const balls = mode === 'safari' ? (['safari-ball'] as BallId[]) : BALLS.filter(ball => ballsLeft(ball) > 0);
       renderResults(overlayRoot, {
-        title,
-        lines,
-        prompt: t('capture.prompt', { name: nameOf(target) }),
+        ...base,
+        prompt: { text: t('capture.prompt', { name: nameOf(target) }), sprite: spriteUrl(target.speciesId), evolving: false },
         buttons: [
           ...balls.map((ball, i) => ({
             label: t('capture.throw', { ball: itemName(ball), count: ballsLeft(ball) }),
             testid: `throw-${ball}`,
+            image: itemUrl(ball),
             primary: i === 0,
             onClick: () => throwAt(ball),
           })),
-          { label: t('capture.letGo'), testid: 'let-go', onClick: letGo },
+          { label: t('capture.letGo'), testid: 'let-go', back: true, primary: false, onClick: letGo },
         ],
+        hints: [{ pad: 'a', key: 'Enter', label: t('capture.throwHint') }, { pad: 'b', key: 'Esc', label: t('capture.letGo') }],
       });
       return;
     }
@@ -914,20 +1174,21 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       // The evolved form's sprite starts loading now, so it's ready when the next battle starts.
       preloadSprites([next.to]);
       renderResults(overlayRoot, {
-        title,
-        lines,
-        prompt: t('results.evolving', { name: nameOf(s.party[next.index]) }),
+        ...base,
+        prompt: { text: t('results.evolving', { name: nameOf(s.party[next.index]) }), sprite: spriteUrl(s.party[next.index].speciesId), evolving: true },
         buttons: [
-          { label: t('results.evolve'), testid: 'evolve', primary: true, onClick: () => decideEvolution(true) },
-          { label: t('results.stop'), testid: 'stop-evolution', onClick: () => decideEvolution(false) },
+          { label: t('results.evolve'), testid: 'evolve', icon: 'star', primary: true, onClick: () => decideEvolution(true) },
+          { label: t('results.stop'), testid: 'stop-evolution', back: true, primary: false, onClick: () => decideEvolution(false) },
         ],
+        hints: [{ pad: 'a', key: 'Enter', label: t('results.evolve') }, { pad: 'b', key: 'Esc', label: t('results.stop') }],
       });
       return;
     }
     renderResults(overlayRoot, {
-      title,
-      lines,
-      buttons: [{ label: t('results.continue'), testid: 'continue', primary: true, onClick: state.onContinue }],
+      ...base,
+      prompt: null,
+      buttons: [{ label: t('results.continue'), testid: 'continue', icon: 'arrow', primary: true, onClick: state.onContinue }],
+      hints: [{ pad: 'a', key: 'Enter', label: t('results.continue') }],
     });
   }
 
@@ -1119,7 +1380,7 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
           if (!leader) return goCity();
           // The leader has the last word.
           const key = (outcome === 'win' ? `leader.${leader.badge}.beaten` : 'gym.lost') as MessageKey;
-          tell([{ speaker: leader.leader, key, params: {} }], goCity);
+          tell([{ speaker: leader.leader, portrait: LEADER_SPRITES[leader.badge], key, params: {} }], goCity);
         },
       };
     }
@@ -1130,18 +1391,37 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
   }
 
   // ── Party screen ──────────────────────────────────────────────────────────────────────────────────────────────
-  function showParty() {
+  /** The party screen's own state: whose summary shows, and the slot picked up to reorder. */
+  let partySelected = 0;
+  let partyMoving: number | null = null;
+
+  function showParty(focus?: string) {
     if (!save) return;
     const s = save;
-    const member = (p: Pokemon, index: number) => {
+    partySelected = Math.min(partySelected, s.party.length - 1);
+    const moveInfo = (slug: string, slot: 'elemental' | 'big'): MoveInfo => {
+      const m = move(slug);
+      return {
+        slug,
+        name: m.name,
+        type: m.type,
+        typeLabel: t(`type.${m.type}` as MessageKey),
+        color: typeColor(m.type),
+        power: t('party.power', { power: m.power ?? '—' }),
+        shape: t(`shape.${slot === 'big' ? bigShape(slug) : elementalShape(slug)}` as MessageKey),
+      };
+    };
+    const member = (p: Pokemon, index: number): PartyMember => {
       const sp = species(p.speciesId);
       const atMax = p.level >= MAX_LEVEL;
       const from = xpForLevel(sp.growthRate, p.level);
       const to = atMax ? from : xpForLevel(sp.growthRate, p.level + 1);
-      const choices = specialOptions(p).map(slug => ({ value: slug, label: move(slug).name }));
-      const change = (slot: 'elemental' | 'big') => (value: string) => {
-        update(current => ({ ...current, party: current.party.map((q, i) => (i === index ? setSpecial(q, slot, value) : q)) }));
+      const stats = statsOf(p);
+      const choose = (slot: 'elemental' | 'big') => (slug: string) => {
+        update(current => ({ ...current, party: current.party.map((q, i) => (i === index ? setSpecial(q, slot, slug) : q)) }));
         partyChanged = true;
+        partySelected = index;
+        showParty(`special-${slot}-${index}`);
       };
       const potions = (['potion', 'super-potion', 'hyper-potion'] as PotionId[]).filter(id => countOf(s.bag, id) > 0 && canUsePotion(p));
       const evolvers = EVOLUTION_ITEMS.filter(id => countOf(s.bag, id) > 0 && itemEvolution(p, id));
@@ -1149,30 +1429,42 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
         name: sp.name,
         sprite: spriteUrl(p.speciesId),
         level: t('party.level', { level: p.level }),
-        hp: p.hp === 0 ? t('party.fainted') : t('party.hp', { hp: displayHp(p.hp), max: displayHp(maxHpOf(p)) }),
+        color: typeColor(sp.types[0]),
+        types: sp.types.map(type => ({ type, label: t(`type.${type}` as MessageKey) })),
+        hp: p.hp,
+        maxHp: maxHpOf(p),
+        hpText: t('party.hp', { hp: displayHp(p.hp), max: displayHp(maxHpOf(p)) }),
         fainted: p.hp === 0,
-        xpProgress: atMax ? 1 : (p.xp - from) / (to - from),
+        xp: atMax ? 1 : (p.xp - from) / (to - from),
         xpText: atMax ? t('party.maxLevel') : t('party.toNext', { xp: to - p.xp }),
-        specials: [
-          { label: t('party.elemental'), testid: `special-elemental-${index}`, options: choices, value: p.specials.elemental, onChange: change('elemental') },
-          { label: t('party.big'), testid: `special-big-${index}`, options: choices, value: p.specials.big, onChange: change('big') },
-        ],
-        actions: potions.map(id => ({
-          label: t('party.use', { item: itemName(id), count: countOf(s.bag, id) }),
-          testid: `use-${id}-${index}`,
-          onClick: () => {
-            update(current => ({
-              ...current,
-              bag: removeItem(current.bag, id),
-              party: current.party.map((q, i) => (i === index ? usePotion(q, id) : q)),
-            }));
-            partyChanged = true;
-            showParty();
-          },
-        })).concat(
-          evolvers.map(id => ({
+        stats: (['hp', 'atk', 'def', 'spa', 'spd', 'spe'] as const).map(stat => ({ label: t(`stat.${stat}`), value: stats[stat] })),
+        specials: (['elemental', 'big'] as const).map(slot => ({
+          label: t(`party.${slot}`),
+          testid: `special-${slot}-${index}`,
+          move: moveInfo(p.specials[slot], slot),
+          options: specialOptions(p).map(slug => moveInfo(slug, slot)),
+          onChoose: choose(slot),
+        })),
+        actions: [
+          ...potions.map(id => ({
+            label: t('party.use', { item: itemName(id), count: countOf(s.bag, id) }),
+            testid: `use-${id}-${index}`,
+            icon: 'heal' as const,
+            onClick: () => {
+              update(current => ({
+                ...current,
+                bag: removeItem(current.bag, id),
+                party: current.party.map((q, i) => (i === index ? usePotion(q, id) : q)),
+              }));
+              partyChanged = true;
+              partySelected = index;
+              showParty(`member-${index}`);
+            },
+          })),
+          ...evolvers.map(id => ({
             label: t('party.evolveWith', { item: itemName(id) }),
             testid: `evolve-${id}-${index}`,
+            icon: 'star' as const,
             onClick: () => {
               const to = itemEvolution(p, id)!.to;
               preloadSprites([to]);
@@ -1182,18 +1474,60 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
                 party: current.party.map((q, i) => (i === index ? evolve(q, to).pokemon : q)),
                 dex: register(current, [], [to]),
               }));
+              audio.play('levelUp');
               partyChanged = true;
-              showParty();
+              partySelected = index;
+              showParty(`member-${index}`);
             },
           })),
-        ),
+        ],
       };
     };
+    const moving = partyMoving;
     renderParty(overlayRoot, {
       title: t('party.title'),
       members: s.party.map(member),
-      language: languagePicker(showParty),
-      buttons: [{ label: t('party.close'), testid: 'close-party', primary: true, back: true, onClick: toggleParty }],
+      selected: partySelected,
+      moving,
+      focus: focus ?? `member-${partySelected}`,
+      labels: {
+        lead: t('party.lead'),
+        fainted: t('party.fainted'),
+        stats: t('party.stats'),
+        specials: t('party.specials'),
+        items: t('party.items'),
+        noItems: t('party.noItems'),
+        moving: moving !== null ? t('party.moving', { name: nameOf(s.party[moving]) }) : '',
+        pick: t('party.pick'),
+        cancel: t('party.cancel'),
+      },
+      onPick: index => {
+        // Picking up only makes sense with someone to swap with.
+        if (s.party.length < 2) return;
+        partyMoving = index;
+        partySelected = index;
+        showParty(`member-${index}`);
+      },
+      onPlace: index => {
+        if (partyMoving !== null && partyMoving !== index) {
+          update(current => ({ ...current, party: swapInParty(current.party, partyMoving!, index) }));
+          partyChanged = true;
+          audio.play('confirm');
+        }
+        partyMoving = null;
+        partySelected = index;
+        showParty(`member-${index}`);
+      },
+      onCancel: () => {
+        const index = partyMoving ?? partySelected;
+        partyMoving = null;
+        showParty(`member-${index}`);
+      },
+      close: { label: t('party.close'), testid: 'close-party', onClick: toggleParty },
+      hints:
+        moving !== null
+          ? [{ pad: 'a', key: 'Enter', label: t('party.place') }, { pad: 'b', key: 'Esc', label: t('party.cancel') }]
+          : [{ pad: 'a', key: 'Enter', label: t('hint.move') }, { pad: 'b', key: 'Esc', label: t('party.close') }],
     });
   }
 
@@ -1223,6 +1557,9 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     if (!inFight && !inLeagueMenu && scene !== 'city') return;
     partyFrom = inFight ? 'fight' : inLeagueMenu ? 'league' : 'city';
     modal = 'party';
+    partySelected = 0;
+    partyMoving = null;
+    if (partyFrom !== 'fight') backdrop.mode('interior');
     show();
     showParty();
   }
@@ -1242,20 +1579,30 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
       F4: tool(s => s.cycleStyle()),
       KeyR: tool(s => s.reset()),
       KeyP: toggleParty,
-      Escape: () => (modal === 'party' ? toggleParty() : leaveCurrentFight()),
+      // In a menu, Esc is its Back button; in a fight, it runs away.
+      Escape: () => {
+        if (!overlayRoot.hidden && pressBack(overlayRoot)) return;
+        if (modal === 'party') toggleParty();
+        else leaveCurrentFight();
+      },
       KeyM: toggleMute,
     },
     { paused: () => scene !== 'fight' || modal !== 'none', alwaysOn: ['KeyP', 'Escape', 'KeyM'] },
   );
-  // In menus, the arrow keys move between buttons (Enter presses the focused one, as browsers do).
+  // In menus, the arrow keys move on screen (Enter presses the focused button, as browsers do), and buttons can have
+  // their own keys (data-key).
+  const ARROWS: Record<string, Direction> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
   window.addEventListener('keydown', event => {
     if (overlayRoot.hidden || event.ctrlKey || event.altKey || event.metaKey) return;
     if (event.target instanceof HTMLElement && event.target.matches('input, select, textarea')) return;
-    const delta = event.code === 'ArrowDown' || event.code === 'ArrowRight' ? 1 : event.code === 'ArrowUp' || event.code === 'ArrowLeft' ? -1 : 0;
-    if (!delta) return;
-    event.preventDefault();
-    moveFocus(overlayRoot, delta);
-    audio.play('select');
+    const direction = ARROWS[event.code];
+    if (direction) {
+      event.preventDefault();
+      moveFocus(overlayRoot, direction);
+      audio.play('select');
+    } else if (!event.repeat && pressShortcut(overlayRoot, `[data-key~="${event.code}"]`)) {
+      event.preventDefault();
+    }
   });
 
   // ── Loop ──────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -1273,14 +1620,12 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     if (events.some(e => e.type === 'battleOver')) battleFinished();
   };
   const clock = createFixedStep(simulate);
-  /** Behind the menus: the place you're in (the League's hall, a city's route, the stadium on the title). */
-  const backdrop = (): StageSpec => {
-    if (league) return { id: 'league' };
-    if (safari) return { id: 'safari' };
-    if (scene === 'title' || !save) return { id: 'stadium' };
-    return { id: 'route' };
+  // The canvas only draws fights; menus show the backdrop (the frame's data-scene hides the canvas).
+  const draw = () => {
+    const next = scene === 'fight' && sandbox ? 'fight' : 'menu';
+    if (frame.dataset.scene !== next) frame.dataset.scene = next;
+    if (sandbox && next === 'fight') renderer.draw(sandbox.view());
   };
-  const draw = () => (sandbox ? renderer.draw(sandbox.view()) : renderer.backdrop(backdrop()));
 
   /** The music for where the player is. */
   const songNow = (): SongId => {
@@ -1293,23 +1638,32 @@ export function startApp(canvas: HTMLCanvasElement, overlayRoot: HTMLElement, op
     return league ? 'league' : 'town';
   };
 
+  const pressFocusedOrPrimary = () => pressShortcut(overlayRoot, '[data-primary]') || pressFocused(overlayRoot);
   let startWasHeld = false;
   let padBefore: MenuPad = NO_MENU_PAD;
   let last: number | undefined;
   function onAnimationFrame(now: number) {
     const pad = readFirstPad();
-    // A controller's Start presses the open menu's main button.
-    if (pad.start && !startWasHeld && !overlayRoot.hidden) pressPrimary(overlayRoot);
-    startWasHeld = pad.start;
-    // In menus: the d-pad moves between buttons, A presses, B goes back (or closes the party).
+    // In menus: the d-pad moves on screen, A presses, B goes back, X / Y / LB / RB are the screen's shortcuts (Y: party).
     if (!overlayRoot.hidden) {
       const pressed = (button: keyof MenuPad) => pad.menu[button] && !padBefore[button];
-      if (pressed('down') || pressed('right')) moveFocus(overlayRoot, 1);
-      if (pressed('up') || pressed('left')) moveFocus(overlayRoot, -1);
+      const any = (Object.keys(pad.menu) as (keyof MenuPad)[]).some(pressed) || (pad.start && !startWasHeld);
+      if (any) input.usePad();
+      for (const direction of ['up', 'down', 'left', 'right'] as const) {
+        if (pressed(direction)) {
+          moveFocus(overlayRoot, direction);
+          audio.play('select');
+        }
+      }
       if (pressed('a')) pressFocused(overlayRoot);
       if (pressed('b')) pressBack(overlayRoot);
+      for (const shortcut of ['x', 'lb', 'rb'] as const) if (pressed(shortcut)) pressShortcut(overlayRoot, `[data-pad="${shortcut}"]`);
+      if (pressed('y') && !pressShortcut(overlayRoot, '[data-pad="y"]')) toggleParty();
     }
     padBefore = pad.menu;
+    // A controller's Start presses the open menu's main button.
+    if (pad.start && !startWasHeld && !overlayRoot.hidden) pressFocusedOrPrimary();
+    startWasHeld = pad.start;
     audio.music(songNow());
     if (!options.manualClock && last !== undefined) clock.advance(now - last);
     last = now;

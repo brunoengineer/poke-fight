@@ -31,3 +31,14 @@ export function addCaught(team: Team, caught: Pokemon): Team & { where: 'party' 
     ? { party: [...team.party, caught], box: team.box, where: 'party' }
     : { party: team.party, box: [...team.box, caught], where: 'box' };
 }
+
+/**
+ * Reorders the party: the Pokémon at `from` moves to `to`, swapping with the one there. The first one leads in
+ * battle (decided in milestone 11: the party screen can reorder).
+ */
+export function swapInParty(party: readonly Pokemon[], from: number, to: number): Pokemon[] {
+  if (from < 0 || to < 0 || from >= party.length || to >= party.length) throw new Error('No Pokémon there');
+  const next = [...party];
+  [next[from], next[to]] = [next[to], next[from]];
+  return next;
+}

@@ -30,7 +30,7 @@ Test mode: open `http://localhost:5173/?test=1` for a fixed seed and a manual cl
 
 ## Status
 
-All 10 milestones are done: the whole Kanto journey can be played to the end. After the prologue (title, the
+All 11 milestones are done: the whole Kanto journey can be played to the end. After the prologue (title, the
 Professor, your starter, a tutorial fight against your rival), travel Kanto's cities on the world map, hunt in the
 grass, caves and water (with a fishing rod), catch wild Pokémon with Poké Balls, fight trainers on the battle field
 for money, buy items, heal at the Pokémon Center and organize your party in the PC box, beat the 8 gym leaders for
@@ -38,13 +38,16 @@ their badges (each badge opens more of Kanto), visit the Safari Zone, buy evolut
 face the Elite Four and your rival, the Champion, at Indigo Plateau, and enter the Hall of Fame. Pokémon level up,
 learn moves and evolve; progress is saved in the browser.
 
-Every fight has its place (route, forest, cave, sea, gym, League, Safari, stadium), trainers throwing their Poké Balls
-before each Pokémon, particles and screen shake, synthesized sound effects, original chiptune music and the Pokémon's
-cries. English and Portuguese. Training (from the title) is a practice mode with Lv. 30 teams.
+It looks and plays like a console game: a 16:9 frame with each place's art behind the menus, a city hub of cards,
+Nurse Joy and Chansey at the Pokémon Center, an illustrated map of Kanto, a party screen with HP bars and reordering,
+and menus that work with a controller (the d-pad moves by direction, A / B / Y) as well as the keyboard and mouse.
+Every fight has its place, the real trainers throwing their Poké Balls before each Pokémon, particles and screen
+shake, synthesized sound effects, original chiptune music and the Pokémon's cries. English and Portuguese. Training
+(from the title) is a practice mode with Lv. 30 teams.
 
 WASD or arrows move (steer jumps in the air), J tackle, K elemental special (¼ PP), I big special (full PP), L guard,
-Space dash (+ back: back dash); every key can be changed on the **Controls** screen. M sound on/off, P party, Esc
-leave. Menus work with the arrow keys and Enter, or a controller (d-pad, A, B, Start). In Training: F1 debug overlay,
+Space dash (+ back: back dash); every key can be changed in **Options**. M sound on/off, P party, Esc leave / back.
+Menus work with the arrow keys and Enter, the mouse, or a controller (d-pad, A, B, Y for the party, Start). In Training: F1 debug overlay,
 F2 player 2 (dummy behaviors, CPU easy / normal / hard), F3 infinite PP, F4 CPU style, R reset.
 `?opponent=cpu-hard` (or `stand`, `guard`…) in the URL picks player 2 in fights; `?entrance=0` skips the Poké Ball
 entrance. Still open: a balance pass from playtesting, and the ideas in [plan.md §11](plan.md#11-open-questions).

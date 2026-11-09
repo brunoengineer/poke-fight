@@ -29,6 +29,12 @@ Run all three before saying a task is done. CI (`.github/workflows/ci.yml`) runs
 - The simulation advances in fixed 1/60 s steps (`engine/loop.ts`). Rendering only reads the state.
 - Fight positions are whole numbers in sub-pixels (planned: 1 px = 256 units), never floats.
 - Menus are DOM (with `data-testid` for tests); only the fight is drawn on the canvas (480×270, whole-number scale).
+  Menus live in a 16:9 frame and are sized in `cqh` (1% of the frame's height), never px. Screens are in
+  `src/ui/screens/` and are built from `src/ui/kit.ts`; every interactive piece is a `<button>`. Show a screen with
+  `mount()` (`ui/focus.ts`), which keeps the focus on redraw. Mark the main button `primary`, the leaving one `back`
+  (B / Esc press it); a locked card stays focusable (`aria-disabled`) so a controller can read why.
+- Which picture goes where (backgrounds, trainers, items, badges, the map) is data in `src/data/art.ts`. Showdown's
+  images have no CORS: draw or show them, never read their pixels.
 - Content (regions, cities, gyms, shops, encounters) is data, not code. Pokémon data comes from
   `scripts/build-data.mjs` into `src/data/generated/`; read it through `src/data/pokedex.ts` and `src/data/types.ts`.
 - Layers: `data/` (generated + typed access) → `game/` (Pokémon, stats, moves: owned Pokémon → fighters) →

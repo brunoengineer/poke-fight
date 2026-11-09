@@ -8,7 +8,7 @@ const team = (change: Partial<SaveData> = {}) => ({ ...(fixture('save-v4-team.js
 test.describe('gyms', () => {
   test('Brock: his words, his team, the Boulder Badge, prize money, and Cerulean opens', async ({ page }) => {
     await openGame(page, { scene: 'city' }, { save: team() });
-    await expect(page.getByTestId('city-gym')).toHaveText('Gym: Brock (Rock)');
+    await expect(page.getByTestId('city-gym')).toContainText('Brock · Rock');
     await page.getByTestId('city-gym').click();
     await expect(page.getByTestId('dialog')).toContainText('Brock');
     await page.getByTestId('dialog-next').click();
@@ -22,9 +22,9 @@ test.describe('gyms', () => {
     await expect(page.getByTestId('dialog-text')).toContainText('Take the Boulder Badge!');
     await page.getByTestId('dialog-next').click();
 
-    await expect(page.getByTestId('city-gym')).toHaveText('Gym: Boulder Badge ✓');
+    await expect(page.getByTestId('city-gym')).toContainText('Beaten');
     await expect(page.getByTestId('city-gym')).toBeDisabled();
-    await expect(page.getByTestId('city-info-2')).toHaveText('Badges: 1/8');
+    await expect(page.getByTestId('city-badges')).toHaveText('1/8');
     const after = await save(page);
     expect(after.badges).toEqual(['boulder']);
     expect(after.money).toBe(3000 + 1386);
@@ -34,7 +34,7 @@ test.describe('gyms', () => {
 
   test("Viridian's gym is locked until the 7th badge", async ({ page }) => {
     await openGame(page, { scene: 'city' }, { save: team({ location: 'viridian' }) });
-    await expect(page.getByTestId('city-gym')).toHaveText('Gym (needs 7 badges)');
+    await expect(page.getByTestId('city-gym')).toContainText('7 badges');
     await expect(page.getByTestId('city-gym')).toBeDisabled();
   });
 });
@@ -51,7 +51,7 @@ test.describe('Safari Zone', () => {
     await page.getByTestId('safari-search').click();
     expect(await scene(page)).toMatchObject({ mode: 'safari' });
     await winBattle(page);
-    await expect(page.getByTestId('throw-safari-ball')).toHaveText('Safari Ball (×30)');
+    await expect(page.getByTestId('throw-safari-ball')).toHaveText('Safari Ball ×30');
     await page.getByTestId('throw-safari-ball').click();
     await expect(page.getByTestId('results-lines')).toContainText(/caught|fled/);
     await page.getByTestId('continue').click();
@@ -77,7 +77,8 @@ test.describe('evolution items', () => {
   test('the Link Cable evolves Kadabra into Alakazam from the party screen', async ({ page }) => {
     await openGame(page, { scene: 'city' }, { save: team({ bag: { 'poke-ball': 5, 'link-cable': 1, 'thunder-stone': 1 } }) });
     await page.keyboard.press('p');
-    // Kadabra (2nd) can use the cable; nobody here can use the Thunder Stone.
+    // The summary follows the focus: Kadabra (2nd) can use the cable; nobody here can use the Thunder Stone.
+    await page.getByTestId('member-1').focus();
     await expect(page.getByTestId('evolve-thunder-stone-1')).toHaveCount(0);
     await page.getByTestId('evolve-link-cable-1').click();
     await expect(page.getByTestId('member-1')).toContainText('Alakazam');

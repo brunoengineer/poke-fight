@@ -4,16 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Poké Fight</title>
-    <!-- Pixelify Sans (titles, the fight's texts) and Inter (menus). Without them, system fonts take over. -->
+    <!-- Barlow Condensed (titles), Inter (menus), Pixelify Sans (the fight's texts). Without them, system fonts take over. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Pixelify+Sans:wght@400;600;700&display=swap" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700;1,800;1,900&family=Inter:wght@400;500;600;700;800&family=Pixelify+Sans:wght@400;600;700&display=swap"
+    />
     <link rel="stylesheet" href="/src/styles/main.css" />
   </head>
   <body>
     <main id="app">
-      <canvas id="screen" data-testid="screen" aria-label="Fight screen"></canvas>
-      <div id="overlay" class="overlay" hidden></div>
+      <!-- The 16:9 frame: the place's picture, the fight canvas, and the menus on top (src/render/screen.ts). -->
+      <div id="frame" class="frame" data-testid="frame" data-scene="menu">
+        <div id="backdrop" class="backdrop" aria-hidden="true"></div>
+        <canvas id="screen" data-testid="screen" aria-label="Fight screen"></canvas>
+        <div id="overlay" class="overlay" hidden></div>
+      </div>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

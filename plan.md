@@ -514,8 +514,43 @@ Pokémon sprites are single front/back images, not fighting-game animation frame
   the player's). Animation is **procedural**: idle bob, squash/stretch on jump, lean + forward slide on the
   physical attack, glow/shake while charging, flash + knockback on hit, fall + fade on KO.
 - **Later** ❓: the data script turns Gen 5 animated GIFs into sprite sheets for the idle animation.
-- Trainers at the edges: pixel figures painted by code (no trainer sprites) with a throwing pose.
-- Menus show each Pokémon's sprite (party, box, Hall of Fame).
+- Trainers at the edges and in the story: **Pokémon Showdown's trainer sprites** (80×80, by URL: the player, the
+  rival, the Professor, Nurse Joy, the Mart clerk, the leaders, the Elite Four, a trainer class for the battle field).
+  Until a sprite loads (or offline, or in the browser tests) a pixel figure painted by code stands in.
+- Places: **Showdown's battle backgrounds** (by URL), both as the fight's stage and behind the menus. The painted
+  stages stay as the stand-in. Items and badges: the PokeAPI sprites.
+- Menus show each Pokémon's sprite (city, party, box, Center, results, Hall of Fame).
+- Which picture goes where is data: `src/data/art.ts` (cities, gyms by type, people, the world map's layout).
+
+### 7.7 Look and feel (milestone 11)
+
+The menus were redesigned to look and play like a console game, **controller first**:
+
+- **The frame**: a 16:9 box as big as the window (`render/screen.ts`). The fight canvas sits in its middle at a
+  whole-number scale; menus fill the frame and are sized in frame units (CSS `cqh`), so everything scales together.
+  Behind the menus, the place's picture (`ui/backdrop.ts`): sharp for a place, blurred for an interior (Center, Mart,
+  box), dimmed around a fight. Each city has a theme color.
+- **Type**: Barlow Condensed (italic, uppercase titles), Inter (text), Pixelify Sans (the fight's canvas).
+- **Pieces** (`ui/kit.ts`): glass panels, bright cards (a gradient of their color, speed lines, a shine on focus),
+  white-on-focus buttons, HP bars (green → yellow → red), XP bars, type pills, a hint bar. Icons are simple line
+  drawings made for the game (`ui/icons.ts`).
+- **Focus** (`ui/focus.ts`, `ui/spatial.ts`): the arrows and the d-pad move **by direction on screen** (grids, rows,
+  columns; lists wrap). A redrawn screen keeps the focus where it was (buying an item stays on the item). The mouse
+  moves the focus too. A / Enter press, B / Esc go back, Y / P opens the party, Start presses the main button.
+  The hint bar shows controller glyphs or keyboard keys, whichever was used last. A sheet (the move picker) keeps the
+  focus inside it.
+- **Screens** (`ui/screens/*`): the title (logo, two Pokémon facing off, the menu, the saved journey), Options
+  (sound, language, keys, the controller's layout), story dialogs (visual-novel style: the speaker's sprite, a name
+  plate, typed-out text, Yes / No questions), the starters (cards with stats), the **city hub** (cards: hunting
+  grounds with the Pokémon that live there (unseen ones as silhouettes), the gym with its leader, the League, the
+  Safari, the battle field; then the Center, the Mart, the box, the map; the party along the bottom), the Pokémon
+  Center (Nurse Joy and Chansey behind the counter, the healing machine), the Mart (the clerk, shelves of item cards,
+  descriptions), the PC box (party column + box grid), the **world map** (an illustrated Kanto, cities as nodes), the
+  **party** (slots with HP bars and types, a summary with stats, XP and the specials, a move picker, items,
+  **reordering**), results (a banner, the report with icons, the capture / evolution card), the League hall (the five
+  opponents), the Hall of Fame (pedestals, confetti), the credits.
+- The browser tests switch the animations off (`html[data-test]`) and check focus and controller flows with a fake
+  gamepad (`e2e/controller.spec.ts`).
 
 ### 7.6 Sound
 
@@ -613,6 +648,7 @@ Each milestone ends with something playable, tests, and green CI.
 | 8 | ✅ **Gyms** | KOF-style team battles, trainers, 8 gyms with AI styles, badges unlock cities, mall, Safari Zone |
 | 9 | ✅ **League** | Elite Four + Champion, credits, "next region" hook (scalability check) |
 | 10 | ✅ **Juice & polish** | Stages per place, trainers' Poké Ball entrance, new HUD, particles and screen shake, sound effects, original music, cries, mute, rebinding UI, menu navigation by keys and controller, modern menus. **Balance pass deferred**: it needs playtest data |
+| 11 | ✅ **Design overhaul** | A console-style 16:9 frame, the places' art behind the menus and as fight stages, trainer and character sprites, every screen redesigned (city hub of cards, Center with Nurse Joy, Mart, box grid, illustrated map, party with HP bars and reordering, results, League hall), controller-first spatial navigation with glyph hints |
 
 Milestones 1–3 come **before** any Pokémon content on purpose: if the fight doesn't feel good with rectangles, the
 sprites won't save it.
@@ -656,7 +692,11 @@ sprites won't save it.
 | Next region | Party, box, money and Pokédex carry over; badges and League start over (default) |
 | Back dash | Invincible on its first 6 frames, punishable after |
 | Capture failure | One throw per win; if it breaks free, it flees |
-| Look | Modern and soft: glassy menus (Inter + Pixelify Sans), stages and trainers painted by code (no extra assets) |
+| Look | Console style (milestone 11): a 16:9 frame, the place's art behind glass menus and bright cards, Barlow Condensed + Inter |
+| Art | Trainers, characters and backgrounds from Pokémon Showdown; items and badges from PokeAPI; all by URL, painted stand-ins until they load |
+| Menus and controller | Spatial navigation (by direction), focus kept on redraw, hint glyphs for the device in use, Y opens the party |
+| Party order | Reorder in the party screen (pick up, then swap); the first Pokémon leads |
+| Options | One screen for sound, language (also kept on the device, without a save) and keys; New game asks in-game before erasing |
 | Entrance | Trainers throw their balls before each Pokémon (72 frames, inputs ignored); the browser tests skip it (`?entrance=0`) |
 | Music | Original loops only (no copied themes); cries are the games' recordings by URL |
 | Settings | Sound and keys live apart from the save (`poke-fight.settings`), one custom key per action, arrows always move |

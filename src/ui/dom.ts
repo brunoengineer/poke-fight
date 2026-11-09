@@ -1,6 +1,6 @@
 // A tiny helper to build DOM elements (menus are DOM; only the fight is a canvas).
 
-type Child = Node | string | null | undefined | false;
+export type Child = Node | string | null | undefined | false;
 
 export interface Props {
   class?: string;
@@ -9,6 +9,8 @@ export interface Props {
   testid?: string;
   onClick?: () => void;
   attrs?: Record<string, string>;
+  /** Inline styles, mostly CSS variables (`--c`: a card's color, `--ratio`: a bar's fill). */
+  style?: Record<string, string | number>;
 }
 
 export function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Props = {}, children: Child[] = []): HTMLElementTagNameMap[K] {
@@ -18,7 +20,18 @@ export function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Props = 
   if (props.testid) element.dataset.testid = props.testid;
   if (props.onClick) element.addEventListener('click', props.onClick);
   for (const [name, value] of Object.entries(props.attrs ?? {})) element.setAttribute(name, value);
+  for (const [name, value] of Object.entries(props.style ?? {})) element.style.setProperty(name, String(value));
   for (const child of children) if (child) element.append(child);
+  return element;
+}
+
+const SVG = 'http://www.w3.org/2000/svg';
+
+/** An SVG element (icons, the world map). */
+export function svg<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number> = {}, children: SVGElement[] = []): SVGElementTagNameMap[K] {
+  const element = document.createElementNS(SVG, tag);
+  for (const [name, value] of Object.entries(attrs)) element.setAttribute(name, String(value));
+  for (const child of children) element.append(child);
   return element;
 }
 
@@ -27,9 +40,3 @@ export interface Choice {
   label: string;
 }
 
-export function select(options: Choice[], value: string, testid: string, label: string, onChange: (value: string) => void) {
-  const element = h('select', { testid, attrs: { 'aria-label': label } }, options.map(o => h('option', { text: o.label, attrs: { value: o.value } })));
-  element.value = value;
-  element.addEventListener('change', () => onChange(element.value));
-  return element;
-}

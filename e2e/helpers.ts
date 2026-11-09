@@ -94,3 +94,34 @@ export const frame = (page: Page) => page.evaluate(() => window.__pf!.frame());
 export const step = (page: Page, frames: number) => page.evaluate(n => window.__pf!.step(n), frames);
 export const snapshot = (page: Page) => page.evaluate(() => window.__pf!.snapshot());
 export const battle = (page: Page) => page.evaluate(() => window.__pf!.battle());
+
+/** The standard gamepad layout's button numbers (as in src/engine/input/gamepad.ts). */
+export const PAD = { A: 0, B: 1, X: 2, Y: 3, LB: 4, RB: 5, Start: 9, Up: 12, Down: 13, Left: 14, Right: 15 } as const;
+
+/**
+ * A fake controller (call before openGame): the game reads it through navigator.getGamepads like a real one.
+ * `press(button)` holds the button for a few animation frames, then releases it.
+ */
+export async function fakePad(page: Page) {
+  await page.addInitScript(() => {
+    const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+    const pad = { connected: true, id: 'fake', index: 0, buttons, axes: [0, 0, 0, 0], mapping: 'standard', timestamp: 0 };
+    Object.defineProperty(navigator, 'getGamepads', { value: () => [pad] });
+    (window as unknown as { __fakePad: typeof buttons }).__fakePad = buttons;
+  });
+  return {
+    async press(button: number) {
+      await page.evaluate(async index => {
+        const buttons = (window as unknown as { __fakePad: { pressed: boolean }[] }).__fakePad;
+        const frames = (n: number) => new Promise<void>(done => {
+          const tick = () => (n-- <= 0 ? done() : requestAnimationFrame(tick));
+          requestAnimationFrame(tick);
+        });
+        buttons[index].pressed = true;
+        await frames(3);
+        buttons[index].pressed = false;
+        await frames(3);
+      }, button);
+    },
+  };
+}

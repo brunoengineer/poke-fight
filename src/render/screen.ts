@@ -18,3 +18,19 @@ export function fitCanvas(canvas: HTMLCanvasElement, availableWidth: number, ava
   canvas.style.height = `${VIEW_H * scale}px`;
   return scale;
 }
+
+/**
+ * The frame around the game: the biggest 16:9 box in the window. Menus fill it (they scale with it, like a console
+ * game); the fight canvas sits in its middle at a whole-number scale, and the place's picture fills the space around.
+ */
+export function frameSize(availableWidth: number, availableHeight: number): { width: number; height: number } {
+  const width = Math.floor(Math.min(availableWidth, (availableHeight * VIEW_W) / VIEW_H));
+  return { width, height: Math.floor((width * VIEW_H) / VIEW_W) };
+}
+
+export function fitFrame(frame: HTMLElement, canvas: HTMLCanvasElement, availableWidth: number, availableHeight: number) {
+  const { width, height } = frameSize(availableWidth, availableHeight);
+  frame.style.width = `${width}px`;
+  frame.style.height = `${height}px`;
+  fitCanvas(canvas, width, height);
+}

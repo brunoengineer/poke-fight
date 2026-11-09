@@ -12,7 +12,9 @@ describe('settings', () => {
 
   it('keeps what is valid and fixes the rest', () => {
     const stored = JSON.stringify({ muted: true, keys: { physical: 'KeyU', guard: 'Escape', big: 7 } });
-    expect(parseSettings(stored)).toEqual({ muted: true, keys: { ...DEFAULT_KEYS, physical: 'KeyU' } });
+    expect(parseSettings(stored)).toEqual({ muted: true, keys: { ...DEFAULT_KEYS, physical: 'KeyU' }, language: null });
+    expect(parseSettings(JSON.stringify({ language: 'pt' })).language).toBe('pt');
+    expect(parseSettings(JSON.stringify({ language: 'xx' })).language).toBeNull();
   });
 
   it('two actions on the same key (a hand-edited file): back to the default keys', () => {

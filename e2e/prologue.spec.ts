@@ -66,7 +66,7 @@ async function playStep(page: Page, name: string) {
 test.describe('title', () => {
   test('without a save: New game and Training; no Continue', async ({ page }) => {
     await openGame(page, { scene: 'title' });
-    await expect(page.getByTestId('title')).toContainText('Poké Fight');
+    await expect(page.getByTestId('title').getByRole('heading', { name: 'Poké Fight' })).toBeVisible();
     await expect(page.getByTestId('new-game')).toBeVisible();
     await expect(page.getByTestId('training')).toBeVisible();
     await expect(page.getByTestId('continue-game')).toHaveCount(0);

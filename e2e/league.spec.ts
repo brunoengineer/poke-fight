@@ -9,7 +9,7 @@ test.describe('Pokémon League', () => {
     const data = victoryRoad();
     data.badges = (data.badges as string[]).slice(0, 7);
     await openGame(page, { scene: 'city' }, { save: data });
-    await expect(page.getByTestId('city-league')).toHaveText('Pokémon League (needs 8 badges)');
+    await expect(page.getByTestId('city-league')).toContainText('8 badges');
     await expect(page.getByTestId('city-league')).toBeDisabled();
   });
 
@@ -44,7 +44,7 @@ test.describe('Pokémon League', () => {
     await expect(page.getByTestId('next-region-go')).toBeDisabled();
     await page.getByTestId('next-region-stay').click();
 
-    await expect(page.getByTestId('city')).toContainText('Champion ★');
+    await expect(page.getByTestId('city-champion')).toHaveText('Champion');
     const after = await save(page);
     expect(after.champion).toBe(true);
     expect(after.hallOfFame).toHaveLength(1);

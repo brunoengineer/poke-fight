@@ -6,7 +6,7 @@ import { species, speciesBySlug } from '../data/pokedex';
 import { city, isUnlocked, KANTO, type HuntKind } from '../data/regions/kanto';
 import { createRng } from '../engine/rng';
 import { HP_UNITS } from '../fight/constants';
-import { addCaught, canSendToBox, canTakeFromBox, sendToBox, takeFromBox } from './box';
+import { addCaught, canSendToBox, canTakeFromBox, sendToBox, swapInParty, takeFromBox } from './box';
 import { catchChance, catchValue, DIFFICULTY_PENALTY, lowLevelBonus, throwBall } from './capture';
 import { addItem, buy, countOf, moneyAfterLoss, prizeMoney, removeItem, START_BAG, START_MONEY, usePotion } from './economy';
 import { bestRod, encounterTable, hasEncounters, rollEncounter, rollIvs, wildPokemon } from './encounters';
@@ -183,5 +183,12 @@ describe('PC box', () => {
   it('a caught Pokémon joins the party, or the box when the party is full', () => {
     expect(addCaught({ party: [p('charmander')], box: [] }, p('pidgey')).where).toBe('party');
     expect(addCaught({ party: Array.from({ length: 6 }, () => p('pidgey')), box: [] }, p('rattata')).where).toBe('box');
+  });
+
+  it('the party can be reordered (the first one leads)', () => {
+    const party = [p('charmander'), p('pidgey'), p('rattata')];
+    expect(swapInParty(party, 2, 0).map(x => x.speciesId)).toEqual([id('rattata'), id('pidgey'), id('charmander')]);
+    expect(party[0].speciesId).toBe(id('charmander'));
+    expect(() => swapInParty(party, 0, 3)).toThrow();
   });
 });

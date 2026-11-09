@@ -10,11 +10,11 @@ test.describe('the city', () => {
   test('shows money and the Pokédex; Pallet Town has grass and water but no shop', async ({ page }) => {
     await openGame(page, { scene: 'city' }, { save: start() });
     await expect(page.getByTestId('city-heading')).toHaveText('Pallet Town');
-    await expect(page.getByTestId('city-info-0')).toHaveText('Money: ₽3000');
-    await expect(page.getByTestId('city-info-1')).toHaveText('Pokédex: 2 seen · 1 caught');
+    await expect(page.getByTestId('city-money')).toHaveText('₽3000');
+    await expect(page.getByTestId('city-dex')).toHaveText('2 seen · 1 caught');
     await expect(page.getByTestId('hunt-grass')).toBeEnabled();
     await expect(page.getByTestId('hunt-water')).toBeDisabled();
-    await expect(page.getByTestId('hunt-water')).toHaveText('Fish (you need a fishing rod)');
+    await expect(page.getByTestId('hunt-water')).toContainText('You need a fishing rod');
     await expect(page.getByTestId('city-shop')).toHaveCount(0);
   });
 
@@ -49,7 +49,7 @@ test.describe('hunting and catching', () => {
     expect(after.party).toHaveLength(2);
     expect(after.bag['poke-ball']).toBe(4);
     expect(after.dex.caught).toContain(after.party[1].speciesId);
-    await expect(page.getByTestId('city-info-1')).toContainText('2 caught');
+    await expect(page.getByTestId('city-dex')).toContainText('2 caught');
   });
 
   test('a defeated wild Pokémon can be let go', async ({ page }) => {
@@ -89,14 +89,17 @@ test.describe('the shop and fishing', () => {
     await page.getByTestId('city-shop').click();
     await page.getByTestId('buy-poke-ball').click();
     await expect(page.getByTestId('item-poke-ball')).toContainText('You have 6');
-    await expect(page.getByTestId('shop-info-0')).toHaveText('Money: ₽2800');
+    await expect(page.getByTestId('shop-money')).toHaveText('₽2800');
+    // Buying keeps the focus on the item (a controller can buy several in a row).
+    await expect(page.getByTestId('buy-poke-ball')).toBeFocused();
+    await expect(page.getByTestId('shop-message')).toHaveText('Here you go: one Poké Ball. Thanks!');
     await page.getByTestId('buy-old-rod').click();
     await expect(page.getByTestId('buy-old-rod')).toBeDisabled();
-    await expect(page.getByTestId('buy-old-rod')).toHaveText('Already yours');
+    await expect(page.getByTestId('buy-old-rod')).toContainText('Owned');
     expect((await save(page)).money).toBe(1800);
 
     await page.getByTestId('back').click();
-    await expect(page.getByTestId('hunt-water')).toHaveText('Fish (Old Rod)');
+    await expect(page.getByTestId('hunt-water')).toContainText('With the Old Rod');
     await page.getByTestId('hunt-water').click();
     // Viridian's Old Rod table only has Magikarp (as in Red/Blue).
     expect((await snapshot(page)).fighters[1].name).toBe('Magikarp');
@@ -106,7 +109,7 @@ test.describe('the shop and fishing', () => {
     await openGame(page, { scene: 'city' }, { save: { ...start(), location: 'viridian', money: 100 } });
     await page.getByTestId('city-shop').click();
     await page.getByTestId('buy-poke-ball').click();
-    await expect(page.getByTestId('shop')).toContainText('You don’t have enough money.');
+    await expect(page.getByTestId('shop-message')).toHaveText('Sorry, you don’t have enough money for that.');
     expect((await save(page)).bag['poke-ball']).toBe(5);
   });
 });

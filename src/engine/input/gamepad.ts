@@ -38,9 +38,13 @@ export interface MenuPad {
   right: boolean;
   a: boolean;
   b: boolean;
+  x: boolean;
+  y: boolean;
+  lb: boolean;
+  rb: boolean;
 }
 
-export const NO_MENU_PAD: MenuPad = { up: false, down: false, left: false, right: false, a: false, b: false };
+export const NO_MENU_PAD: MenuPad = { up: false, down: false, left: false, right: false, a: false, b: false, x: false, y: false, lb: false, rb: false };
 
 export function padMenu(pad: PadLike): MenuPad {
   const on = (index: number) => pad.buttons[index]?.pressed === true;
@@ -52,6 +56,10 @@ export function padMenu(pad: PadLike): MenuPad {
     right: on(PAD.Right) || stickX >= STICK_DEADZONE,
     a: on(PAD.A),
     b: on(PAD.B),
+    x: on(PAD.X),
+    y: on(PAD.Y),
+    lb: on(PAD.LB),
+    rb: on(PAD.RB),
   };
 }
 

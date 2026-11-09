@@ -56,7 +56,8 @@ describe('controller', () => {
   });
 
   it('in menus: the d-pad or the stick move, A confirms, B goes back', () => {
-    expect(padMenu(pad([PAD.Down, PAD.A]))).toEqual({ up: false, down: true, left: false, right: false, a: true, b: false });
+    expect(padMenu(pad([PAD.Down, PAD.A]))).toEqual({ up: false, down: true, left: false, right: false, a: true, b: false, x: false, y: false, lb: false, rb: false });
+    expect(padMenu(pad([PAD.Y, PAD.RB]))).toMatchObject({ y: true, rb: true, x: false, lb: false });
     expect(padMenu(pad([PAD.B], [0, -0.9]))).toMatchObject({ up: true, b: true, a: false });
   });
 

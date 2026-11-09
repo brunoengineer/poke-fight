@@ -68,7 +68,9 @@ test.describe('party screen', () => {
     await step(page, 30);
     expect((await snapshot(page)).frame).toBe(frame);
 
-    await page.getByTestId('special-elemental-0').selectOption('scratch');
+    await page.getByTestId('special-elemental-0').click();
+    await page.getByTestId('move-scratch').click();
+    await expect(page.getByTestId('special-elemental-0')).toContainText('Scratch');
     await page.keyboard.press('p');
     await expect(page.getByTestId('party')).toBeHidden();
     expect((await snapshot(page)).fighters[0].loadout.elemental.name).toBe('Scratch');
@@ -88,17 +90,19 @@ test.describe('party screen', () => {
     expect((await save(page)).party[1].hp).toBeGreaterThan(0);
   });
 
-  test('switching to Portuguese changes every text, and is remembered', async ({ page }) => {
-    await openGame(page, {}, { save: fixture('save-v2-viridian.json') });
-    await page.keyboard.press('p');
-    await page.getByTestId('language').selectOption('pt');
-    await expect(page.getByTestId('party').getByRole('heading')).toHaveText('Equipe');
-    await expect(page.getByTestId('close-party')).toHaveText('Fechar (P)');
+  test('switching to Portuguese (Options) changes every text, and is remembered', async ({ page }) => {
+    await openGame(page, { scene: 'city' }, { save: fixture('save-v2-viridian.json') });
+    await page.getByTestId('city-options').click();
+    await page.getByTestId('language-pt').click();
+    await expect(page.getByTestId('options').getByRole('heading', { level: 2 })).toHaveText('Opções');
     expect(await page.evaluate(() => document.documentElement.lang)).toBe('pt-BR');
+    await page.getByTestId('back').click();
+    await page.keyboard.press('p');
+    await expect(page.getByTestId('party').getByRole('heading', { level: 2 })).toHaveText('Equipe');
+    await expect(page.getByTestId('close-party')).toHaveText('Fechar');
     await reload(page);
     expect((await save(page)).settings.language).toBe('pt');
-    await page.keyboard.press('p');
-    await expect(page.getByTestId('party').getByRole('heading')).toHaveText('Equipe');
+    await expect(page.getByTestId('city-party')).toContainText('Equipe');
   });
 });
 

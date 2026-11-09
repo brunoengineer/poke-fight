@@ -23,8 +23,9 @@ export interface Entrance {
   first: boolean;
 }
 
-/** How a trainer looks (colors of a small pixel figure). */
+/** How a trainer looks: a sprite (Showdown name), and the colors of the pixel figure drawn until it loads. */
 export interface TrainerLook {
+  sprite?: string;
   hair: string;
   top: string;
   bottom: string;
@@ -34,14 +35,15 @@ export interface TrainerLook {
 }
 
 export const LOOKS = {
-  player: { hair: '#3b2414', top: '#3a6df0', bottom: '#2b2f45', cap: '#e5404a' },
-  rival: { hair: '#c58a3e', top: '#8a52e0', bottom: '#33304a' },
-  trainer: { hair: '#1e1e2a', top: '#2fb39a', bottom: '#2a3044', cap: '#f2f2f2' },
-  champion: { hair: '#c58a3e', top: '#8a52e0', bottom: '#33304a', cape: '#f2cf6a' },
+  player: { sprite: 'red', hair: '#3b2414', top: '#3a6df0', bottom: '#2b2f45', cap: '#e5404a' },
+  rival: { sprite: 'blue', hair: '#c58a3e', top: '#8a52e0', bottom: '#33304a' },
+  trainer: { sprite: 'acetrainer', hair: '#1e1e2a', top: '#2fb39a', bottom: '#2a3044', cap: '#f2f2f2' },
+  champion: { sprite: 'blue', hair: '#c58a3e', top: '#8a52e0', bottom: '#33304a', cape: '#f2cf6a' },
 } satisfies Record<string, TrainerLook>;
 
 /** A gym leader or an Elite Four member: dressed in their type's color (with a cape for the Elite Four). */
-export const leaderLook = (color: string, elite = false): TrainerLook => ({
+export const leaderLook = (color: string, elite = false, sprite?: string): TrainerLook => ({
+  sprite,
   hair: '#2a2030',
   top: color,
   bottom: '#262a3e',

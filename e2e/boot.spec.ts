@@ -41,6 +41,7 @@ test('passes the seed from the URL to the game', async ({ page }) => {
 
 test('test hooks do not exist in a normal game', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByTestId('screen')).toBeVisible();
+  // A normal game starts on the title screen (the fight canvas only shows during fights).
+  await expect(page.getByTestId('title')).toBeVisible();
   expect(await page.evaluate(() => window.__pf)).toBeUndefined();
 });

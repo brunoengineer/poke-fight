@@ -3,6 +3,7 @@
 
 import { Button } from '../fight/input';
 import type { Bindings } from '../engine/input/keys';
+import { isLanguage, type Language } from '../i18n';
 
 export const SETTINGS_KEY = 'poke-fight.settings';
 
@@ -51,9 +52,11 @@ export const RESERVED_KEYS: ReadonlySet<string> = new Set([
 export interface Settings {
   muted: boolean;
   keys: KeyMap;
+  /** The language chosen on this device (null: follow the browser, or the save). */
+  language: Language | null;
 }
 
-export const DEFAULT_SETTINGS: Settings = { muted: false, keys: DEFAULT_KEYS };
+export const DEFAULT_SETTINGS: Settings = { muted: false, keys: DEFAULT_KEYS, language: null };
 
 /** Reads stored settings, keeping whatever is valid and using the defaults for the rest (never fails). */
 export function parseSettings(raw: string | null): Settings {
@@ -64,7 +67,7 @@ export function parseSettings(raw: string | null): Settings {
     data = null;
   }
   if (typeof data !== 'object' || data === null) return DEFAULT_SETTINGS;
-  const { muted, keys } = data as { muted?: unknown; keys?: unknown };
+  const { muted, keys, language } = data as { muted?: unknown; keys?: unknown; language?: unknown };
   let map = DEFAULT_KEYS;
   if (typeof keys === 'object' && keys !== null) {
     const stored = keys as Record<string, unknown>;
@@ -74,7 +77,7 @@ export function parseSettings(raw: string | null): Settings {
     // Two actions on one key can only come from a hand-edited file: fall back to the defaults.
     if (new Set(Object.values(candidate)).size === ACTIONS.length) map = candidate;
   }
-  return { muted: muted === true, keys: map };
+  return { muted: muted === true, keys: map, language: isLanguage(language) ? language : null };
 }
 
 /**

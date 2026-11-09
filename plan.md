@@ -294,9 +294,13 @@ More archetypes can come later (status effects: paralysis = slower, burn = damag
 - **Choosing and switching** (after milestone 11; rules in `fight/battle.ts`):
   - After **every** faint (yours or theirs), you pick who fights the next round (a quick menu, the fight paused;
     your current Pokémon is selected, so J keeps it). With one Pokémon left there is nothing to pick.
-  - **Mid-round, once**: Tab (controller: View) pauses on the same menu; Guard or the same Pokémon cancels without
-    using the switch. The new Pokémon comes in with half a PP bar, the opponent keeps its HP and PP, and the round's
-    clock keeps running (no free reset).
+  - **Mid-round, once**: Tab (controller: View) pauses on the same menu; Guard / Esc / the controller's B, or the
+    same Pokémon, cancels without using the switch. The new Pokémon comes in with half a PP bar **where the old one
+    stood**, the opponent keeps its HP, PP, place and whatever it was doing, and the round's clock keeps running: it
+    is the same round, not a new one (no free reset, nobody teleports back to the start).
+  - The menu reads the battle's own menu buttons (`Button.Confirm` / `Button.Cancel`): the tackle key or Enter or the
+    controller's A sends, B cancels. (A also means "jump" in the fight, so a press with Confirm never moves the
+    cursor.) The hint line shows the keys or the controller's glyphs, for the device in use.
   - After a switch, the next one is refused until a Pokémon faints (on either side); a message says so, and the HUD
     shows the switch as ready or used. No switching in the tutorial.
 - **Time over**: the side with the higher % HP wins.
@@ -336,6 +340,21 @@ More archetypes can come later (status effects: paralysis = slower, burn = damag
   carried on 100+ px past the defender and was safe even when guarded. A Rush that hits still passes through.
 - Sandbox: F2 cycles player 2 (dummy behaviors, then CPU easy / normal / hard), F4 cycles the CPU style. The game
   starts against CPU normal; `?opponent=stand` (or any other) chooses player 2 from the URL (the browser tests do).
+
+**A profile per opponent Pokémon** (after milestone 11; `game/ai.ts`, `ai.test.ts`):
+
+- **Skill is a scale** from 0 to 1 (`skillAt`): 0 is a clumsy wild Pokémon (reaction 36, guards 5%), and easy /
+  normal / hard are the points ⅓, ⅔ and 1 (the numbers above, unchanged).
+- **Who controls it** sets the base: wild = 0; a trainer's Pokémon = the trainer's difficulty − 0.1 (battle field:
+  normal; gyms and the League: their own). **Each evolution stage adds 0.1**, and the level up to 0.12 more (at 100).
+  So a wild Pidgey is clumsy, a trainer's Pidgeot plays near normal, Giovanni's Rhydon plays at hard.
+- **Style from its stats** (unless a leader sets one for the team): Sp. Atk well above Attack → zoner; defenses well
+  above its attacks → defensive; a fast physical attacker → aggressive; else balanced.
+- **A twist per Pokémon**: each personality number varies ±20%, so two of the same species don't fight alike.
+- **No two fights the same**: every fight gets a fresh CPU seed (from its own random sequence, so it never changes
+  which Pokémon appear), and the **first plan of a round is an opening** picked more freely (wait and watch, walk
+  in, a special, jump in, back off, dash, guard). Before this, every fight used the session's seed, so the CPU
+  opened the same way every time. The balance pins above still hold.
 
 ## 5. Progression systems
 
@@ -428,12 +447,17 @@ World map (cities unlocked by badges)
   shop and its hunting grounds: real Red/Blue location areas grouped as grass, cave and water (Red and Blue merged,
   so both versions' exclusives appear). Without badges: Pallet, Viridian, Pewter.
 - **Hunting**: grass and caves (walking tables); water = fishing with the **best rod owned** (Old, Good, Super Rod:
-  each its own Red/Blue table). Rods are **bought** (decided): Old Rod in Viridian (₽1000), Good Rod in Pewter
+  each its own Red/Blue table). **Rare bites** (decided after milestone 11): in Red/Blue the Old Rod only ever
+  catches Magikarp; here each rod also hooks the next rod's Pokémon 30% of the time, at its own levels (Old Rod:
+  Magikarp, mostly; sometimes a Poliwag or a Goldeen). Rods are **bought** (decided): Old Rod in Viridian (₽1000), Good Rod in Pewter
   (₽3000), Super Rod at the Saffron mall (₽10000). Surfing: later.
 - **Wild battles**: the party against one wild Pokémon (an easy CPU), "A wild X appeared!". Esc runs away.
   Wild Pokémon roll their own **IVs** (0–31), kept when caught.
 - **Catching**: after a win, one ball (Poké / Great / Ultra / Master): the Gen 8 formula as planned (no performance
-  bonus), 4 shake checks; if it breaks free it flees; you can also let it go. A caught Pokémon arrives rested (full
+  bonus), 4 shake checks; if it breaks free it flees; you can also let it go. **The throw plays out** as in the
+  games (`ui/screens/capture.ts`): the ball arcs in, the Pokémon turns to red light and is drawn inside, the ball
+  drops and wobbles once per shake check passed, then clicks shut (a green light, stars, "Gotcha!") or bursts open
+  ("Aargh! Almost had it!": the games' lines by the number of wobbles). A skips to the end. A caught Pokémon arrives rested (full
   HP) and joins the party, or the box when the party is full.
 - **Money**: start ₽3000 and 5 Poké Balls. Battle field (trainers) pays the sum of their levels × 20; wild Pokémon
   pay nothing. **Losing** (wild or trainer): half the money is lost, the party is healed, back to the city.
@@ -527,9 +551,20 @@ Pokémon sprites are single front/back images, not fighting-game animation frame
 - Places: **Showdown's battle backgrounds** (by URL), both as the fight's stage and behind the menus, with life drawn
   over them (`render/ambience.ts`: leaves and light rays, water sparkles, bubbles, dust, snow, embers, lightning,
   stars, spotlights; some pass in front of the fighters). The painted stages stay as the stand-in.
-- **Cities**: a pixel-art panorama per city painted by code (`render/town.ts`: the sky for its mood, the skyline with
-  the Pokémon Center, the Mart, the gym and its landmark, the plaza). It's the city's backdrop in the menus and the
-  stage of its battle field's fights.
+- **Cities**: a top-down pixel-art town per city, painted by code (`render/town.ts`, after milestone 11; the first
+  version was a flat side-view skyline): a forest edge, the main row of buildings in the band the city's cards
+  leave visible (houses, the Pokémon Center with its Poké Ball, the Mart, the gym with its statues, the landmark:
+  Oak's lab, the museum's columns, Lavender's tower, the department store, Silph's tower, the Safari gate, the
+  League, Cinnabar's volcano), the road with lamps and flower beds, gardens and fences, tall grass at the edges,
+  and the city's water (the sea, a river with a bridge, a pond, Vermilion's harbor with its ship). Each city has its
+  ground (grass, rock, sand, paving) and time of day (Lavender at dusk and the Plateau at night, windows lit). The
+  battle field's fights use the city's battle background again (a top-down town can't be a side-view stage).
+- **The world map** is pixel art too (`render/kanto-map.ts`): the sea with surf and shallows, a rugged coast and
+  beaches, mountain **ranges** (several peaks each, lit and shaded faces, crevices, snow) instead of triangles,
+  forests of little trees, a lake and a river, roads that turn on the map's axes (dotted over the sea, grey while
+  locked), and each city as a little town. The city buttons are rings around them.
+- Both are drawn by a small pixel painter (`render/pixel.ts`): pixels written to a buffer, light from the top-left,
+  dark outlines, a few tones per material with ordered dithering between them, and fixed noise for textures.
 - Items and badges: the PokeAPI sprites.
 - **Rendering**: the fight is laid out in 480×270 art pixels but drawn at the screen's resolution, with a whole number
   of *device* pixels per art pixel and positions snapped to device pixels (`render/screen.ts`). Stretching a
@@ -581,7 +616,11 @@ All in `audio/`, through the Web Audio API, starting on the first click or key (
   (`audio/cues.ts`), tested.
 - **Music**: short **original** chiptune loops written as chords + a melody (`audio/music.ts`): title, town, battle,
   gym, League, victory. No game's music is copied.
-- **Cries**: the games' recordings, loaded by URL from PokeAPI (like the sprites) when a Pokémon comes out.
+- **Cries**: the games' recordings, loaded by URL from PokeAPI (like the sprites) when a Pokémon comes out. They go
+  through the mix like everything else (their own bus, then the master), so mute and volume apply.
+- **Volume** (after milestone 11): Options has music, effects and cries, 0–10 each (device settings). Defaults 6 / 6
+  / 3: the cries are full-loudness recordings and the music a soft synth, so at the old fixed levels a cry drowned
+  the music. Levels are squared into gains (`gainOf`), so the steps sound even.
 - The browser tests are silent (test mode uses a silent player and never fetches cries).
 
 ### 7.4 Folder structure
@@ -715,13 +754,16 @@ sprites won't save it.
 | Look | Console style (milestone 11): a 16:9 frame, the place's art behind glass menus and bright cards, Barlow Condensed + Inter |
 | Art | Trainers, characters and backgrounds from Pokémon Showdown; items and badges from PokeAPI; all by URL, painted stand-ins until they load |
 | Menus and controller | Spatial navigation (by direction), focus kept on redraw, hint glyphs for the device in use, Y opens the party |
-| Party order | Reorder in the party screen (pick up, then swap); the first Pokémon leads |
-| Switching | Once mid-round (Tab / View), again only after a faint; after every faint the player picks the next fighter |
+| Party order | Reorder in the party screen (pick up, then swap); the first Pokémon leads. The two slots glide into each other's places; a screen redrawn after a change doesn't play its entrance again |
+| Switching | Once mid-round (Tab / View), again only after a faint; after every faint the player picks the next fighter. A mid-round switch continues the same round from where everyone stood |
+| CPU per Pokémon | Skill from who controls it (wild clumsy, trainers at their difficulty) plus its evolution stage and level; style from its stats; a new seed every fight |
+| Fishing | Each rod also hooks the next rod's Pokémon 30% of the time (the Old Rod isn't only Magikarp) |
+| Towns and map | Top-down pixel art painted by code (original drawings), not pictures |
 | Results | XP cards per Pokémon (level, XP bar filling from where it was, level ups, new moves); "Hunt again" after wild and Safari battles |
 | Options | One screen for sound, language (also kept on the device, without a save) and keys; New game asks in-game before erasing |
 | Entrance | Trainers throw their balls before each Pokémon (72 frames, inputs ignored); the browser tests skip it (`?entrance=0`) |
 | Music | Original loops only (no copied themes); cries are the games' recordings by URL |
-| Settings | Sound and keys live apart from the save (`poke-fight.settings`), one custom key per action, arrows always move |
+| Settings | Sound, volumes and keys live apart from the save (`poke-fight.settings`), one custom key per action, arrows always move |
 | Balance pass | Deferred until there is playtest data (numbers stay pinned in tests) |
 
 ### Still open

@@ -4,6 +4,7 @@
 
 import { compileSong, SONGS, type CompiledSong, type SongId } from './music';
 import type { SoundId } from './cues';
+import { DEFAULT_VOLUMES, MAX_VOLUME, type Volumes } from '../state/settings';
 
 export interface Audio {
   /** Call on the first click or key press (the browser's autoplay rule). */
@@ -13,22 +14,32 @@ export interface Audio {
   music(song: SongId | null): void;
   cry(speciesId: number): void;
   setMuted(muted: boolean): void;
+  /** Levels 0–10 for the music, the effects and the cries (state/settings.ts). */
+  setVolumes(volumes: Volumes): void;
 }
 
-export const createSilentAudio = (): Audio => ({ unlock() {}, play() {}, music() {}, cry() {}, setMuted() {} });
+export const createSilentAudio = (): Audio => ({ unlock() {}, play() {}, music() {}, cry() {}, setMuted() {}, setVolumes() {} });
 
 /** The cries recorded from the games, as PokeAPI hosts them (like the sprites, loaded only when needed). */
 const cryUrl = (speciesId: number) => `https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/${speciesId}.ogg`;
 
-const MUSIC_VOLUME = 0.16;
-const SFX_VOLUME = 0.5;
-const CRY_VOLUME = 0.35;
+/**
+ * Each bus's gain at level 10. The cries are recordings at full loudness while the music is a soft synth: at the
+ * default levels (music 6, sounds 6, cries 3) the music bus is 0.16, the effects 0.5 and a cry about 0.08, so a cry
+ * sits just above the music instead of drowning it (it was 0.35, outside the mix, before).
+ */
+export const BUS_GAIN: Record<keyof Volumes, number> = { music: 0.45, sounds: 1.4, cries: 0.9 };
 
-export function createWebAudio(startMuted: boolean): Audio {
+/** A level (0–10) → a gain. Squared, so the steps sound even (loudness is closer to logarithmic than linear). */
+export const gainOf = (kind: keyof Volumes, level: number) => BUS_GAIN[kind] * (level / MAX_VOLUME) ** 2;
+
+export function createWebAudio(startMuted: boolean, startVolumes: Volumes = DEFAULT_VOLUMES): Audio {
   let ctx: AudioContext | null = null;
   let master: GainNode | null = null;
   let musicBus: GainNode | null = null;
   let sfxBus: GainNode | null = null;
+  let cryBus: GainNode | null = null;
+  let volumes = startVolumes;
   let noise: AudioBuffer | null = null;
   let muted = startMuted;
   let wanted: SongId | null = null;
@@ -155,11 +166,14 @@ export function createWebAudio(startMuted: boolean): Audio {
       master.gain.value = muted ? 0 : 1;
       master.connect(ctx.destination);
       musicBus = ctx.createGain();
-      musicBus.gain.value = MUSIC_VOLUME;
+      musicBus.gain.value = gainOf('music', volumes.music);
       musicBus.connect(master);
       sfxBus = ctx.createGain();
-      sfxBus.gain.value = SFX_VOLUME;
+      sfxBus.gain.value = gainOf('sounds', volumes.sounds);
       sfxBus.connect(master);
+      cryBus = ctx.createGain();
+      cryBus.gain.value = gainOf('cries', volumes.cries);
+      cryBus.connect(master);
       noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
       const data = noise.getChannelData(0);
       for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
@@ -176,16 +190,26 @@ export function createWebAudio(startMuted: boolean): Audio {
       startWanted();
     },
     cry(speciesId) {
-      if (!ctx || muted) return;
+      if (!ctx || !cryBus || muted) return;
       let element = cries.get(speciesId);
       if (!element) {
-        element = new window.Audio(cryUrl(speciesId));
-        element.volume = CRY_VOLUME;
+        element = new window.Audio();
+        // Through the mix (the cries' bus, then the master), which needs the file with CORS (GitHub sends it).
+        element.crossOrigin = 'anonymous';
+        element.src = cryUrl(speciesId);
+        ctx.createMediaElementSource(element).connect(cryBus);
         cries.set(speciesId, element);
       }
       element.currentTime = 0;
       // A cry that can't load (offline) is simply skipped.
       element.play().catch(() => undefined);
+    },
+    setVolumes(next) {
+      volumes = next;
+      if (!ctx) return;
+      musicBus?.gain.setTargetAtTime(gainOf('music', next.music), now(), 0.02);
+      sfxBus?.gain.setTargetAtTime(gainOf('sounds', next.sounds), now(), 0.02);
+      cryBus?.gain.setTargetAtTime(gainOf('cries', next.cries), now(), 0.02);
     },
     setMuted(next) {
       muted = next;

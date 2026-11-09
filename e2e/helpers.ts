@@ -123,5 +123,14 @@ export async function fakePad(page: Page) {
         await frames(3);
       }, button);
     },
+    /** Holds or lets go of a button (the fight reads the pad on each simulated frame: step while it is held). */
+    async set(button: number, pressed: boolean) {
+      await page.evaluate(
+        ([index, down]) => {
+          (window as unknown as { __fakePad: { pressed: boolean }[] }).__fakePad[index].pressed = down;
+        },
+        [button, pressed] as const,
+      );
+    },
   };
 }

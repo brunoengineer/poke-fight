@@ -33,9 +33,11 @@ Run all three before saying a task is done. CI (`.github/workflows/ci.yml`) runs
   never stretch a low-resolution canvas (it blurs texts and makes moving sprites flicker).
   Menus live in a 16:9 frame and are sized in `cqh` (1% of the frame's height), never px. Screens are in
   `src/ui/screens/` and are built from `src/ui/kit.ts`; every interactive piece is a `<button>`. Show a screen with
-  `mount()` (`ui/focus.ts`), which keeps the focus on redraw. Mark the main button `primary`, the leaving one `back`
+  `mount()` (`ui/focus.ts`), which keeps the focus on redraw (and skips the entrance animations when the same screen
+  is drawn again). Mark the main button `primary`, the leaving one `back`
   (B / Esc press it); a locked card stays focusable (`aria-disabled`) so a controller can read why.
-- Which picture goes where (backgrounds, trainers, items, badges, the map) is data in `src/data/art.ts`. Showdown's
+- Which picture goes where (backgrounds, trainers, items, badges, the map) is data in `src/data/art.ts`. The towns and
+  the world map are pixel art painted by code (`render/town.ts`, `render/kanto-map.ts`, on `render/pixel.ts`). Showdown's
   images have no CORS: draw or show them, never read their pixels.
 - Content (regions, cities, gyms, shops, encounters) is data, not code. Pokémon data comes from
   `scripts/build-data.mjs` into `src/data/generated/`; read it through `src/data/pokedex.ts` and `src/data/types.ts`.

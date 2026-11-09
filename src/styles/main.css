@@ -96,12 +96,12 @@ select {
 
 /* A city's panorama: pixel art made at the fight's size, shown whole and crisp, drifting less. */
 .backdrop-image.pixel {
-  inset: -1%;
-  /* Bigger and lifted, so the skyline shows in the band above the city's cards. */
-  background-size: 132% auto;
-  background-position: center 80%;
+  inset: 0;
+  /* The town is drawn for the frame's size; its main row of buildings is in the top band, above the city's cards. */
+  background-size: cover;
+  background-position: center top;
   image-rendering: pixelated;
-  animation-name: drift-small;
+  animation: none;
 }
 
 @keyframes drift-small {
@@ -245,6 +245,12 @@ p {
   padding: 3.4cqh 4cqh 2.6cqh;
   gap: 2.2cqh;
   animation: screen-in 380ms var(--ease-out) both;
+}
+
+/* A screen drawn again after a change on it (ui/focus.ts mount): no entrance, so it doesn't look reloaded. */
+.screen[data-redraw],
+.screen[data-redraw] :is(.card, .place-name, .dialog-box, .clerk, .helper, .mini-party li, .item-card, .page, .page-line, .seat, .pedestal) {
+  animation: none;
 }
 
 @keyframes screen-in {
@@ -1360,6 +1366,57 @@ kbd,
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
 }
 
+/* Volume: − ▮▮▮▯▯ + (two buttons, so a controller's d-pad and A work like everywhere else). */
+.volume-rows {
+  display: grid;
+  gap: 0.8cqh;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.volume-row {
+  display: grid;
+  grid-template-columns: 11cqh auto 1fr auto;
+  align-items: center;
+  gap: 1cqh;
+  font: 700 2cqh/1 var(--body);
+}
+
+.volume-step {
+  width: 4.4cqh;
+  height: 4.4cqh;
+  border: 0;
+  border-radius: 1cqh;
+  background: rgba(255, 255, 255, 0.1);
+  color: inherit;
+  font: 800 2.6cqh/1 var(--body);
+  cursor: pointer;
+}
+
+.volume-step:focus {
+  outline: none;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 0 0 0.4cqh color-mix(in srgb, var(--theme) 65%, white);
+}
+
+.volume-pips {
+  display: flex;
+  gap: 0.4cqh;
+  height: 2.2cqh;
+}
+
+.volume-pips i {
+  flex: 1;
+  border-radius: 0.4cqh;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.volume-pips i.on {
+  background: linear-gradient(to top, color-mix(in srgb, var(--theme) 80%, white), #fff);
+}
+
 .pad-map {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2223,71 +2280,7 @@ kbd,
   inset: 0;
   width: 100%;
   height: 100%;
-}
-
-.kanto .sea {
-  fill: #2464b8;
-}
-
-.kanto .sea-waves {
-  opacity: 0.5;
-}
-
-.kanto .wave {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.18);
-  stroke-width: 0.25;
-}
-
-.kanto .land {
-  fill: url(#land);
-  stroke: #f2e1a2;
-  stroke-width: 0.9;
-  stroke-linejoin: round;
-  paint-order: stroke;
-}
-
-.kanto .land-light {
-  fill: rgba(255, 255, 255, 0.12);
-  filter: blur(2px);
-}
-
-.kanto .lake {
-  fill: #3c86d8;
-  stroke: #f2e1a2;
-  stroke-width: 0.4;
-}
-
-.kanto .compass circle {
-  fill: rgba(255, 255, 255, 0.08);
-  stroke: rgba(255, 255, 255, 0.35);
-  stroke-width: 0.3;
-}
-
-.kanto .compass path {
-  fill: rgba(255, 255, 255, 0.7);
-}
-
-.kanto .mountain {
-  fill: #8a7155;
-  stroke: #5e4a36;
-  stroke-width: 0.3;
-}
-
-.kanto .tree {
-  fill: #2f7a42;
-}
-
-.kanto .route {
-  stroke: rgba(255, 255, 255, 0.35);
-  stroke-width: 0.7;
-  stroke-dasharray: 1.2 1;
-  stroke-linecap: round;
-}
-
-.kanto .route.open {
-  stroke: #fff4c4;
-  stroke-dasharray: none;
+  image-rendering: pixelated;
 }
 
 .place {
@@ -2312,20 +2305,29 @@ kbd,
 }
 
 .node-dot {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 3.4cqh;
-  height: 3.4cqh;
+  width: 5.2cqh;
+  height: 5.2cqh;
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 0 0.5cqh color-mix(in srgb, var(--theme) 80%, black), 0 0.6cqh 1.2cqh rgba(0, 0, 0, 0.45);
+  /* A ring around the little town drawn on the map. */
+  box-shadow: 0 0 0 0.35cqh rgba(255, 255, 255, 0.9), 0 0.5cqh 1.2cqh rgba(0, 0, 0, 0.45);
   transition: transform 160ms var(--ease-pop);
   color: var(--ink);
 }
 
+/* The badge on the ring: a pin where you are, a lock where you can't go yet. */
 .node-dot .icon {
-  width: 2cqh;
-  height: 2cqh;
+  position: absolute;
+  top: -1.2cqh;
+  right: -1.2cqh;
+  width: 2.6cqh;
+  height: 2.6cqh;
+  padding: 0.45cqh;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0.3cqh 0.8cqh rgba(0, 0, 0, 0.4);
 }
 
 .node-name {
@@ -2339,9 +2341,12 @@ kbd,
 }
 
 .node.locked .node-dot {
+  box-shadow: 0 0 0 0.3cqh rgba(20, 16, 40, 0.55);
+}
+
+.node.locked .node-dot .icon {
   background: #5d6385;
   color: #fff;
-  box-shadow: 0 0 0 0.4cqh rgba(0, 0, 0, 0.4);
 }
 
 .node.locked .node-name {
@@ -2349,13 +2354,17 @@ kbd,
 }
 
 .node.here .node-dot {
-  background: var(--gold);
+  box-shadow: 0 0 0 0.45cqh var(--gold), 0 0.5cqh 1.2cqh rgba(0, 0, 0, 0.45);
   animation: pulse 1.4s ease-in-out infinite;
+}
+
+.node.here .node-dot .icon {
+  background: var(--gold);
 }
 
 @keyframes pulse {
   50% {
-    box-shadow: 0 0 0 1.4cqh color-mix(in srgb, var(--gold) 30%, transparent), 0 0.6cqh 1.2cqh rgba(0, 0, 0, 0.45);
+    box-shadow: 0 0 0 0.45cqh var(--gold), 0 0 0 1.4cqh color-mix(in srgb, var(--gold) 30%, transparent);
   }
 }
 
@@ -2364,7 +2373,7 @@ kbd,
 }
 
 .node:focus .node-dot {
-  transform: scale(1.35);
+  transform: scale(1.25);
   box-shadow: 0 0 0 0.5cqh #fff, 0 0 0 1.1cqh color-mix(in srgb, var(--theme) 60%, transparent);
 }
 
@@ -3666,6 +3675,301 @@ kbd,
 .evolution-screen.done::after {
   animation: none;
   opacity: 0;
+}
+
+/* ── Capture ─────────────────────────────────────────────────────────────────────────────────────────────────── */
+/* The states (data-state on the stage) come from ui/screens/capture.ts, which owns the timing. */
+
+.capture-screen {
+  grid-template-rows: 1fr auto auto;
+  background: radial-gradient(70% 60% at 50% 48%, rgba(30, 40, 80, 0.55), rgba(4, 6, 16, 0.9));
+}
+
+.capture-stage {
+  position: relative;
+  min-height: 0;
+}
+
+.capture-mon,
+.capture-ground,
+.capture-ball,
+.capture-stars {
+  position: absolute;
+  left: 50%;
+}
+
+.capture-mon {
+  top: 44%;
+  width: 30cqh;
+  height: 30cqh;
+  translate: -50% -50%;
+}
+
+.capture-ground {
+  top: calc(44% + 7cqh);
+  width: 26cqh;
+  height: 4cqh;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.45), transparent);
+}
+
+/* The ball rests on the ground in front of where the Pokémon stood. */
+.capture-ball {
+  top: calc(44% + 6cqh);
+  width: 12cqh;
+  height: 12cqh;
+  margin: -6cqh 0 0 -6cqh;
+  transform-origin: 50% 85%;
+  opacity: 0;
+}
+
+.capture-ball-image {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0.6cqh 0.4cqh rgba(0, 0, 0, 0.5));
+}
+
+/* The button on the ball's front: it lights up green when the ball clicks shut. */
+.capture-light {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3cqh;
+  height: 3cqh;
+  margin: -1.5cqh 0 0 -1.5cqh;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.capture-stars {
+  top: calc(44% + 6cqh);
+  width: 0;
+  height: 0;
+}
+
+.capture-stars i {
+  position: absolute;
+  width: 2.4cqh;
+  height: 2.4cqh;
+  margin: -1.2cqh;
+  background: #ffe27a;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  opacity: 0;
+}
+
+.capture-stage[data-state='thrown'] .capture-ball {
+  opacity: 1;
+  animation: capture-throw 650ms cubic-bezier(0.3, 0.6, 0.5, 1) forwards;
+}
+
+@keyframes capture-throw {
+  from {
+    transform: translate(-70cqh, 30cqh) rotate(0);
+  }
+  45% {
+    transform: translate(-30cqh, -30cqh) rotate(-420deg);
+  }
+  to {
+    transform: translate(0, -14cqh) rotate(-720deg);
+  }
+}
+
+/* The ball pops open in a flash and the Pokémon, turned to red light, is drawn inside. */
+.capture-stage[data-state='absorb'] .capture-ball {
+  opacity: 1;
+  transform: translate(0, -14cqh);
+}
+
+.capture-stage[data-state='absorb'] .capture-ball::before {
+  content: '';
+  position: absolute;
+  inset: -6cqh;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, #fff, rgba(255, 120, 120, 0.6), transparent);
+  animation: capture-flash 600ms ease-out forwards;
+}
+
+@keyframes capture-flash {
+  from {
+    opacity: 1;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+.capture-stage[data-state='absorb'] .capture-mon {
+  animation: capture-absorb 600ms ease-in forwards;
+}
+
+@keyframes capture-absorb {
+  30% {
+    filter: brightness(0.7) sepia(1) saturate(9) hue-rotate(-30deg);
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    filter: brightness(1.4) sepia(1) saturate(9) hue-rotate(-30deg);
+    transform: translateY(8cqh) scale(0);
+    opacity: 0;
+  }
+}
+
+.capture-stage[data-state='drop'] .capture-ball,
+.capture-stage[data-state='caught'] .capture-ball {
+  opacity: 1;
+}
+
+.capture-stage[data-state='drop'] .capture-ball:not(.wobble) {
+  animation: capture-drop 550ms cubic-bezier(0.5, 0, 0.6, 1) forwards;
+}
+
+@keyframes capture-drop {
+  from {
+    transform: translate(0, -14cqh);
+  }
+  55% {
+    transform: translate(0, 0);
+  }
+  75% {
+    transform: translate(0, -3cqh);
+  }
+  to {
+    transform: translate(0, 0);
+  }
+}
+
+/* Each wobble: tip one way, the other way, settle. */
+.capture-ball.wobble {
+  animation: capture-wobble 620ms ease-in-out;
+}
+
+@keyframes capture-wobble {
+  20% {
+    transform: rotate(-24deg);
+  }
+  50% {
+    transform: rotate(18deg);
+  }
+  75% {
+    transform: rotate(-7deg);
+  }
+  to {
+    transform: rotate(0);
+  }
+}
+
+.capture-stage[data-state='drop'] .capture-mon,
+.capture-stage[data-state='caught'] .capture-mon {
+  opacity: 0;
+}
+
+/* Caught: the click, a green light on the ball's button, and stars. */
+.capture-stage[data-state='caught'] .capture-ball {
+  animation: capture-click 300ms ease-out;
+}
+
+.capture-stage[data-state='caught'] .capture-ball-image {
+  filter: brightness(0.82) drop-shadow(0 0.6cqh 0.4cqh rgba(0, 0, 0, 0.5));
+}
+
+@keyframes capture-click {
+  40% {
+    transform: scale(1.12, 0.9);
+  }
+}
+
+.capture-stage[data-state='caught'] .capture-light {
+  opacity: 1;
+  background: radial-gradient(closest-side, #eaffd8, #4fe36a 55%, rgba(79, 227, 106, 0));
+  box-shadow: 0 0 3cqh 1cqh rgba(79, 227, 106, 0.55);
+  animation: capture-glow 1.2s ease-out;
+}
+
+@keyframes capture-glow {
+  from {
+    transform: scale(3);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(1.4);
+    opacity: 1;
+  }
+}
+
+.capture-stage[data-state='caught'] .capture-stars i {
+  animation: capture-star 900ms ease-out forwards;
+}
+
+@keyframes capture-star {
+  from {
+    opacity: 1;
+    transform: rotate(var(--a)) translateX(2cqh) scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: rotate(var(--a)) translateX(12cqh) scale(1);
+  }
+}
+
+/* Broke free: the ball bursts open in a flash and the Pokémon is back. */
+.capture-stage[data-state='escaped'] .capture-ball {
+  opacity: 0;
+  animation: capture-burst 380ms ease-out;
+}
+
+@keyframes capture-burst {
+  from {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(3);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.8);
+    filter: brightness(4);
+  }
+}
+
+.capture-stage[data-state='escaped'] .capture-mon {
+  animation: capture-out 520ms var(--ease-pop);
+}
+
+@keyframes capture-out {
+  from {
+    filter: brightness(1.4) sepia(1) saturate(9) hue-rotate(-30deg);
+    transform: translateY(8cqh) scale(0);
+  }
+  60% {
+    filter: brightness(1.2) sepia(1) saturate(6) hue-rotate(-30deg);
+  }
+}
+
+.capture-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3cqh;
+  padding: 2.6cqh 3.4cqh;
+  background: var(--glass-strong);
+}
+
+.capture-text {
+  font: 700 3cqh/1.35 var(--body);
+}
+
+.capture-text.good {
+  color: #7dffa0;
+  animation: pop 400ms var(--ease-pop) both;
+}
+
+.capture-text.bad {
+  color: #ffb2a8;
+  animation: pop 400ms var(--ease-pop) both;
 }
 
 /* ── Tests: no animations (they would only slow every click down) ──────────────────────────────────────────── */

@@ -153,12 +153,31 @@ describe('battle', () => {
       expect(asked.battle).toMatchObject({ phase: 'choose', chooseReason: 'switch', cursor: 0 });
       const presses = [Down, 0, Physical];
       const { battle: b, events } = play(asked.battle, presses.length, f => presses[f - 1]);
-      expect(events.some(e => e.type === 'roundStart')).toBe(true);
+      expect(events.map(e => e.type)).toEqual(['switchIn']);
       expect(b.phase).toBe('fight');
+      expect(b.rounds).toBe(before.rounds);
       expect(b.round.fighters[0]).toMatchObject({ name: 'A2', pp: PP_START });
       expect(b.round.fighters[1]).toMatchObject({ name: 'B1', hp: before.round.fighters[1].hp, pp: before.round.fighters[1].pp });
       expect(b.round.timer).toBe(before.round.timer);
       expect(b.switchReady).toBe(false);
+    });
+
+    it('goes on from where everyone stood: nobody goes back to the starting positions', () => {
+      const before = start();
+      const { battle: b } = play(requestSwitch(before).battle, 3, f => [Down, 0, Physical][f - 1]);
+      expect(b.round.fighters[0]).toMatchObject({ x: before.round.fighters[0].x, y: 0, action: 'idle' });
+      expect(b.round.fighters[1]).toEqual(before.round.fighters[1]);
+      expect(b.round.frame).toBe(before.round.frame);
+    });
+
+    it("a controller's A sends (it also means up: the cursor doesn't move) and its B cancels", () => {
+      const { Confirm, Cancel, Big } = Button;
+      const asked = requestSwitch(start()).battle;
+      let { battle: b } = play(asked, 3, f => [Down, 0, Up | Confirm][f - 1]);
+      expect(b.round.fighters[0].name).toBe('A2');
+      ({ battle: b } = play(requestSwitch(start()).battle, 1, () => Big | Cancel));
+      expect(b).toMatchObject({ phase: 'fight', switchReady: true });
+      expect(b.round.fighters[0].name).toBe('A1');
     });
 
     it('only once: a second switch is refused until a Pokémon faints', () => {

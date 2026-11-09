@@ -8,11 +8,11 @@ import { activeHitbox, bodyBox, currentMove, isGuarding, isInvincible, movePhase
 import type { BattleEvent } from '../fight/battle';
 import { ELEMENTAL_COST, PP_MAX, ROUND_FRAMES, SUB } from '../fight/constants';
 import { Button, has, type InputMask } from '../fight/input';
-import type { FightEvent, Fighter, FightState } from '../fight/state';
+import type { Fighter, FightState } from '../fight/state';
 import { displayHp } from '../game/pokemon';
 import { t, type MessageKey } from '../i18n';
 import { ENTRANCE } from '../screens/entrance';
-import { EFFECT_FRAMES, type SandboxView } from '../screens/sandbox';
+import { EFFECT_FRAMES, isFightEvent, type SandboxView } from '../screens/sandbox';
 import { BODY_FONT, DISPLAY_FONT, TYPE_COLORS, typeColor } from './colors';
 import { backdropUrl } from '../data/art';
 import { drawAmbience } from './ambience';
@@ -38,7 +38,8 @@ const font = (size: number, weight = 'bold') =>
   weight === 'normal' ? `600 ${size * 0.92}px ${BODY_FONT}` : `italic 800 ${size * 1.2}px ${DISPLAY_FONT}`;
 
 export interface Renderer {
-  draw(view: SandboxView): void;
+  /** `pad`: the player uses a controller (the switch menu shows Ⓐ / Ⓑ instead of keys). */
+  draw(view: SandboxView, options?: { pad?: boolean }): void;
   /** After each simulated frame: effects follow the fight. */
   onTick(view: SandboxView, events: readonly BattleEvent[]): void;
   reset(): void;
@@ -50,7 +51,7 @@ export function createRenderer(ctx: CanvasRenderingContext2D): Renderer {
   const ambient = () => Math.floor(performance.now() / (1000 / 60));
 
   return {
-    draw(view) {
+    draw(view, options = {}) {
       const { round } = view.battle;
       // Everything below is laid out in art pixels; the canvas holds a whole number of device pixels per art pixel.
       deviceScale = Math.max(1, Math.round(ctx.canvas.width / VIEW_W));
@@ -81,10 +82,10 @@ export function createRenderer(ctx: CanvasRenderingContext2D): Renderer {
         ctx.fillStyle = `rgba(255, 255, 255, ${(0.55 * view.flash) / 8})`;
         ctx.fillRect(0, 0, VIEW_W, VIEW_H);
       }
-      drawPhase(ctx, view);
+      drawPhase(ctx, view, options.pad === true);
     },
     onTick(view, events) {
-      const fightEvents = events.filter((e): e is FightEvent => e.type !== 'roundStart' && e.type !== 'battleOver');
+      const fightEvents = events.filter(isFightEvent);
       fx.onTick(view.battle.round, fightEvents);
     },
     reset() {
@@ -690,7 +691,7 @@ function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView, trail: (id: 0
 
 // ── Phases: KO, choosing the next Pokémon, battle over ───────────────────────────────────────────────────────────
 
-function drawPhase(ctx: CanvasRenderingContext2D, view: SandboxView) {
+function drawPhase(ctx: CanvasRenderingContext2D, view: SandboxView, pad: boolean) {
   const { battle } = view;
   ctx.save();
   ctx.textAlign = 'center';
@@ -737,7 +738,8 @@ function drawPhase(ctx: CanvasRenderingContext2D, view: SandboxView) {
     ctx.textAlign = 'center';
     ctx.font = font(8, 'normal');
     ctx.fillStyle = '#9aa3c7';
-    ctx.fillText(t(battle.chooseReason === 'switch' ? 'battle.switchKeys' : 'battle.chooseKeys'), VIEW_W / 2, top + 16 + team.length * 16);
+    const keys = battle.chooseReason === 'switch' ? (pad ? 'battle.switchPad' : 'battle.switchKeys') : pad ? 'battle.choosePad' : 'battle.chooseKeys';
+    ctx.fillText(t(keys), VIEW_W / 2, top + 16 + team.length * 16);
   } else if (battle.phase === 'over') {
     // The results screen (DOM) shows over a dimmed fight.
     ctx.fillStyle = 'rgba(6, 8, 20, 0.5)';

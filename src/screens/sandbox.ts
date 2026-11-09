@@ -4,8 +4,8 @@
 import { pushHistory, type HistoryEntry } from '../engine/input/history';
 import { createAdvantageTracker, trackAdvantage, type AdvantageTracker } from '../fight/advantage';
 import { cpuStep, createCpu, describeCpu, resetCpuMemory, type CpuState } from '../fight/ai/cpu';
-import { DIFFICULTIES, makeProfile, STYLES, type Difficulty, type Style } from '../fight/ai/profiles';
-import { battleStep, createBattle, requestSwitch, type BattleEvent, type BattleState, type TeamMember } from '../fight/battle';
+import { DIFFICULTIES, makeProfile, STYLES, type AiProfile, type Difficulty, type Style } from '../fight/ai/profiles';
+import { battleStep, cancelSwitch, createBattle, requestSwitch, type BattleEvent, type BattleState, type TeamMember } from '../fight/battle';
 import { PP_MAX } from '../fight/constants';
 import { DUMMY_MODES, dummyInput, type DummyMode } from '../fight/dummy';
 import { cleanDirections, type InputMask } from '../fight/input';
@@ -35,6 +35,9 @@ export function effectText(effectiveness: number): EffectMessage['text'] | null 
   if (effectiveness < 1) return 'effect.weak';
   return null;
 }
+
+/** The events of the fight itself (not the battle's: rounds, switches, the end). */
+export const isFightEvent = (e: BattleEvent): e is FightEvent => e.type !== 'roundStart' && e.type !== 'switchIn' && e.type !== 'battleOver';
 
 /** Who plays player 2: a dummy behavior or a CPU difficulty. F2 cycles through them. */
 export const OPPONENTS = [...DUMMY_MODES, ...DIFFICULTIES.map(d => `cpu-${d}` as const)] as const;
@@ -97,6 +100,8 @@ export interface Sandbox {
   reset(): void;
   /** Player 1 asks to switch Pokémon mid-round (the battle's rules decide; never during the entrance). */
   trySwitch(): 'ok' | 'used' | 'alone' | 'busy';
+  /** Back to the fight from the switch menu (Esc). Returns false when no switch menu is open. */
+  cancelSwitch(): boolean;
   /** A new battle with this player team (after the party changed: XP, evolution, specials, healing). */
   setPlayerTeam(team: TeamMember[]): void;
   toggleDebug(): void;
@@ -117,6 +122,8 @@ export interface SandboxOptions {
   intro?: Banner;
   /** The CPU's style (default: balanced). */
   style?: Style;
+  /** One CPU profile per opponent team member (the journey: game/ai.ts). Without them, the difficulty and style. */
+  profiles?: AiProfile[];
   /** Each round's timer, in frames (default: 99 seconds). */
   roundFrames?: number;
   /** Training tools (F1–F4, R). Default: on, unless a director runs the fight. Journey fights turn them off. */
@@ -152,9 +159,11 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
     options.entrance && (sides[0] || sides[1]) ? { frame: 0, sides, first } : null;
   let entrance = enter([true, true], true);
 
+  /** The profile of the opponent's Pokémon fighting now. */
+  const profileNow = (difficulty: Difficulty) => options.profiles?.[battle.active[1]] ?? makeProfile(difficulty, style);
   const newCpu = (): CpuState | null => {
     const difficulty = difficultyOf(opponent);
-    return difficulty ? createCpu(1, makeProfile(difficulty, style), seed) : null;
+    return difficulty ? createCpu(1, profileNow(difficulty), seed) : null;
   };
   let cpu = newCpu();
 
@@ -184,16 +193,18 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
       battle = result.battle;
       // Training only: the sandbox refills PP outside the fight rules.
       if (infinitePp) for (const f of battle.round.fighters) f.pp = PP_MAX;
-      const fightEvents = result.events.filter((e): e is FightEvent => e.type !== 'roundStart' && e.type !== 'battleOver');
+      const fightEvents = result.events.filter(isFightEvent);
       if (director && battle.phase === 'fight') director.after(battle.round, fightEvents);
       history = pushHistory(history, cleanDirections(p1));
       // A new round: a new frame-advantage measurement, and the CPU forgets the Pokémon it was fighting.
       if (result.events.some(e => e.type === 'roundStart')) {
         advantage = createAdvantageTracker();
-        if (cpu) cpu = resetCpuMemory(cpu);
+        if (cpu) cpu = { ...resetCpuMemory(cpu), profile: options.profiles?.[battle.active[1]] ?? cpu.profile };
         // Only the side whose Pokémon changed throws a new ball.
         entrance = enter([battle.active[0] !== before[0], battle.active[1] !== before[1]], false);
       }
+      // A switch mid-round: only player 1 throws a ball; the CPU keeps its plans (it is the same fight).
+      if (result.events.some(e => e.type === 'switchIn')) entrance = enter([true, false], false);
       advantage = trackAdvantage(advantage, battle.round, fightEvents);
       flash = result.events.some(e => e.type === 'hit' && e.big) ? BIG_HIT_FLASH : Math.max(0, flash - 1);
       effect = effect && effect.frames > 1 ? { ...effect, frames: effect.frames - 1 } : null;
@@ -212,6 +223,12 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
       const asked = requestSwitch(battle);
       battle = asked.battle;
       return asked.result;
+    },
+    cancelSwitch() {
+      const next = cancelSwitch(battle);
+      if (next === battle) return false;
+      battle = next;
+      return true;
     },
     reset() {
       battle = newBattle();

@@ -9,6 +9,10 @@ export interface OptionsView {
   title: string;
   info: string;
   sound: { label: string; value: string; on: boolean; onClick: () => void };
+  volumes: {
+    label: string;
+    rows: { kind: string; label: string; level: number; max: number; downLabel: string; upLabel: string; onStep: (by: number) => void }[];
+  };
   language: { label: string; options: { value: string; label: string; selected: boolean; onClick: () => void }[] };
   keyboard: {
     label: string;
@@ -37,6 +41,23 @@ export function renderOptions(root: HTMLElement, view: OptionsView) {
               attrs: { type: 'button', 'aria-pressed': String(view.sound.on), 'data-autofocus': '' },
             },
             [icon(view.sound.on ? 'sound' : 'mute'), h('span', { class: 'toggle-text', text: view.sound.value }), h('span', { class: 'switch' })],
+          ),
+          h('h3', { class: 'label', text: view.volumes.label }),
+          h(
+            'ul',
+            { class: 'volume-rows' },
+            view.volumes.rows.map(row =>
+              h('li', { class: 'volume-row', testid: `volume-${row.kind}` }, [
+                h('span', { class: 'volume-name', text: row.label }),
+                h('button', { class: 'volume-step', testid: `volume-${row.kind}-down`, text: '−', onClick: () => row.onStep(-1), attrs: { type: 'button', 'aria-label': `${row.label}: ${row.downLabel}`, } }),
+                h(
+                  'span',
+                  { class: 'volume-pips', testid: `volume-${row.kind}-level`, attrs: { 'data-level': String(row.level), role: 'meter', 'aria-valuemin': '0', 'aria-valuemax': String(row.max), 'aria-valuenow': String(row.level) } },
+                  Array.from({ length: row.max }, (_, i) => h('i', { class: i < row.level ? 'on' : '' })),
+                ),
+                h('button', { class: 'volume-step', testid: `volume-${row.kind}-up`, text: '+', onClick: () => row.onStep(1), attrs: { type: 'button', 'aria-label': `${row.label}: ${row.upLabel}` } }),
+              ]),
+            ),
           ),
           h('h3', { class: 'label', text: view.language.label }),
           h(

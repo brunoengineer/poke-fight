@@ -20,6 +20,7 @@ import { afterBattle, type ReportLine, type XpGain } from './game/after-battle';
 import { addCaught, canSendToBox, canTakeFromBox, sendToBox, swapInParty, takeFromBox } from './game/box';
 import { catchValue, throwBall } from './game/capture';
 import { buy, canUsePotion, countOf, MAX_MONEY, moneyAfterLoss, prizeMoney, removeItem, usePotion } from './game/economy';
+import { cpuProfile, type Controller } from './game/ai';
 import { bestRod, encounterTable, rollEncounter, tableForAreas, wildPokemon } from './game/encounters';
 import { canChallenge, gymTeam, leaderPrize } from './game/gym';
 import { canEnterLeague, LEAGUE_SIZE, leagueOpponent, leaguePrize, type LeagueOpponent } from './game/league';
@@ -41,7 +42,7 @@ import { createSandbox, isOpponent, type Banner, type Director, type Opponent, t
 import { OPPONENT_TEAM, PLAYER_TEAM } from './screens/sandbox-teams';
 import { createTutorialDirector, type TutorialDirector } from './screens/tutorial-director';
 import { newSave, type Save } from './state/save';
-import { ACTIONS, bindingsOf, createSettingsStore, DEFAULT_KEYS, keyLabel, keyNames, rebind, type Action, type Settings } from './state/settings';
+import { ACTIONS, bindingsOf, createSettingsStore, DEFAULT_KEYS, keyLabel, keyNames, MAX_VOLUME, rebind, stepVolume, VOLUME_KINDS, type Action, type Settings } from './state/settings';
 import { createSaveStore } from './state/store';
 import { installTestHooks, type TestOptions } from './test/hooks';
 import { createBackdrop } from './ui/backdrop';
@@ -54,6 +55,7 @@ import { renderMap } from './ui/screens/map';
 import { renderMart } from './ui/screens/mart';
 import { renderStarter } from './ui/screens/starter';
 import { renderDialog } from './ui/screens/dialog';
+import { renderCapture } from './ui/screens/capture';
 import { renderEvolution } from './ui/screens/evolution';
 import { renderOptions } from './ui/screens/options';
 import { renderTitle, type TitleOption } from './ui/screens/title';
@@ -109,6 +111,11 @@ export interface AppElements {
   backdrop: HTMLElement;
 }
 
+/** What the player hears at each moment of a throw. */
+const CAPTURE_SOUND = { throw: 'ballThrow', open: 'ballOpen', shake: 'shake', caught: 'caught', escape: 'ballOpen' } as const satisfies Record<string, SoundId>;
+/** The games' lines for a Pokémon breaking free, by how many times the ball wobbled first. */
+const ESCAPE_TEXT = ['capture.escape0', 'capture.escape1', 'capture.escape2', 'capture.escape3'] as const;
+
 export function startApp(elements: AppElements, options: TestOptions) {
   const { frame, canvas, overlay: overlayRoot } = elements;
   const backdrop = createBackdrop(elements.backdrop);
@@ -120,6 +127,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
   const seed = options.enabled ? options.seed : Date.now() >>> 0;
   /** Encounters and catching (seeded in test mode, so the browser tests are repeatable). */
   const rng = createRng(seed);
+  /** The CPU's seeds and personalities: their own sequence, so they never change which Pokémon appear. */
+  const fightRng = createRng(seed ^ 0x5bd1e995);
 
   // ── Save and language ─────────────────────────────────────────────────────────────────────────────────────────
   const store = createSaveStore(safeStorage());
@@ -137,7 +146,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
   let settings: Settings = settingsStore.load();
   setKeyNames(keyNames(settings.keys));
   // The browser tests stay silent (and never fetch cries).
-  const audio = options.enabled ? createSilentAudio() : createWebAudio(settings.muted);
+  const audio = options.enabled ? createSilentAudio() : createWebAudio(settings.muted, settings.volumes);
   const unlockAudio = () => audio.unlock();
   window.addEventListener('pointerdown', unlockAudio, true);
   window.addEventListener('keydown', unlockAudio, true);
@@ -151,6 +160,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     keys.setBindings(bindingsOf(next.keys));
     setKeyNames(keyNames(next.keys));
     audio.setMuted(next.muted);
+    audio.setVolumes(next.volumes);
   };
   const toggleMute = () => {
     applySettings({ ...settings, muted: !settings.muted });
@@ -581,6 +591,24 @@ export function startApp(elements: AppElements, options: TestOptions) {
         applySettings({ ...settings, muted: !settings.muted });
         showOptions(from);
       } },
+      volumes: {
+        label: t('options.volume'),
+        rows: VOLUME_KINDS.map(kind => ({
+          kind,
+          label: t(`options.volume.${kind}`),
+          level: settings.volumes[kind],
+          max: MAX_VOLUME,
+          downLabel: t('options.quieter'),
+          upLabel: t('options.louder'),
+          onStep: (by: number) => {
+            applySettings({ ...settings, volumes: stepVolume(settings.volumes, kind, by) });
+            // A taste of the new level.
+            if (kind === 'sounds') audio.play('select');
+            if (kind === 'cries' && save?.party[0]) audio.cry(save.party[0].speciesId);
+            showOptions(from);
+          },
+        })),
+      },
       language: {
         label: t('party.language'),
         options: LANGUAGES.map(l => ({
@@ -811,6 +839,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
     intro?: Banner;
     opponent?: Opponent;
     style?: Style;
+    /** Who plays the opponent's Pokémon: each gets its own CPU profile (game/ai.ts). */
+    cpu?: Controller;
     roundFrames?: number;
     stage?: StageSpec;
     /** Who stands on the opponent's side (none for a wild Pokémon, which leaps in by itself). */
@@ -823,7 +853,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
   function enterFight(next: FightMode, player: TeamMember[], opponents: TeamMember[], setup: FightSetup = {}) {
     const stage: StageSpec = setup.stage ?? { id: 'stadium', backdrop: 'spl' };
     const trainers: [TrainerLook, TrainerLook | null] = [LOOKS.player, setup.rivalLook === undefined ? LOOKS.trainer : setup.rivalLook];
-    backdrop.set({ image: stage.backdrop ?? 'spl', town: stage.town, theme: stage.tint ?? '#6c8cff', mode: 'fight' });
+    backdrop.set({ image: stage.backdrop ?? 'spl', theme: stage.tint ?? '#6c8cff', mode: 'fight' });
     preloadImages([
       ...(stage.backdrop ? [backdropUrl(stage.backdrop)] : []),
       ...trainers.flatMap(look => (look?.sprite ? [trainerUrl(look.sprite)] : [])),
@@ -837,7 +867,10 @@ export function startApp(elements: AppElements, options: TestOptions) {
       player,
       opponentTeam: opponents,
       opponent: opponentFor(setup.opponent ?? 'cpu-normal'),
-      seed,
+      // A new seed for every fight: the CPU never plays the same fight twice.
+      seed: fightRng.int(2 ** 31),
+      // (`?opponent=` in the tests replaces the CPU entirely.)
+      profiles: setup.cpu && !opponentParam ? opponents.map(o => cpuProfile(o, setup.cpu!, fightRng)) : undefined,
       director: setup.director,
       intro: setup.intro,
       style: setup.style,
@@ -873,7 +906,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
     gym = null;
     update(s => ({ ...s, dex: register(s, opponents.map(p => p.speciesId)) }));
     enterFight('trainer', party.map(toFighter), opponents.map(toFighter), {
-      stage: { id: 'stadium', backdrop: cityArt(save.location).backdrop, town: save.location },
+      cpu: { kind: 'trainer', difficulty: 'normal' },
+      stage: { id: 'stadium', backdrop: cityArt(save.location).backdrop },
       rivalLook: { ...LOOKS.trainer, sprite: trainerClassFor(opponents.map(p => p.speciesId)) },
       intro: { step: null, key: 'trainer.challenge', params: {} },
     });
@@ -910,6 +944,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     update(current => ({ ...current, dex: register(current, [found.speciesId]) }));
     enterFight('wild', party.map(toFighter), [toFighter(found)], {
       opponent: 'cpu-easy',
+      cpu: { kind: 'wild' },
       stage: huntStage(s.location, kind),
       rivalLook: null,
       intro: { step: null, key: 'wild.appeared', params: { name: nameOf(found) } },
@@ -929,6 +964,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
       enterFight('gym', party.map(toFighter), team.map(toFighter), {
         opponent: `cpu-${g.ai.difficulty}`,
         style: g.ai.style,
+        cpu: { kind: 'trainer', ...g.ai },
         stage: { id: 'gym', tint: typeColor(g.type), backdrop: typeBackdrop(g.type) },
         rivalLook: leaderLook(typeColor(g.type), false, LEADER_SPRITES[g.badge]),
         intro: { step: null, key: 'gym.challenge', params: { leader: g.leader } },
@@ -973,6 +1009,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     update(s => ({ ...s, dex: register(s, [found.speciesId]) }));
     enterFight('safari', save.party.map(toFighter), [toFighter(found)], {
       opponent: 'cpu-easy',
+      cpu: { kind: 'wild' },
       roundFrames: SAFARI_SECONDS * 60,
       stage: { id: 'safari', backdrop: HUNT_BACKDROPS.safari },
       rivalLook: null,
@@ -1053,6 +1090,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
       enterFight('league', save.party.map(toFighter), opponent.team.map(toFighter), {
         opponent: `cpu-${opponent.ai.difficulty}`,
         style: opponent.ai.style,
+        cpu: { kind: 'trainer', ...opponent.ai },
         stage: { id: 'league', tint: opponent.type ? typeColor(opponent.type) : undefined, backdrop: typeBackdrop(opponent.type) },
         rivalLook: opponent.kind === 'champion' ? LOOKS.champion : leaderLook(typeColor(opponent.type), true, ELITE_SPRITES[opponent.id]),
         intro: { step: null, key: 'league.wants', params: { who: whoIs(opponent) } },
@@ -1248,10 +1286,6 @@ export function startApp(elements: AppElements, options: TestOptions) {
     if (ball === 'safari-ball' && safari) safari.balls--;
     else update(s => ({ ...s, bag: removeItem(s.bag, ball) }));
     const name = nameOf(pokemon);
-    // The ball's sounds: the throw, each shake, then the click (caught) or nothing (it broke free).
-    audio.play('ballThrow');
-    for (let i = 0; i < thrown.shakes; i++) later(0.5 + i * 0.45, 'shake');
-    if (thrown.caught) later(0.5 + thrown.shakes * 0.45, 'caught');
     if (thrown.caught) {
       // A caught Pokémon arrives rested (it was knocked out in the battle).
       const team = addCaught(save, heal(pokemon));
@@ -1263,11 +1297,19 @@ export function startApp(elements: AppElements, options: TestOptions) {
       results.lines.push({ key: 'capture.fled', params: { name } });
     }
     results.capture = null;
-    showResults();
-  }
-
-  function later(seconds: number, sound: SoundId) {
-    window.setTimeout(() => audio.play(sound), seconds * 1000);
+    // The throw itself, with its suspense; then the results.
+    renderCapture(overlayRoot, {
+      sprite: spriteUrl(pokemon.speciesId),
+      ball: itemUrl(ball),
+      shakes: thrown.shakes,
+      caught: thrown.caught,
+      start: t('capture.thrown', { ball: itemName(ball) }),
+      end: thrown.caught ? t('capture.caught', { name }) : t(ESCAPE_TEXT[Math.min(3, thrown.shakes)]),
+      next: t('dialog.next'),
+      hints: [{ pad: 'a', key: 'Enter', label: t('dialog.next') }],
+      onMoment: moment => audio.play(CAPTURE_SOUND[moment]),
+      onDone: showResults,
+    });
   }
 
   function letGo() {
@@ -1452,7 +1494,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     }
     modal = 'results';
     show();
-    if (results?.lines.some(line => line.key === 'results.level')) later(0.3, 'levelUp');
+    if (results?.lines.some(line => line.key === 'results.level')) window.setTimeout(() => audio.play('levelUp'), 300);
     showResults();
   }
 
@@ -1461,7 +1503,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
   let partySelected = 0;
   let partyMoving: number | null = null;
 
-  function showParty(focus?: string) {
+  function showParty(focus?: string, swapped?: [number, number]) {
     if (!save) return;
     const s = save;
     partySelected = Math.min(partySelected, s.party.length - 1);
@@ -1555,6 +1597,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
       members: s.party.map(member),
       selected: partySelected,
       moving,
+      swapped,
       focus: focus ?? `member-${partySelected}`,
       labels: {
         lead: t('party.lead'),
@@ -1575,14 +1618,15 @@ export function startApp(elements: AppElements, options: TestOptions) {
         showParty(`member-${index}`);
       },
       onPlace: index => {
-        if (partyMoving !== null && partyMoving !== index) {
-          update(current => ({ ...current, party: swapInParty(current.party, partyMoving!, index) }));
+        const from = partyMoving;
+        if (from !== null && from !== index) {
+          update(current => ({ ...current, party: swapInParty(current.party, from, index) }));
           partyChanged = true;
           audio.play('confirm');
         }
         partyMoving = null;
         partySelected = index;
-        showParty(`member-${index}`);
+        showParty(`member-${index}`, from !== null && from !== index ? [from, index] : undefined);
       },
       onCancel: () => {
         const index = partyMoving ?? partySelected;
@@ -1670,6 +1714,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
       // In a menu, Esc is its Back button; in a fight, it runs away.
       Escape: () => {
         if (!overlayRoot.hidden && pressBack(overlayRoot)) return;
+        // On the switch menu, Esc goes back to the fight (not out of it).
+        if (scene === 'fight' && modal === 'none' && sandbox?.cancelSwitch()) return;
         if (modal === 'party') toggleParty();
         else leaveCurrentFight();
       },
@@ -1699,7 +1745,10 @@ export function startApp(elements: AppElements, options: TestOptions) {
   let cueMemory = freshCues();
   const simulate = () => {
     if (scene !== 'fight' || modal !== 'none' || !sandbox) return;
-    const events = sandbox.tick(keys.sample() | readFirstPad().mask);
+    const pad = readFirstPad().mask;
+    // The fight's own hints (the switch menu) follow the device in use.
+    if (pad !== 0) input.usePad();
+    const events = sandbox.tick(keys.sample() | pad);
     const view = sandbox.view();
     renderer.onTick(view, events);
     const cues = fightCues(cueMemory, { fighters: view.battle.round.fighters, entrance: view.entrance, trainers: view.trainers }, events);
@@ -1713,7 +1762,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
   const draw = () => {
     const next = scene === 'fight' && sandbox ? 'fight' : 'menu';
     if (frame.dataset.scene !== next) frame.dataset.scene = next;
-    if (sandbox && next === 'fight') renderer.draw(sandbox.view());
+    if (sandbox && next === 'fight') renderer.draw(sandbox.view(), { pad: input.device() === 'pad' });
   };
 
   /** The music for where the player is. */

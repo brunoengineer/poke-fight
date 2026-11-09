@@ -51,6 +51,8 @@ export interface PartyView {
   labels: { lead: string; fainted: string; stats: string; specials: string; items: string; noItems: string; moving: string; pick: string; cancel: string };
   /** The button that gets the focus (after a change). */
   focus: string;
+  /** Two slots that just traded places: they glide to their new places (the rest of the screen stays still). */
+  swapped?: [number, number];
   onPick: (index: number) => void;
   onPlace: (index: number) => void;
   onCancel: () => void;
@@ -189,4 +191,35 @@ export function renderParty(root: HTMLElement, view: PartyView) {
   target?.setAttribute('data-autofocus', '');
   describe(Math.min(view.selected, view.members.length - 1));
   mount(root, party);
+  if (view.swapped) glide(slots, view.swapped);
+}
+
+/** How long two swapped slots take to trade places (milliseconds). */
+export const SWAP_MS = 420;
+
+/** Each of the two slots starts where the other one is and glides home (FLIP: the layout is already final). */
+function glide(slots: HTMLElement[], [a, b]: [number, number]) {
+  const ra = slots[a]?.getBoundingClientRect();
+  const rb = slots[b]?.getBoundingClientRect();
+  if (!ra || !rb || typeof slots[a].animate !== 'function') return;
+  for (const [slot, from, to] of [
+    [slots[a], rb, ra],
+    [slots[b], ra, rb],
+  ] as const) {
+    const dx = from.left - to.left;
+    const dy = from.top - to.top;
+    slot.style.zIndex = slot === slots[a] ? '3' : '2';
+    slot
+      .animate(
+        [
+          { transform: `translate(${dx}px, ${dy}px) scale(1.04)`, boxShadow: '0 2cqh 4cqh rgba(0, 0, 0, 0.45)' },
+          { transform: 'translate(0, 0) scale(1)', boxShadow: 'none' },
+        ],
+        { duration: SWAP_MS, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+      )
+      .finished.then(
+        () => (slot.style.zIndex = ''),
+        () => undefined,
+      );
+  }
 }

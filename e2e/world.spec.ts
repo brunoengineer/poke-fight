@@ -21,6 +21,8 @@ test.describe('the city', () => {
   test('the world map: Viridian and Pewter are open, the rest needs badges', async ({ page }) => {
     await openGame(page, { scene: 'city' }, { save: start() });
     await page.getByTestId('city-map').click();
+    // The map itself is pixel art drawn on a canvas at its art size (300 × 180), scaled crisp.
+    await expect(page.locator('canvas.kanto')).toHaveJSProperty('width', 300);
     await expect(page.getByTestId('place-pallet')).toContainText('You are here');
     await expect(page.getByTestId('go-cerulean')).toBeDisabled();
     await expect(page.getByTestId('place-cerulean')).toContainText('Needs 1 badge(s)');
@@ -42,6 +44,10 @@ test.describe('hunting and catching', () => {
     await expect(page.getByTestId('results-prompt')).toHaveText(`The wild ${wild} is worn out! Throw a ball?`);
     // Route 1's Pokémon have a catch rate of 255: a Poké Ball always works.
     await page.getByTestId('throw-poke-ball').click();
+    // The throw plays out (the tests skip straight to its end): the ball clicked shut.
+    await expect(page.getByTestId('capture-text')).toHaveText(`Gotcha! ${wild} was caught!`);
+    await expect(page.locator('.capture-stage')).toHaveAttribute('data-state', 'caught');
+    await page.getByTestId('capture-done').click();
     await expect(page.getByTestId('results-lines')).toContainText(`Gotcha! ${wild} was caught!`);
     await page.getByTestId('continue').click();
 

@@ -11,6 +11,10 @@ export const Button = {
   Big: 1 << 6,
   Guard: 1 << 7,
   Dash: 1 << 8,
+  // Menu buttons: only the battle's menus read them (the fight ignores them). A controller's A also jumps and its B
+  // is also the big special, so the menus need to tell "A" apart from "up".
+  Confirm: 1 << 9,
+  Cancel: 1 << 10,
 } as const;
 
 export type InputMask = number;

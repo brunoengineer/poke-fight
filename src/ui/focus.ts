@@ -81,8 +81,10 @@ export function mount(root: HTMLElement, screen: HTMLElement) {
   const before = root.firstElementChild instanceof HTMLElement ? root.firstElementChild.dataset.testid : undefined;
   const focused = document.activeElement instanceof HTMLElement && root.contains(document.activeElement) ? document.activeElement : null;
   const focusedId = focused?.dataset.testid;
-  root.replaceChildren(screen);
   const same = before !== undefined && before === screen.dataset.testid;
+  // The same screen drawn again (a change on it): it doesn't rise in again, only what changed moves.
+  if (same) screen.dataset.redraw = '';
+  root.replaceChildren(screen);
   const again = same && focusedId ? root.querySelector<HTMLElement>(`[data-testid="${CSS.escape(focusedId)}"]`) : null;
   // A text field (a name) takes the keyboard first.
   const field = root.querySelector<HTMLInputElement>('input[data-autofocus]');

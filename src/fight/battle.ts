@@ -5,14 +5,16 @@
 //   choose → player 1 picks a Pokémon (the opponent always sends the next one in its team order):
 //              - 'fainted': its Pokémon fainted, it must pick another;
 //              - 'next':    the opponent's fainted, it picks who fights the next round (the same one is fine);
-//              - 'switch':  it asked to switch mid-round (requestSwitch); Guard or the same Pokémon cancels.
+//              - 'switch':  it asked to switch mid-round (requestSwitch); Guard / B / Esc or the same Pokémon cancels.
 //   over   → one team has no Pokémon left
 //
 // Switching (decided after milestone 11): player 1 can switch once mid-round; after that, only once a Pokémon has
-// fainted (on either side) can it switch again. A switch keeps the round's clock running.
+// fainted (on either side) can it switch again. A switch doesn't start a new round: the clock keeps running, the
+// opponent stays where it is (doing what it was doing), and the new Pokémon comes in where the old one stood.
 //
 // The Pokémon that stays keeps the HP and PP it has left; a Pokémon coming in starts with half a PP bar. HP carries
-// over to the team (and, later, out of the battle). Both start a new round from their starting positions.
+// over to the team (and, later, out of the battle). After a faint, both start a new round from their starting
+// positions.
 
 import { PP_START, ROUND_FRAMES } from './constants';
 import { Button, cleanDirections, has, type InputMask } from './input';
@@ -51,7 +53,12 @@ export interface BattleState {
   fought: number[][];
 }
 
-export type BattleEvent = FightEvent | { type: 'roundStart'; round: number } | { type: 'battleOver' };
+export type BattleEvent =
+  | FightEvent
+  | { type: 'roundStart'; round: number }
+  /** Player 1 switched mid-round: a new Pokémon on its side, the round goes on. */
+  | { type: 'switchIn'; side: FighterId }
+  | { type: 'battleOver' };
 
 /** How long the bodies fall after a KO before the next Pokémon comes in. */
 export const KO_DELAY = 90;
@@ -129,24 +136,30 @@ export function battleStep(previous: BattleState, inputs: readonly [InputMask, I
     case 'choose': {
       const choices = alive(battle.teams[0]);
       const at = Math.max(0, choices.indexOf(battle.cursor));
-      if (has(pressed, Button.Down)) battle.cursor = choices[(at + 1) % choices.length];
-      if (has(pressed, Button.Up)) battle.cursor = choices[(at - 1 + choices.length) % choices.length];
       const switching = battle.chooseReason === 'switch';
-      if (switching && has(pressed, Button.Guard)) {
+      // Confirm: the tackle key, Enter, or a controller's A. (A also means "up" for the fight, so a press with
+      // Confirm never moves the cursor.)
+      const confirm = has(pressed, Button.Physical) || has(pressed, Button.Confirm);
+      const cancel = has(pressed, Button.Guard) || has(pressed, Button.Cancel);
+      if (switching && cancel) {
         battle.phase = 'fight';
-      } else if (has(pressed, Button.Physical)) {
+      } else if (confirm) {
         if (switching && battle.cursor === battle.active[0]) {
           // The same Pokémon: nothing changes, the switch isn't used.
           battle.phase = 'fight';
-        } else {
-          if (switching) {
-            saveHp(battle);
-            battle.switchReady = false;
-          }
+        } else if (switching) {
+          saveHp(battle);
+          battle.switchReady = false;
           battle.active[0] = battle.cursor;
-          // A switch keeps the clock running; after a faint, the next round has a full clock.
-          startRound(battle, events, switching ? battle.round.timer : battle.roundFrames);
+          switchIn(battle, events);
+        } else {
+          battle.active[0] = battle.cursor;
+          // After a faint, the next round has a full clock.
+          startRound(battle, events, battle.roundFrames);
         }
+      } else {
+        if (has(pressed, Button.Down)) battle.cursor = choices[(at + 1) % choices.length];
+        if (has(pressed, Button.Up)) battle.cursor = choices[(at - 1 + choices.length) % choices.length];
       }
       break;
     }
@@ -202,6 +215,35 @@ export function requestSwitch(previous: BattleState): { battle: BattleState; res
   battle.teams[0][battle.active[0]].hp = battle.round.fighters[0].hp;
   battle.cursor = battle.active[0];
   return { battle, result: 'ok' };
+}
+
+/** Player 1 cancels a mid-round switch (Esc): back to the fight, the switch is still there. */
+export function cancelSwitch(battle: BattleState): BattleState {
+  if (battle.phase !== 'choose' || battle.chooseReason !== 'switch') return battle;
+  return { ...battle, phase: 'fight' };
+}
+
+/**
+ * The switch itself: the same round goes on. The new Pokémon stands where the old one stood (on the ground, ready),
+ * with half a PP bar; the old one's projectiles vanish with it; the opponent is untouched.
+ */
+function switchIn(battle: BattleState, events: BattleEvent[]) {
+  const round = battle.round;
+  const old = round.fighters[0];
+  const fresh = createFight({
+    x: [old.x, round.fighters[1].x],
+    fighters: [battle.teams[0][battle.active[0]], battle.teams[1][battle.active[1]]],
+    pp: [PP_START, PP_START],
+  }).fighters[0];
+  fresh.facing = old.facing;
+  round.fighters[0] = fresh;
+  round.projectiles = round.projectiles.filter(p => p.owner !== 0);
+  // It is the one fighting this round now (it keeps its PP if the round ends with it still standing).
+  battle.roundActive[0] = battle.active[0];
+  noteWhoFights(battle);
+  battle.phase = 'fight';
+  battle.phaseFrame = 0;
+  events.push({ type: 'switchIn', side: 0 });
 }
 
 function startRound(battle: BattleState, events: BattleEvent[], timer: number) {

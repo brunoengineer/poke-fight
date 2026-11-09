@@ -49,14 +49,33 @@ export const RESERVED_KEYS: ReadonlySet<string> = new Set([
   ...Object.keys(ARROWS),
 ]);
 
+/** Volume levels, 0–10 each. */
+export interface Volumes {
+  music: number;
+  sounds: number;
+  cries: number;
+}
+
+export const VOLUME_KINDS = ['music', 'sounds', 'cries'] as const;
+export const MAX_VOLUME = 10;
+/** The cries are recordings at full loudness; the music and effects are soft synths. Cries start low. */
+export const DEFAULT_VOLUMES: Volumes = { music: 6, sounds: 6, cries: 3 };
+
 export interface Settings {
   muted: boolean;
+  volumes: Volumes;
   keys: KeyMap;
   /** The language chosen on this device (null: follow the browser, or the save). */
   language: Language | null;
 }
 
-export const DEFAULT_SETTINGS: Settings = { muted: false, keys: DEFAULT_KEYS, language: null };
+export const DEFAULT_SETTINGS: Settings = { muted: false, volumes: DEFAULT_VOLUMES, keys: DEFAULT_KEYS, language: null };
+
+/** One volume a step up or down, kept within 0–10. */
+export const stepVolume = (volumes: Volumes, kind: keyof Volumes, by: number): Volumes => ({
+  ...volumes,
+  [kind]: Math.min(MAX_VOLUME, Math.max(0, volumes[kind] + by)),
+});
 
 /** Reads stored settings, keeping whatever is valid and using the defaults for the rest (never fails). */
 export function parseSettings(raw: string | null): Settings {
@@ -67,7 +86,12 @@ export function parseSettings(raw: string | null): Settings {
     data = null;
   }
   if (typeof data !== 'object' || data === null) return DEFAULT_SETTINGS;
-  const { muted, keys, language } = data as { muted?: unknown; keys?: unknown; language?: unknown };
+  const { muted, keys, language, volumes } = data as { muted?: unknown; keys?: unknown; language?: unknown; volumes?: unknown };
+  const storedVolumes = (typeof volumes === 'object' && volumes !== null ? volumes : {}) as Record<string, unknown>;
+  const level = (kind: keyof Volumes) => {
+    const v = storedVolumes[kind];
+    return typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= MAX_VOLUME ? v : DEFAULT_VOLUMES[kind];
+  };
   let map = DEFAULT_KEYS;
   if (typeof keys === 'object' && keys !== null) {
     const stored = keys as Record<string, unknown>;
@@ -77,7 +101,12 @@ export function parseSettings(raw: string | null): Settings {
     // Two actions on one key can only come from a hand-edited file: fall back to the defaults.
     if (new Set(Object.values(candidate)).size === ACTIONS.length) map = candidate;
   }
-  return { muted: muted === true, keys: map, language: isLanguage(language) ? language : null };
+  return {
+    muted: muted === true,
+    volumes: { music: level('music'), sounds: level('sounds'), cries: level('cries') },
+    keys: map,
+    language: isLanguage(language) ? language : null,
+  };
 }
 
 /**
@@ -95,6 +124,9 @@ export function bindingsOf(keys: KeyMap): Bindings {
   const table: Record<string, number> = {};
   for (const [code, action] of Object.entries(ARROWS)) table[code] = ACTION_BUTTON[action];
   for (const action of ACTIONS) table[keys[action]] = ACTION_BUTTON[action];
+  // Enter confirms on the battle's menus (choosing a Pokémon), like everywhere else.
+  table.Enter = Button.Confirm;
+  table.NumpadEnter = Button.Confirm;
   return table;
 }
 

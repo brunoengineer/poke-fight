@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { Button } from '../fight/input';
 import { createKeyLatch } from '../engine/input/keys';
-import { bindingsOf, DEFAULT_KEYS, DEFAULT_SETTINGS, keyLabel, keyNames, parseSettings, rebind } from './settings';
+import { bindingsOf, DEFAULT_KEYS, DEFAULT_SETTINGS, DEFAULT_VOLUMES, keyLabel, keyNames, parseSettings, rebind, stepVolume } from './settings';
+import { gainOf } from '../audio/audio';
 
 describe('settings', () => {
   it('nothing stored, or garbage: the defaults', () => {
@@ -12,9 +13,23 @@ describe('settings', () => {
 
   it('keeps what is valid and fixes the rest', () => {
     const stored = JSON.stringify({ muted: true, keys: { physical: 'KeyU', guard: 'Escape', big: 7 } });
-    expect(parseSettings(stored)).toEqual({ muted: true, keys: { ...DEFAULT_KEYS, physical: 'KeyU' }, language: null });
+    expect(parseSettings(stored)).toEqual({ muted: true, volumes: DEFAULT_VOLUMES, keys: { ...DEFAULT_KEYS, physical: 'KeyU' }, language: null });
     expect(parseSettings(JSON.stringify({ language: 'pt' })).language).toBe('pt');
     expect(parseSettings(JSON.stringify({ language: 'xx' })).language).toBeNull();
+  });
+
+  it('volumes: 0–10 each, kept when valid; the cries start low', () => {
+    expect(parseSettings(JSON.stringify({ volumes: { music: 9, sounds: 11, cries: 'x' } })).volumes).toEqual({ ...DEFAULT_VOLUMES, music: 9 });
+    expect(stepVolume(DEFAULT_VOLUMES, 'cries', -5).cries).toBe(0);
+    expect(stepVolume({ ...DEFAULT_VOLUMES, music: 10 }, 'music', 1).music).toBe(10);
+    // At the defaults, a cry (a full-loudness recording) plays well under the effects and close to the music.
+    expect(gainOf('cries', DEFAULT_VOLUMES.cries)).toBeLessThan(gainOf('music', DEFAULT_VOLUMES.music));
+    expect(gainOf('music', DEFAULT_VOLUMES.music)).toBeCloseTo(0.16, 2);
+    expect(gainOf('music', 0)).toBe(0);
+  });
+
+  it('Enter confirms on the battle menus, and a controller has its own confirm', () => {
+    expect(bindingsOf(DEFAULT_KEYS).Enter).toBe(Button.Confirm);
   });
 
   it('two actions on the same key (a hand-edited file): back to the default keys', () => {

@@ -6,7 +6,6 @@
 import { backdropUrl, type Backdrop } from '../data/art';
 import { drawAmbience } from './ambience';
 import { getImage } from './images';
-import { townPicture } from './town';
 import { VIEW_H, VIEW_W } from './screen';
 
 export const FLOOR_Y = 230;
@@ -19,8 +18,6 @@ export interface StageSpec {
   tint?: string;
   /** The place's picture (drawn instead of the painted stage once it has loaded). */
   backdrop?: Backdrop;
-  /** A city's panorama (render/town.ts): the battle field's fights happen in town. */
-  town?: string;
 }
 
 /** A small, repeatable random sequence (the same scenery every time). */
@@ -35,11 +32,6 @@ function seeded(seed: number) {
 const cache = new Map<string, HTMLCanvasElement>();
 
 export function drawStage(ctx: CanvasRenderingContext2D, spec: StageSpec, frame: number): void {
-  if (spec.town) {
-    ctx.drawImage(townPicture(spec.town), 0, 0);
-    drawAmbience(ctx, 'route', frame, 'back');
-    return;
-  }
   const picture = spec.backdrop ? getImage(backdropUrl(spec.backdrop)) : null;
   if (picture) {
     drawPicture(ctx, picture, spec);

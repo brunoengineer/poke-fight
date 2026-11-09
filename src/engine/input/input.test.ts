@@ -63,10 +63,11 @@ describe('controller', () => {
 
   it('maps the d-pad and the face buttons', () => {
     expect(padMask(pad([PAD.Left]))).toBe(Button.Left);
-    expect(padMask(pad([PAD.A]))).toBe(Button.Up);
+    // A jumps, and confirms on the battle's menus; B is the big special, and cancels there.
+    expect(padMask(pad([PAD.A]))).toBe(Button.Up | Button.Confirm);
     expect(padMask(pad([PAD.X]))).toBe(Button.Physical);
     expect(padMask(pad([PAD.Y]))).toBe(Button.Special);
-    expect(padMask(pad([PAD.B]))).toBe(Button.Big);
+    expect(padMask(pad([PAD.B]))).toBe(Button.Big | Button.Cancel);
     expect(padMask(pad([PAD.RB]))).toBe(Button.Guard);
     expect(padMask(pad([PAD.LB]))).toBe(Button.Dash);
   });
@@ -78,7 +79,7 @@ describe('controller', () => {
   });
 
   it('works with pads that report fewer buttons', () => {
-    expect(padMask({ buttons: [{ pressed: true }], axes: [] })).toBe(Button.Up);
+    expect(padMask({ buttons: [{ pressed: true }], axes: [] })).toBe(Button.Up | Button.Confirm);
   });
 });
 

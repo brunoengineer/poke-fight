@@ -53,6 +53,7 @@ test.describe('Safari Zone', () => {
     await winBattle(page);
     await expect(page.getByTestId('throw-safari-ball')).toHaveText('Safari Ball ×30');
     await page.getByTestId('throw-safari-ball').click();
+    await page.getByTestId('capture-done').click();
     await expect(page.getByTestId('results-lines')).toContainText(/caught|fled/);
     await page.getByTestId('continue').click();
 

@@ -78,6 +78,21 @@ test('sound: the Options switch and M turn it off and on, and it is remembered',
   expect((await storedSettings(page)).muted).toBe(false);
 });
 
+test('volumes: music, effects and cries go up and down, and are remembered', async ({ page }) => {
+  await openGame(page, { scene: 'title' });
+  await page.getByTestId('options').click();
+  await expect(page.getByTestId('volume-cries-level')).toHaveAttribute('data-level', '3');
+  await page.getByTestId('volume-cries-down').click();
+  await page.getByTestId('volume-music-up').click();
+  await expect(page.getByTestId('volume-cries-level')).toHaveAttribute('data-level', '2');
+  // The focus stays on the button (the screen redraws), so A / Enter can keep pressing it.
+  await expect(page.getByTestId('volume-music-up')).toBeFocused();
+  expect((await storedSettings(page)).volumes).toEqual({ music: 7, sounds: 6, cries: 2 });
+  await reload(page);
+  await page.getByTestId('options').click();
+  await expect(page.getByTestId('volume-music-level')).toHaveAttribute('data-level', '7');
+});
+
 test('the language chosen on the title is remembered without a saved game', async ({ page }) => {
   await openGame(page, { scene: 'title' });
   await page.getByTestId('options').click();
@@ -130,6 +145,8 @@ test.describe('menus without a mouse', () => {
     await page.getByTestId('member-0').click();
     await expect(page.getByTestId('member-0')).toContainText('Machoke');
     await expect(page.getByTestId('member-2')).toContainText('Charmeleon');
+    // The party is redrawn in place (no entrance again): only the two slots glide.
+    await expect(page.getByTestId('party')).toHaveAttribute('data-redraw', '');
     expect((await page.evaluate(() => window.__pf!.save().party.map(p => p.speciesId)))).toEqual([67, 64, 5]);
     // B / Esc cancels a pick-up instead of closing the party.
     await page.getByTestId('member-1').click();

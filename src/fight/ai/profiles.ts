@@ -1,7 +1,8 @@
-// CPU profiles = difficulty × style.
-//   - Difficulty is about skill: how late it sees you, how often it guards, anti-airs and punishes.
+// CPU profiles = skill × style.
+//   - Skill is how late it sees you, how often it guards, anti-airs and punishes. A number from 0 (a clumsy wild
+//     Pokémon) to 1 (hard); the three difficulties are points on that scale (easy ⅓, normal ⅔, hard 1).
 //   - Style is about personality: approach or keep away, specials, jumps, big specials.
-// Later, each opponent in the journey gets one (wild Pokémon: easy; gym leaders: a style per type; League: hard).
+// In the journey each opponent Pokémon gets its own (game/ai.ts): who controls it, how evolved it is, its stats.
 
 export interface AiProfile {
   name: string;
@@ -33,14 +34,41 @@ export type Difficulty = (typeof DIFFICULTIES)[number];
 export const STYLES = ['balanced', 'aggressive', 'defensive', 'zoner'] as const;
 export type Style = (typeof STYLES)[number];
 
-type Skill = Pick<AiProfile, 'reaction' | 'planFrames' | 'guard' | 'antiAir' | 'punish'>;
-type Personality = Pick<AiProfile, 'aggression' | 'zoning' | 'jump' | 'big' | 'caution'>;
+export type Skill = Pick<AiProfile, 'reaction' | 'planFrames' | 'guard' | 'antiAir' | 'punish'>;
+export type Personality = Pick<AiProfile, 'aggression' | 'zoning' | 'jump' | 'big' | 'caution'>;
 
 const SKILL: Record<Difficulty, Skill> = {
   easy: { reaction: 30, planFrames: [20, 50], guard: 0.15, antiAir: 0.1, punish: 0.1 },
   normal: { reaction: 18, planFrames: [12, 35], guard: 0.5, antiAir: 0.4, punish: 0.5 },
   hard: { reaction: 10, planFrames: [6, 20], guard: 0.85, antiAir: 0.75, punish: 0.85 },
 };
+
+/** Below easy: a wild Pokémon that barely knows it is in a fight. */
+const CLUMSY: Skill = { reaction: 36, planFrames: [26, 64], guard: 0.05, antiAir: 0.03, punish: 0.04 };
+
+/** Where each difficulty sits on the skill scale. */
+export const SKILL_OF: Record<Difficulty, number> = { easy: 1 / 3, normal: 2 / 3, hard: 1 };
+
+/** The skill numbers at any point of the scale (0–1), between the anchors. */
+export function skillAt(skill: number): Skill {
+  const anchors: [number, Skill][] = [[0, CLUMSY], ...DIFFICULTIES.map(d => [SKILL_OF[d], SKILL[d]] as [number, Skill])];
+  const s = Math.min(1, Math.max(0, skill));
+  const i = Math.max(1, anchors.findIndex(([at]) => at >= s));
+  const [a, from] = anchors[i - 1];
+  const [b, to] = anchors[i];
+  const k = (s - a) / (b - a);
+  const mix = (x: number, y: number) => x + (y - x) * k;
+  return {
+    reaction: Math.round(mix(from.reaction, to.reaction)),
+    planFrames: [Math.round(mix(from.planFrames[0], to.planFrames[0])), Math.round(mix(from.planFrames[1], to.planFrames[1]))],
+    guard: mix(from.guard, to.guard),
+    antiAir: mix(from.antiAir, to.antiAir),
+    punish: mix(from.punish, to.punish),
+  };
+}
+
+/** A style's personality numbers (game/ai.ts varies them a little per Pokémon). */
+export const personalityOf = (style: Style): Personality => ({ ...PERSONALITY[style] });
 
 const PERSONALITY: Record<Style, Personality> = {
   balanced: { aggression: 0.5, zoning: 0.4, jump: 0.25, big: 0.5, caution: 0.3 },

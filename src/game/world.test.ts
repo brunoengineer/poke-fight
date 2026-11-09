@@ -9,7 +9,7 @@ import { HP_UNITS } from '../fight/constants';
 import { addCaught, canSendToBox, canTakeFromBox, sendToBox, swapInParty, takeFromBox } from './box';
 import { catchChance, catchValue, DIFFICULTY_PENALTY, lowLevelBonus, throwBall } from './capture';
 import { addItem, buy, countOf, moneyAfterLoss, prizeMoney, removeItem, START_BAG, START_MONEY, usePotion } from './economy';
-import { bestRod, encounterTable, hasEncounters, rollEncounter, rollIvs, wildPokemon } from './encounters';
+import { bestRod, encounterTable, hasEncounters, RARE_BITE, rollEncounter, rollIvs, wildPokemon } from './encounters';
 import { createPokemon, maxHpOf } from './pokemon';
 
 const id = (slug: string) => speciesBySlug(slug).id;
@@ -67,8 +67,18 @@ describe('encounters', () => {
     expect(encounterTable(viridian, 'water', null)).toEqual([]);
     const old = new Set(encounterTable(viridian, 'water', 'old-rod').map(e => species(e.speciesId).slug));
     const good = new Set(encounterTable(viridian, 'water', 'good-rod').map(e => species(e.speciesId).slug));
-    expect(old).toEqual(new Set(['magikarp']));
+    expect(old).toEqual(new Set(['magikarp', 'poliwag', 'goldeen']));
     expect(good).toContain('poliwag');
+    expect(good).toContain('tentacool');
+  });
+
+  it("the Old Rod catches Magikarp, mostly: the Good Rod's Pokémon bite 30% of the time, at the Old Rod's levels", () => {
+    const table = encounterTable(city('pallet'), 'water', 'old-rod');
+    const rng = createRng(3);
+    const rolls = Array.from({ length: 4000 }, () => rollEncounter(table, rng));
+    const magikarp = rolls.filter(r => r.speciesId === id('magikarp')).length / rolls.length;
+    expect(magikarp).toBeCloseTo(1 - RARE_BITE, 1);
+    expect(Math.max(...rolls.map(r => r.level))).toBeLessThanOrEqual(7);
   });
 
   it('the best rod owned is used', () => {

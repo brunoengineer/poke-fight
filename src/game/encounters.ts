@@ -45,11 +45,34 @@ export function bestRod(owned: (rod: RodId) => boolean): RodId | null {
 export const tableForAreas = (areas: readonly string[], method: Method): EncounterEntry[] =>
   areas.flatMap(area => INDEX.get(area)?.get(method) ?? []);
 
+/**
+ * How often a rod hooks what the next rod catches (decided after milestone 11): in Red/Blue the Old Rod only ever
+ * catches Magikarp, which makes fishing dull. Here each rod also hooks, now and then, the next rod's Pokémon, at its
+ * own (lower) levels. The Super Rod is the best: nothing above it.
+ */
+export const RARE_BITE = 0.3;
+
 /** Everything that can appear when hunting this kind of ground in this city (water needs a rod). */
 export function encounterTable(city: City, kind: HuntKind, rod: RodId | null): EncounterEntry[] {
   const method: Method | null = kind === 'water' ? rod : 'walk';
   if (!method) return [];
-  return tableForAreas(city.hunts[kind] ?? [], method);
+  const areas = city.hunts[kind] ?? [];
+  const table = tableForAreas(areas, method);
+  return method === 'walk' ? table : withRareBites(table, tableForAreas(areas, nextRod(method)));
+}
+
+const nextRod = (rod: RodId): RodId => RODS[Math.min(RODS.indexOf(rod) + 1, RODS.length - 1)];
+
+/** The rod's own table, plus the next rod's Pokémon as RARE_BITE of the weight, at this rod's levels. */
+function withRareBites(own: EncounterEntry[], better: EncounterEntry[]): EncounterEntry[] {
+  const extra = better.filter(b => !own.some(o => o.speciesId === b.speciesId));
+  if (own.length === 0 || extra.length === 0) return own;
+  const ownWeight = own.reduce((sum, e) => sum + e.weight, 0);
+  const extraWeight = extra.reduce((sum, e) => sum + e.weight, 0);
+  const scale = (ownWeight * RARE_BITE) / (1 - RARE_BITE) / extraWeight;
+  const minLevel = Math.min(...own.map(e => e.minLevel));
+  const maxLevel = Math.max(...own.map(e => e.maxLevel));
+  return [...own, ...extra.map(e => ({ speciesId: e.speciesId, minLevel, maxLevel: maxLevel + 2, weight: e.weight * scale }))];
 }
 
 export interface WildRoll {

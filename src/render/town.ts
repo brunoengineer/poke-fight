@@ -1,448 +1,946 @@
-// Each city as a pixel-art panorama, painted by code (shapes made for this game): a sky for the city's mood, far
-// hills, the skyline (houses, the Pokémon Center, the Mart, the gym, and the city's landmark), trees, and the plaza in
-// front. 480×270 art pixels, the fight's own size: it's the city's backdrop in the menus (as an image) and the stage
-// of the battle field's fights. The horizon sits high, so the skyline shows above the city screen's cards.
+// Each city as a top-down pixel-art town, painted by code (an original layout and buildings made for this game, in
+// the spirit of the handheld RPG towns): a forest edge, a row of buildings (houses, the Pokémon Center, the Mart,
+// the gym and the city's landmark) along the main road, and gardens, ponds, the sea or tall grass below. 480×270 art
+// pixels. It is the city's backdrop in the menus: the main row of buildings sits in the top band, which the city
+// screen's cards leave visible.
 
-import { VIEW_H, VIEW_W } from './screen';
+import { bayer, clumps, hash, mix, noise, Pixels, rgb, seeded, smooth, tone, type Ball, type RGB } from './pixel';
 
-/** The skyline's base line (where buildings stand). */
-const BASE = 118;
+const W = 480;
+const H = 270;
+/** Where the main row of buildings stands (their doors), just above the city screen's cards. */
+const ROW_A = 98;
+const ROAD_TOP = 104;
+const ROAD_BOTTOM = 126;
+/** The second row, mostly behind the cards. */
+const ROW_B = 196;
 
-interface Mood {
-  sky: [string, string, string];
-  sun: { x: number; y: number; color: string; size: number } | null;
-  hills: string;
-  far: string;
-  ground: [string, string];
-  /** Lit windows (dusk and night). */
-  lights: boolean;
-  stars: boolean;
+// ── Each city ────────────────────────────────────────────────────────────────────────────────────────────────────
+
+type Ground = 'grass' | 'rock' | 'sand' | 'paved';
+type Feature =
+  | 'house'
+  | 'center'
+  | 'mart'
+  | 'gym'
+  | 'lab'
+  | 'museum'
+  | 'tower'
+  | 'store'
+  | 'tall'
+  | 'skyscraper'
+  | 'gate'
+  | 'league'
+  | 'volcano';
+
+interface Light {
+  /** Multiplies every color (dusk, night); null in daylight. */
+  tint: [number, number, number] | null;
+  /** Windows and lamps are lit. */
+  lit: boolean;
 }
 
-const DAY: Mood = {
-  sky: ['#4c9bff', '#86c4ff', '#d8efff'],
-  sun: { x: 400, y: 34, color: '#fff6c9', size: 14 },
-  hills: '#6aa66a',
-  far: '#9cc3d8',
-  ground: ['#d9c9a3', '#c4b087'],
-  lights: false,
-  stars: false,
-};
+interface Plan {
+  ground: Ground;
+  /** The main row, left to right (houses fill the gaps). */
+  row: Feature[];
+  /** Water: the sea along the bottom or the right, a river on the right, a pond in the second row. */
+  water: ('seaBottom' | 'seaRight' | 'river' | 'pond')[];
+  light: Light;
+  /** Greens (or the rocky / sandy ground's colors) a little different per city. */
+  grass?: string;
+}
 
-const MOODS: Record<string, Partial<Mood>> = {
-  pallet: { ground: ['#bfe39a', '#a3cf7f'] },
-  viridian: { hills: '#4d9a57', ground: ['#a9d98a', '#8cc271'] },
-  pewter: { sky: ['#6aa4e8', '#a9cdef', '#eaf2f6'], hills: '#9c8a74', far: '#b9b2a8', ground: ['#cbbfa9', '#b2a48b'] },
-  cerulean: { sky: ['#3f8cf2', '#7fb8ff', '#d4ecff'] },
-  vermilion: { sky: ['#ff9a5a', '#ffc88a', '#ffe9c4'], sun: { x: 380, y: 70, color: '#fff1c2', size: 18 }, hills: '#7f8fb0', far: '#e3b9a0' },
-  lavender: { sky: ['#2b2350', '#6a4f9e', '#c79ad6'], sun: { x: 90, y: 30, color: '#f3ecff', size: 10 }, hills: '#3d3566', far: '#7b6aa8', ground: ['#a99bbd', '#8f80a6'], lights: true, stars: true },
-  celadon: { hills: '#3f8f52', ground: ['#b9dd9a', '#9fca80'] },
-  fuchsia: { sky: ['#5fb2ff', '#a8dcff', '#f4f9e8'], hills: '#5aa257', ground: ['#d9cf96', '#c2b67a'] },
-  saffron: { sky: ['#ff8f4a', '#ffbf6e', '#ffe7b0'], sun: { x: 120, y: 60, color: '#fff3c4', size: 20 }, hills: '#8d7a8f', far: '#e2b493', lights: true },
-  cinnabar: { sky: ['#e2553d', '#ff9d5c', '#ffd9a0'], sun: { x: 420, y: 80, color: '#fff0c8', size: 22 }, hills: '#6b4a45', far: '#c98a6f', ground: ['#d8b88f', '#bf9c72'] },
-  indigo: { sky: ['#0f1240', '#2d2f78', '#7a6ad0'], sun: { x: 70, y: 28, color: '#eef0ff', size: 9 }, hills: '#2b2d5c', far: '#4a4c8a', ground: ['#b3aac9', '#9a90b3'], lights: true, stars: true },
+const DAY: Light = { tint: null, lit: false };
+const SUNSET: Light = { tint: [1.03, 0.93, 0.84], lit: true };
+const DUSK: Light = { tint: [0.68, 0.6, 0.92], lit: true };
+const NIGHT: Light = { tint: [0.42, 0.48, 0.86], lit: true };
+
+const PLANS: Record<string, Plan> = {
+  pallet: { ground: 'grass', row: ['house', 'lab', 'house'], water: ['seaBottom'], light: DAY, grass: '#78c850' },
+  viridian: { ground: 'grass', row: ['house', 'center', 'mart', 'house', 'gym'], water: ['pond'], light: DAY, grass: '#5fb54a' },
+  pewter: { ground: 'rock', row: ['house', 'museum', 'center', 'mart', 'gym'], water: [], light: DAY },
+  cerulean: { ground: 'grass', row: ['house', 'center', 'gym', 'mart'], water: ['river', 'pond'], light: DAY, grass: '#6cc55a' },
+  vermilion: { ground: 'grass', row: ['center', 'mart', 'gym', 'house'], water: ['seaRight'], light: SUNSET, grass: '#7cc455' },
+  lavender: { ground: 'grass', row: ['house', 'tower', 'center', 'mart'], water: [], light: DUSK, grass: '#7aa86a' },
+  celadon: { ground: 'grass', row: ['house', 'store', 'center', 'gym', 'tall'], water: ['pond'], light: DAY, grass: '#58b35a' },
+  fuchsia: { ground: 'grass', row: ['gate', 'center', 'mart', 'gym'], water: ['pond'], light: DAY, grass: '#86c24a' },
+  saffron: { ground: 'paved', row: ['tall', 'skyscraper', 'center', 'gym', 'mart', 'tall'], water: [], light: DAY },
+  cinnabar: { ground: 'sand', row: ['center', 'mart', 'gym', 'volcano'], water: ['seaBottom'], light: SUNSET },
+  indigo: { ground: 'grass', row: ['center', 'league', 'mart'], water: [], light: NIGHT, grass: '#5f9e5a' },
 };
 
 const cache = new Map<string, HTMLCanvasElement>();
 
-/** The city's panorama (painted once, then reused). */
+/** The city's picture (painted once, then reused). */
 export function townPicture(cityId: string): HTMLCanvasElement {
   let canvas = cache.get(cityId);
   if (!canvas) {
-    canvas = document.createElement('canvas');
-    canvas.width = VIEW_W;
-    canvas.height = VIEW_H;
-    const ctx = canvas.getContext('2d');
-    if (ctx) paintTown(ctx, cityId);
+    canvas = paintTown(cityId).toCanvas();
     cache.set(cityId, canvas);
   }
   return canvas;
 }
 
-/** The panorama as an image URL (for the menus' backdrop). */
+/** The picture as an image URL (for the menus' backdrop). */
 export const townUrl = (cityId: string) => townPicture(cityId).toDataURL('image/png');
 
-// ── Painting ──────────────────────────────────────────────────────────────────────────────────────────────────────
+// ── Palette ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-function seeded(seed: number) {
-  let state = seed >>> 0 || 1;
-  return () => {
-    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
-    return state / 4294967296;
+interface Palette {
+  /** dark, base, light, and the darkest (outlines of grass). */
+  grass: [RGB, RGB, RGB, RGB];
+  path: [RGB, RGB, RGB];
+  plaza: [RGB, RGB, RGB];
+  water: [RGB, RGB, RGB, RGB];
+  sand: [RGB, RGB, RGB];
+  leaves: RGB[];
+  leafLine: RGB;
+}
+
+function paletteOf(plan: Plan): Palette {
+  const grass = rgb(plan.grass ?? (plan.ground === 'rock' ? '#a2a06a' : plan.ground === 'sand' ? '#9bc25a' : '#68b850'));
+  const leaves = rgb(plan.ground === 'rock' ? '#4f8a48' : plan.ground === 'sand' ? '#4fa04a' : '#3f9a48');
+  return {
+    grass: [tone(grass, -0.22), grass, tone(grass, 0.22), tone(grass, -0.45)],
+    path: plan.ground === 'rock' ? [rgb('#9c8a70'), rgb('#c9b796'), rgb('#e0d2b4')] : [rgb('#b88f5a'), rgb('#dcc08a'), rgb('#efdcae')],
+    plaza: plan.ground === 'paved' ? [rgb('#8a8c96'), rgb('#bfc2c8'), rgb('#dfe1e6')] : [rgb('#8f8aa0'), rgb('#c9c5d4'), rgb('#e6e3ee')],
+    water: [rgb('#2a5fb8'), rgb('#3f86e0'), rgb('#7cbcf4'), rgb('#e8f6ff')],
+    sand: [rgb('#d8bc80'), rgb('#efd9a2'), rgb('#fbeccb')],
+    leaves: [tone(leaves, -0.38), tone(leaves, -0.12), leaves, tone(leaves, 0.2), tone(leaves, 0.42)],
+    leafLine: tone(leaves, -0.62),
   };
 }
 
-const hash = (text: string) => [...text].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619), 2166136261);
+// ── The ground ───────────────────────────────────────────────────────────────────────────────────────────────────
 
-/** A color made darker or lighter (amount −1…1). */
-function shade(hex: string, amount: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const channel = (shift: number) => {
-    const c = (n >> shift) & 255;
-    return Math.round(amount < 0 ? c * (1 + amount) : c + (255 - c) * amount);
-  };
-  return `rgb(${channel(16)}, ${channel(8)}, ${channel(0)})`;
+const enum K {
+  Grass,
+  Path,
+  Plaza,
+  Water,
+  Sand,
+  Tall,
+  Rock,
 }
 
-type Ctx = CanvasRenderingContext2D;
-
-const rect = (c: Ctx, x: number, y: number, w: number, h: number, color: string) => {
-  c.fillStyle = color;
-  c.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
-};
-
-function paintTown(c: Ctx, cityId: string) {
-  const mood: Mood = { ...DAY, ...MOODS[cityId] };
-  const random = seeded(hash(cityId));
-
-  // Sky, in three bands blended by steps (pixel-art style: no smooth gradient).
-  const [top, mid, low] = mood.sky;
-  const bands = 14;
-  for (let i = 0; i < bands; i++) {
-    const t = i / (bands - 1);
-    rect(c, 0, (i * BASE) / bands, VIEW_W, BASE / bands + 1, mix(t < 0.5 ? top : mid, t < 0.5 ? mid : low, t < 0.5 ? t * 2 : (t - 0.5) * 2));
+class Ground2 {
+  readonly kind = new Uint8Array(W * H);
+  fill(x: number, y: number, w: number, h: number, k: K) {
+    for (let j = Math.max(0, Math.floor(y)); j < Math.min(H, y + h); j++) for (let i = Math.max(0, Math.floor(x)); i < Math.min(W, x + w); i++) this.kind[j * W + i] = k;
   }
-  if (mood.stars) {
-    for (let i = 0; i < 60; i++) rect(c, random() * VIEW_W, random() * BASE * 0.6, 1, 1, random() > 0.7 ? '#ffffff' : '#c8c8ff');
-  }
-  if (mood.sun) {
-    const { x, y, color, size } = mood.sun;
-    disc(c, x, y, size + 6, shade(color, -0.05), 0.25);
-    disc(c, x, y, size, color, 1);
-  }
-  // Clouds.
-  for (let i = 0; i < 5; i++) cloud(c, random() * VIEW_W, 14 + random() * 50, 18 + random() * 26, mood.stars ? 'rgba(220,210,255,0.25)' : 'rgba(255,255,255,0.85)');
-
-  // Far range and near hills.
-  ridge(c, mood.far, BASE - 34, 18, random);
-  if (cityId === 'cinnabar') volcano(c, 360, BASE - 2);
-  if (cityId === 'pewter' || cityId === 'indigo') peaks(c, mood.far, random);
-  ridge(c, mood.hills, BASE - 14, 10, random);
-
-  // The ground (plaza / grass) with a few rows of texture, and water for harbor towns.
-  rect(c, 0, BASE, VIEW_W, VIEW_H - BASE, mood.ground[0]);
-  for (let y = BASE + 6; y < VIEW_H; y += 9) for (let x = (y * 7) % 23; x < VIEW_W; x += 23) rect(c, x, y, 6, 1, mood.ground[1]);
-  if (cityId === 'cerulean' || cityId === 'vermilion' || cityId === 'cinnabar') sea(c, cityId === 'cerulean' ? 300 : 260, BASE, mood);
-
-  // Far away: a hazy row of small houses, for depth.
-  for (let fx = 4; fx < VIEW_W; fx += 16 + random() * 22) {
-    const w = 10 + random() * 8;
-    const h = 6 + random() * 6;
-    rect(c, fx, BASE - h - 2, w, h + 2, mix(mood.far, '#ffffff', 0.25));
-    for (let dy = 0; dy < 4; dy++) rect(c, fx - 1 + dy, BASE - h - 6 + dy, w + 2 - dy * 2, 1, mix(mood.hills, mood.far, 0.4));
-  }
-  rect(c, 0, BASE - 2, VIEW_W, 2, shade(mood.hills, -0.15));
-
-  // The skyline: the city's landmark, its services, and houses, spread across the whole width; trees between.
-  const widths: Record<string, number> = { house: 34, center: 46, mart: 38, gym: 58, tall: 30 };
-  const width = (feature: string) => LANDMARKS[feature]?.width ?? widths[feature] ?? 34;
-  const features = [...(FEATURES[cityId] ?? ['house', 'center', 'house'])];
-  // More houses until the row is full (alternating sides, so the landmarks stay in the middle).
-  for (let i = 0; features.reduce((sum, f) => sum + width(f) + 14, 0) < VIEW_W - 60; i++) {
-    if (i % 2) features.push('house');
-    else features.unshift('house');
-  }
-  const total = features.reduce((sum, f) => sum + width(f), 0);
-  const gap = (VIEW_W - total) / (features.length + 1);
-  let x = gap;
-  for (const feature of features) {
-    trees(c, x - gap / 2 + 4, BASE, gap > 18 ? 2 : 1, random);
-    BUILDERS[feature]?.(c, x, BASE, mood, random) ?? LANDMARKS[feature]?.draw(c, x, BASE, mood, random);
-    x += width(feature) + gap;
-  }
-  trees(c, VIEW_W - 4, BASE, 2, random);
-
-  // The plaza: a path in perspective, flower beds along the buildings, lamp posts.
-  for (let y = BASE + 2; y < VIEW_H; y += 1) {
-    const half = 10 + (y - BASE) * 0.55;
-    rect(c, VIEW_W / 2 - half, y, half * 2, 1, shade(mood.ground[0], 0.12));
-  }
-  for (let fx = 0; fx < VIEW_W; fx += 3) {
-    if (Math.abs(fx - VIEW_W / 2) < 14) continue;
-    rect(c, fx, BASE, 3, 3, (fx / 3) % 4 === 0 ? '#e86a8a' : (fx / 3) % 4 === 2 ? '#ffd24a' : '#3f8f4a');
-  }
-  for (const lx of [60, 150, 330, 420]) lamp(c, lx, BASE + 14 + Math.abs(lx - VIEW_W / 2) * 0.05, mood);
-}
-
-function lamp(c: Ctx, x: number, base: number, mood: Mood) {
-  rect(c, x, base - 22, 2, 22, '#3a3f52');
-  rect(c, x - 2, base - 25, 6, 4, '#4a5068');
-  rect(c, x - 1, base - 24, 4, 2, mood.lights ? '#ffe28a' : '#f2f2f2');
-  if (mood.lights) disc(c, x + 1, base - 23, 7, '#ffe28a', 0.18);
-  rect(c, x - 2, base, 6, 1, 'rgba(0,0,0,0.25)');
-}
-
-function mix(a: string, b: string, t: number): string {
-  const pa = parseInt(a.slice(1), 16);
-  const pb = parseInt(b.slice(1), 16);
-  const ch = (s: number) => Math.round(((pa >> s) & 255) * (1 - t) + ((pb >> s) & 255) * t);
-  return `rgb(${ch(16)}, ${ch(8)}, ${ch(0)})`;
-}
-
-function disc(c: Ctx, x: number, y: number, r: number, color: string, alpha: number) {
-  c.globalAlpha = alpha;
-  c.fillStyle = color;
-  for (let dy = -r; dy <= r; dy++) {
-    const half = Math.round(Math.sqrt(r * r - dy * dy));
-    c.fillRect(Math.round(x - half), Math.round(y + dy), half * 2, 1);
-  }
-  c.globalAlpha = 1;
-}
-
-function cloud(c: Ctx, x: number, y: number, w: number, color: string) {
-  c.fillStyle = color;
-  for (let i = 0; i < 4; i++) {
-    const cx = x + (i / 3) * w;
-    const r = 5 + ((i * 3) % 5);
-    for (let dy = -r; dy <= 0; dy++) {
-      const half = Math.round(Math.sqrt(r * r - dy * dy));
-      c.fillRect(Math.round(cx - half), Math.round(y + dy), half * 2, 1);
-    }
-  }
-  c.fillRect(Math.round(x - 5), Math.round(y), Math.round(w + 10), 2);
-}
-
-function ridge(c: Ctx, color: string, base: number, amplitude: number, random: () => number) {
-  const phase = random() * 10;
-  for (let x = 0; x < VIEW_W; x++) {
-    const h = amplitude * (0.6 + 0.4 * Math.sin(x / 37 + phase) + 0.25 * Math.sin(x / 13 + phase * 2));
-    rect(c, x, base - h, 1, BASE - base + h, color);
+  at(x: number, y: number): K {
+    if (x < 0 || y < 0 || x >= W || y >= H) return -1 as K;
+    return this.kind[y * W + x] as K;
   }
 }
 
-function peaks(c: Ctx, color: string, random: () => number) {
-  for (let i = 0; i < 4; i++) {
-    const x = 30 + i * 120 + random() * 40;
-    const h = 40 + random() * 25;
-    for (let dy = 0; dy < h; dy++) {
-      const half = (dy / h) * (h * 0.9);
-      rect(c, x - half, BASE - 30 - h + dy, half * 2, 1, dy < 6 ? '#f4f6ff' : shade(color, -0.12));
-    }
-  }
+/** Tall grass, a 6×6 tuft repeated (light tips, darker roots). */
+function tallGrass(x: number, y: number, pal: Palette): RGB {
+  const row = Math.floor(y / 6);
+  const lx = (x + (row % 2) * 3) % 6;
+  const ly = y % 6;
+  const [dark, base, light, deepest] = pal.grass;
+  if (ly === 0) return lx === 1 || lx === 4 ? light : dark;
+  if (ly === 1) return lx === 1 || lx === 4 ? base : lx === 2 || lx === 5 ? dark : light;
+  if (ly < 4) return lx === 2 || lx === 5 ? deepest : base;
+  return dark;
 }
 
-function volcano(c: Ctx, x: number, base: number) {
-  const h = 70;
-  for (let dy = 0; dy < h; dy++) {
-    const half = 12 + (dy / h) * 70;
-    rect(c, x - half, base - h + dy, half * 2, 1, dy < 4 ? '#ff7a3d' : '#7a4a42');
-  }
-  for (let i = 0; i < 5; i++) cloud(c, x - 10 + i * 6, base - h - 8 - i * 9, 14 + i * 3, `rgba(90, 80, 90, ${0.55 - i * 0.08})`);
-}
-
-function sea(c: Ctx, from: number, base: number, mood: Mood) {
-  for (let y = base; y < VIEW_H; y++) {
-    const t = (y - base) / (VIEW_H - base);
-    rect(c, from + (1 - t) * 0, y, VIEW_W - from, 1, mix('#3f86d8', '#24569e', t));
-  }
-  for (let i = 0; i < 40; i++) {
-    const y = base + 4 + ((i * 37) % (VIEW_H - base - 8));
-    const x = from + 6 + ((i * 53) % (VIEW_W - from - 16));
-    rect(c, x, y, 5, 1, mood.lights ? 'rgba(255,220,180,0.5)' : 'rgba(255,255,255,0.55)');
-  }
-  rect(c, from - 3, base, 3, VIEW_H - base, '#e8dcae');
-}
-
-function trees(c: Ctx, x: number, base: number, count: number, random: () => number) {
-  for (let i = 0; i < count; i++) {
-    const tx = x - i * 7 - random() * 3;
-    const r = 6 + Math.floor(random() * 3);
-    rect(c, tx - 1, base - 6, 2, 6, '#5a3e2b');
-    disc(c, tx, base - 6 - r, r, '#2f7d43', 1);
-    disc(c, tx - 2, base - 8 - r, r - 3, '#4aa35a', 1);
-  }
-}
-
-/** Windows on a wall, lit or not. */
-function windows(c: Ctx, x: number, y: number, w: number, h: number, mood: Mood, random: () => number, size = 3, gap = 4) {
-  for (let wy = y + 3; wy + size < y + h - 2; wy += size + gap) {
-    for (let wx = x + 3; wx + size < x + w - 2; wx += size + gap) {
-      const lit = mood.lights && random() > 0.35;
-      rect(c, wx, wy, size, size, lit ? '#ffd97a' : '#6f97c4');
-      if (!lit) rect(c, wx, wy, size, 1, '#a9c9ec');
-    }
-  }
-}
-
-/** A house: walls with a shaded side, a gable roof drawn row by row, a door and windows. */
-function house(c: Ctx, x: number, base: number, w: number, h: number, wall: string, roof: string, mood: Mood, random: () => number) {
-  rect(c, x, base - h, w, h, wall);
-  rect(c, x + w - 3, base - h, 3, h, shade(wall, -0.18));
-  const roofH = Math.round(w * 0.38);
-  for (let dy = 0; dy < roofH; dy++) {
-    const inset = roofH - dy;
-    rect(c, x - 2 + inset, base - h - roofH + dy, w + 4 - inset * 2, 1, dy === roofH - 1 ? shade(roof, -0.3) : dy < 2 ? shade(roof, 0.2) : roof);
-  }
-  rect(c, x + Math.round(w / 2) - 3, base - 9, 6, 9, shade(wall, -0.45));
-  windows(c, x + 1, base - h, w - 4, h - 10, mood, random);
-}
-
-const BUILDERS: Record<string, (c: Ctx, x: number, base: number, mood: Mood, random: () => number) => void> = {
-  house(c, x, base, mood, random) {
-    const walls = ['#f2e6cf', '#e9d6c0', '#f5f0e6', '#dfe6ef'];
-    const roofs = ['#c8503f', '#4f7cc8', '#5c9b5a', '#9a6b4b', '#8a5bb8'];
-    house(c, x, base, 34, 20 + Math.floor(random() * 8), walls[Math.floor(random() * walls.length)], roofs[Math.floor(random() * roofs.length)], mood, random);
-  },
-  center(c, x, base, mood, random) {
-    // The Pokémon Center: white, a red roof band, a Poké Ball sign.
-    const w = 46;
-    const h = 30;
-    rect(c, x, base - h, w, h, '#fbf7f2');
-    rect(c, x + w - 3, base - h, 3, h, '#ddd5cf');
-    rect(c, x - 2, base - h - 7, w + 4, 7, '#e2463f');
-    rect(c, x - 2, base - h - 7, w + 4, 2, '#ff7a6a');
-    rect(c, x - 2, base - h - 1, w + 4, 1, '#9c2a26');
-    disc(c, x + w / 2, base - h - 12, 5, '#e2463f', 1);
-    rect(c, x + w / 2 - 5, base - h - 12, 10, 5, '#fbf7f2');
-    rect(c, x + w / 2 - 5, base - h - 12, 10, 1, '#2a2a33');
-    rect(c, x + w / 2 - 1, base - h - 13, 2, 3, '#2a2a33');
-    rect(c, x + w / 2 - 5, base - 11, 10, 11, '#7fc7ff');
-    rect(c, x + w / 2, base - 11, 1, 11, '#5aa0d8');
-    windows(c, x + 2, base - h + 2, 14, 16, mood, random);
-    windows(c, x + w - 18, base - h + 2, 14, 16, mood, random);
-  },
-  mart(c, x, base, mood, random) {
-    const w = 38;
-    const h = 26;
-    rect(c, x, base - h, w, h, '#f4f6fb');
-    rect(c, x + w - 3, base - h, 3, h, '#d4d8e4');
-    rect(c, x - 2, base - h - 6, w + 4, 6, '#3f78e0');
-    rect(c, x - 2, base - h - 6, w + 4, 2, '#7fa8ff');
-    rect(c, x + 8, base - h + 3, w - 16, 5, '#3f78e0');
-    rect(c, x + 10, base - h + 5, w - 20, 1, '#ffffff');
-    rect(c, x + w / 2 - 4, base - 10, 8, 10, '#7fc7ff');
-    windows(c, x + 2, base - h + 10, 12, 10, mood, random);
-  },
-  gym(c, x, base, mood) {
-    const w = 58;
-    const h = 30;
-    rect(c, x, base - h, w, h, '#d9d2c4');
-    rect(c, x + w - 4, base - h, 4, h, '#b8b0a2');
-    for (let dy = 0; dy < 10; dy++) rect(c, x - 3 + dy, base - h - 10 + dy, w + 6 - dy * 2, 1, dy < 2 ? '#8a8496' : '#5f5a6e');
-    rect(c, x + w / 2 - 6, base - h - 4, 12, 8, '#f2c94c');
-    rect(c, x + w / 2 - 4, base - h - 2, 8, 4, '#c8961c');
-    rect(c, x + w / 2 - 6, base - 14, 12, 14, '#4a4458');
-    for (let i = 0; i < 4; i++) rect(c, x + 5 + i * 13, base - h + 6, 3, h - 6, '#ece6da');
-    void mood;
-  },
-  tall(c, x, base, mood, random) {
-    const h = 40 + Math.floor(random() * 30);
-    rect(c, x, base - h, 30, h, '#b9c3d6');
-    rect(c, x + 26, base - h, 4, h, '#929db3');
-    windows(c, x, base - h, 26, h, mood, random, 2, 3);
-  },
-};
-
-const LANDMARKS: Record<string, { width: number; draw: (c: Ctx, x: number, base: number, mood: Mood, random: () => number) => void }> = {
-  lab: {
-    width: 56,
-    draw(c, x, base, mood, random) {
-      rect(c, x, base - 28, 56, 28, '#f2f4f6');
-      rect(c, x + 52, base - 28, 4, 28, '#cdd2d8');
-      rect(c, x - 2, base - 33, 60, 5, '#7c8a96');
-      rect(c, x + 40, base - 44, 2, 11, '#7c8a96');
-      disc(c, x + 41, base - 46, 4, '#c8d0d8', 1);
-      windows(c, x + 2, base - 26, 50, 16, mood, random, 4, 4);
-      rect(c, x + 24, base - 10, 8, 10, '#5a6672');
-    },
-  },
-  museum: {
-    width: 66,
-    draw(c, x, base) {
-      rect(c, x, base - 30, 66, 30, '#c9bda8');
-      for (let dy = 0; dy < 12; dy++) rect(c, x - 2 + dy * 2.5, base - 42 + dy, 70 - dy * 5, 1, dy < 2 ? '#e6dccb' : '#b0a28a');
-      for (let i = 0; i < 6; i++) rect(c, x + 4 + i * 11, base - 28, 4, 28, '#efe7d8');
-      rect(c, x - 2, base - 3, 70, 3, '#a89a83');
-    },
-  },
-  bridge: {
-    width: 70,
-    draw(c, x, base) {
-      rect(c, x, base - 10, 70, 4, '#b07a4a');
-      for (let i = 0; i <= 7; i++) rect(c, x + i * 10, base - 16, 2, 16, '#8a5a34');
-      rect(c, x, base - 16, 70, 2, '#d39a60');
-    },
-  },
-  ship: {
-    width: 90,
-    draw(c, x, base) {
-      // A big white liner in the harbor.
-      for (let dy = 0; dy < 12; dy++) rect(c, x + dy, base - 12 + dy, 90 - dy * 2, 1, dy < 3 ? '#2c3e66' : '#f6f6f6');
-      rect(c, x + 10, base - 22, 66, 10, '#ffffff');
-      rect(c, x + 20, base - 30, 44, 8, '#f2f2f2');
-      for (let i = 0; i < 3; i++) {
-        rect(c, x + 26 + i * 14, base - 42, 7, 12, '#d84a3c');
-        rect(c, x + 26 + i * 14, base - 42, 7, 3, '#2a2a33');
+function paintGround(p: Pixels, g: Ground2, pal: Palette, seed: number) {
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const k = g.at(x, y);
+      let c: RGB;
+      switch (k) {
+        case K.Grass:
+        case K.Rock: {
+          const [dark, base, light] = pal.grass;
+          // Big soft patches of lighter grass, dithered at their edges.
+          const patch = smooth(x, y, 40, seed) * 0.65 + smooth(x, y, 14, seed + 1) * 0.35;
+          c = patch > 0.62 + (bayer(x, y) - 0.5) * 0.12 ? mix(base, light, 0.35) : base;
+          // A tuft in some 8×8 cells: two blades and a lit tip.
+          const cell = noise(x >> 3, y >> 3, seed + 2);
+          if (cell < 0.5) {
+            const ox = 1 + Math.floor(cell * 10);
+            const oy = 2 + Math.floor(cell * 7) % 4;
+            const lx = (x & 7) - ox;
+            const ly = (y & 7) - oy;
+            if ((ly === 0 && (lx === 0 || lx === 2)) || (ly === 1 && lx === 1)) c = dark;
+            if (ly === -1 && lx === 1) c = light;
+          }
+          if (k === K.Rock && noise(x, y, seed + 3) > 0.985) c = rgb('#8a8378');
+          break;
+        }
+        case K.Tall:
+          c = tallGrass(x, y, pal);
+          break;
+        case K.Path: {
+          const [dark, base, light] = pal.path;
+          c = noise(x >> 2, y >> 2, seed + 4) > 0.8 ? mix(base, dark, 0.18) : base;
+          if (noise(x, y, seed + 5) > 0.975) c = light;
+          else if (noise(x, y - 1, seed + 5) > 0.975) c = dark;
+          break;
+        }
+        case K.Plaza: {
+          const [dark, base, light] = pal.plaza;
+          const row = Math.floor(y / 8);
+          const lx = (x + (row % 2) * 6) % 12;
+          const ly = y % 8;
+          c = ly === 0 || lx === 0 ? dark : ly === 1 || lx === 1 ? light : noise(Math.floor((x + (row % 2) * 6) / 12), row, seed) > 0.7 ? mix(base, dark, 0.12) : base;
+          break;
+        }
+        case K.Water: {
+          const [deep, base, light] = pal.water;
+          // Deeper (darker) further down, dithered between the two tones.
+          c = bayer(x, y) < (y / H) * 0.7 ? mix(base, deep, 0.45) : base;
+          // Little wave crests, in staggered rows.
+          const band = y % 8;
+          const shift = (Math.floor(y / 8) % 2) * 8;
+          const crest = noise((x + shift) >> 4, Math.floor(y / 8), seed + 7) > 0.45;
+          const lx = (x + shift) & 15;
+          if (crest && band === 0 && lx > 3 && lx < 10) c = light;
+          if (crest && band === 1 && (lx === 3 || lx === 10)) c = mix(base, light, 0.5);
+          break;
+        }
+        case K.Sand: {
+          const [dark, base, light] = pal.sand;
+          c = noise(x, y, seed + 8) > 0.94 ? dark : noise(x, y, seed + 9) > 0.95 ? light : base;
+          break;
+        }
+        default:
+          c = 0;
       }
-      for (let i = 0; i < 12; i++) rect(c, x + 13 + i * 5, base - 18, 2, 2, '#4a6a9c');
+      p.set(x, y, c);
+    }
+  }
+  // Edges: a darker rim along paths, foam and a lighter band along the shore, a dark bank on the land side.
+  const isLand = (k: K) => k !== K.Water;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const k = g.at(x, y);
+      const n = [g.at(x - 1, y), g.at(x + 1, y), g.at(x, y - 1), g.at(x, y + 1)];
+      const near = (test: (k: K) => boolean) => n.some(m => (m as number) >= 0 && test(m));
+      if (k === K.Path && near(m => m === K.Grass || m === K.Tall || m === K.Rock)) p.set(x, y, pal.path[0]);
+      if (k === K.Plaza && near(m => m !== K.Plaza)) p.set(x, y, pal.plaza[0]);
+      if (k === K.Water) {
+        if (near(isLand)) p.set(x, y, pal.water[3]);
+        else if ([g.at(x - 2, y), g.at(x + 2, y), g.at(x, y - 2), g.at(x, y + 2)].some(m => (m as number) >= 0 && isLand(m))) p.set(x, y, pal.water[2]);
+      } else if (near(m => m === K.Water) && k !== K.Sand) p.set(x, y, tone(pal.grass[0], -0.35));
+      // Grass beside tall grass: a dark line where the tall blades start.
+      if (k === K.Grass && g.at(x, y + 1) === K.Tall) p.set(x, y, pal.grass[3]);
+    }
+  }
+}
+
+// ── Things on the ground ─────────────────────────────────────────────────────────────────────────────────────────
+
+const SHADOW = 0x1a1430;
+
+interface Thing {
+  /** Drawn back to front, by this line (where it touches the ground). */
+  base: number;
+  shadow?: (p: Pixels) => void;
+  draw: (p: Pixels) => void;
+}
+
+function tree(x: number, base: number, pal: Palette, size = 1): Thing {
+  const s = size;
+  const balls: Ball[] = [
+    { x: x - 6 * s, y: base - 14 * s, r: 7 * s },
+    { x: x + 6 * s, y: base - 14 * s, r: 7 * s },
+    { x: x, y: base - 21 * s, r: 8 * s },
+    { x: x, y: base - 12 * s, r: 7.5 * s },
+  ];
+  return {
+    base,
+    shadow: p => p.oval(x + 3, base - 1, 12 * s, 4 * s, SHADOW, 0.32),
+    draw: p => {
+      // The trunk, lit on the left.
+      for (let j = 0; j < 7 * s; j++) {
+        for (let i = -2; i < 2; i++) p.set(x + i, base - 1 - j, i < 0 ? rgb('#8a5a32') : rgb('#5e3a22'));
+      }
+      p.set(x - 3, base - 1, rgb('#4a2c1a'));
+      p.set(x + 2, base - 1, rgb('#4a2c1a'));
+      clumps(p, balls, pal.leaves, pal.leafLine);
     },
-  },
-  tower: {
-    width: 26,
-    draw(c, x, base, mood, random) {
-      // A tall, quiet tower.
-      rect(c, x, base - 78, 26, 78, '#6c5a8f');
-      rect(c, x + 22, base - 78, 4, 78, '#55467a');
-      for (let dy = 0; dy < 18; dy++) rect(c, x + 13 - (dy * 13) / 18, base - 96 + dy, 2 + (dy * 26) / 18, 1, '#4a3d6e');
-      windows(c, x, base - 74, 22, 70, mood, random, 2, 6);
+  };
+}
+
+function bush(x: number, base: number, pal: Palette, flowers?: RGB): Thing {
+  const balls: Ball[] = [
+    { x: x - 4, y: base - 5, r: 5 },
+    { x: x + 4, y: base - 5, r: 5 },
+    { x, y: base - 7, r: 5 },
+  ];
+  return {
+    base,
+    shadow: p => p.oval(x + 2, base, 9, 2.5, SHADOW, 0.3),
+    draw: p => {
+      clumps(p, balls, pal.leaves, pal.leafLine);
+      if (flowers) {
+        for (const [dx, dy] of [[-5, -7], [3, -9], [5, -4], [-1, -4], [-3, -10]]) {
+          p.set(x + dx, base + dy, flowers);
+          p.set(x + dx + 1, base + dy, tone(flowers, 0.4));
+        }
+      }
     },
-  },
-  store: {
-    width: 52,
-    draw(c, x, base, mood, random) {
-      rect(c, x, base - 70, 52, 70, '#e8e2d6');
-      rect(c, x + 48, base - 70, 4, 70, '#c8c0b0');
-      rect(c, x, base - 74, 52, 4, '#3f8f52');
-      windows(c, x, base - 68, 48, 64, mood, random, 3, 3);
-      rect(c, x + 20, base - 10, 12, 10, '#7fc7ff');
+  };
+}
+
+function boulder(x: number, base: number, size = 1): Thing {
+  const stone = [rgb('#6c6676'), rgb('#8e8898'), rgb('#aaa4b2'), rgb('#c8c3cf'), rgb('#e2dee8')];
+  return {
+    base,
+    shadow: p => p.oval(x + 2, base, 9 * size, 3 * size, SHADOW, 0.3),
+    draw: p => clumps(p, [{ x: x - 2 * size, y: base - 5 * size, r: 6 * size }, { x: x + 4 * size, y: base - 4 * size, r: 4.5 * size }], stone, rgb('#3e3848')),
+  };
+}
+
+function flowerBed(p: Pixels, x: number, y: number, w: number, colors: RGB[], seed: number) {
+  for (let i = 0; i < w; i += 4) {
+    for (const dy of [0, 4]) {
+      const c = colors[Math.floor(noise(x + i, y + dy, seed) * colors.length)];
+      const fx = x + i + (dy ? 2 : 0);
+      p.set(fx, y + dy, c);
+      p.set(fx + 1, y + dy, tone(c, 0.35));
+      p.set(fx, y + dy + 1, tone(c, -0.3));
+      p.set(fx + 1, y + dy + 1, rgb('#3b7a2e'));
+    }
+  }
+}
+
+function fence(p: Pixels, x: number, y: number, w: number) {
+  const white = rgb('#f4f1ea');
+  const shade = rgb('#b9b2c4');
+  const line = rgb('#4a4458');
+  for (let i = 0; i <= w; i++) {
+    p.set(x + i, y - 6, line);
+    p.set(x + i, y - 5, white);
+    p.set(x + i, y - 4, shade);
+    p.set(x + i, y - 3, line);
+  }
+  for (let i = 0; i <= w; i += 8) {
+    for (let j = -9; j <= 0; j++) {
+      p.set(x + i - 1, y + j, line);
+      p.set(x + i, y + j, j === -9 ? line : white);
+      p.set(x + i + 1, y + j, j === -9 ? line : shade);
+      p.set(x + i + 2, y + j, line);
+    }
+    p.blendRect(x + i, y + 1, 4, 1, SHADOW, 0.3);
+  }
+}
+
+function lamp(x: number, base: number, lights: Glow[]): Thing {
+  return {
+    base,
+    shadow: p => p.blendRect(x + 1, base, 6, 2, SHADOW, 0.3),
+    draw: p => {
+      const post = rgb('#3a3d56');
+      p.rect(x, base - 18, 2, 18, post);
+      p.set(x, base - 18, tone(post, 0.4));
+      p.rect(x - 2, base - 23, 6, 5, rgb('#2a2c40'));
+      p.rect(x - 1, base - 22, 4, 3, rgb('#fff1b8'));
+      p.rect(x - 1, base - 1, 4, 1, post);
+      lights.push({ x: x + 1, y: base - 21, r: 16 });
     },
-  },
-  skyscraper: {
-    width: 44,
-    draw(c, x, base, mood, random) {
-      rect(c, x, base - 100, 44, 100, '#9aa7c2');
-      rect(c, x + 38, base - 100, 6, 100, '#7a87a3');
-      rect(c, x + 18, base - 112, 2, 12, '#7a87a3');
-      windows(c, x, base - 98, 38, 96, mood, random, 2, 3);
+  };
+}
+
+function sign(x: number, base: number): Thing {
+  return {
+    base,
+    shadow: p => p.blendRect(x + 1, base, 11, 2, SHADOW, 0.3),
+    draw: p => {
+      const wood = rgb('#b07a42');
+      p.rect(x + 4, base - 6, 2, 6, rgb('#6a4424'));
+      p.rect(x, base - 13, 11, 8, rgb('#4a2c1a'));
+      p.rect(x + 1, base - 12, 9, 6, wood);
+      p.rect(x + 1, base - 12, 9, 1, tone(wood, 0.35));
+      p.rect(x + 3, base - 10, 5, 1, tone(wood, -0.4));
+      p.rect(x + 3, base - 8, 4, 1, tone(wood, -0.4));
     },
-  },
-  gate: {
-    width: 50,
-    draw(c, x, base) {
-      rect(c, x, base - 22, 50, 22, '#c9a46a');
-      for (let dy = 0; dy < 10; dy++) rect(c, x - 4 + dy, base - 32 + dy, 58 - dy * 2, 1, dy < 2 ? '#8fbf4a' : '#5f9a3a');
-      rect(c, x + 19, base - 14, 12, 14, '#5a3e2b');
+  };
+}
+
+// ── Buildings ────────────────────────────────────────────────────────────────────────────────────────────────────
+
+interface Glow {
+  x: number;
+  y: number;
+  r: number;
+}
+
+interface Window {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+interface BuildingStyle {
+  w: number;
+  wall: number;
+  roof: number;
+  roofColor: RGB;
+  wallColor: RGB;
+  door?: 'wood' | 'glass' | 'double' | 'arch';
+  /** Window columns (left and right of the door). */
+  windows?: number;
+  chimney?: boolean;
+  /** Flat roof (a tall building seen from above) instead of a sloped one. */
+  flat?: boolean;
+  /** Floors of windows (tall buildings). */
+  floors?: number;
+  sign?: 'center' | 'mart' | 'gym' | 'league';
+}
+
+const OUTLINE = 0x2a2238;
+
+function building(x: number, base: number, s: BuildingStyle, windowsLit: Window[]): Thing {
+  const top = base - s.wall - s.roof;
+  const wallTop = base - s.wall;
+  return {
+    base,
+    shadow: p => {
+      // Cast to the bottom-right (light from the top-left).
+      p.blendRect(x + s.w + 3, top + 6, 6, base - top - 4, SHADOW, 0.3);
+      p.blendRect(x + 2, base, s.w + 7, 4, SHADOW, 0.3);
     },
-  },
-  league: {
-    width: 96,
-    draw(c, x, base, mood, random) {
-      rect(c, x, base - 40, 96, 40, '#e6e0f2');
-      rect(c, x + 90, base - 40, 6, 40, '#c2b9d8');
-      disc(c, x + 48, base - 40, 18, '#7b5cff', 1);
-      rect(c, x + 28, base - 40, 40, 2, '#5a3fd0');
-      for (let i = 0; i < 8; i++) rect(c, x + 5 + i * 12, base - 36, 4, 36, '#f6f2ff');
-      rect(c, x + 3, base - 58, 2, 18, '#9a92b0');
-      rect(c, x + 5, base - 58, 10, 6, '#ffcf4a');
-      rect(c, x + 91, base - 58, 2, 18, '#9a92b0');
-      rect(c, x + 81, base - 58, 10, 6, '#ffcf4a');
-      void mood;
-      void random;
+    draw: p => {
+      // The walls: lit on the left, a plank line every few pixels (houses), a darker foundation.
+      for (let j = wallTop; j < base; j++) {
+        for (let i = x; i < x + s.w; i++) {
+          let c = s.wallColor;
+          if (!s.flat && (j - wallTop) % 5 === 4) c = tone(c, -0.08);
+          if (i <= x + 1) c = tone(c, 0.15);
+          if (i >= x + s.w - 3) c = tone(c, -0.14);
+          if (j >= base - 3) c = tone(s.wallColor, -0.3);
+          p.set(i, j, c);
+        }
+      }
+      // Windows: on each floor, in columns on both sides of the door.
+      const floors = s.floors ?? 1;
+      const cols = s.windows ?? 1;
+      const floorH = (s.wall - 18) / floors;
+      for (let f = 0; f < floors; f++) {
+        const wy = s.floors ? wallTop + 4 + f * floorH : wallTop + 5;
+        const ww = s.floors ? 6 : 8;
+        const span = s.floors ? s.w - 8 : s.w / 2 - 12;
+        const count = s.floors ? Math.floor(span / 10) : cols;
+        for (let n = 0; n < count; n++) {
+          const xs = s.floors
+            ? [x + 5 + n * 10 + Math.floor((span - count * 10) / 2)]
+            : [x + 6 + n * 12, x + s.w - 6 - ww - n * 12];
+          for (const wx of xs) {
+            if (s.floors && wy + 7 > base - 18) continue;
+            window_(p, wx, wy, ww, 7, s.wallColor);
+            windowsLit.push({ x: wx + 1, y: wy + 1, w: ww - 2, h: 5 });
+          }
+        }
+      }
+      door(p, x + Math.floor(s.w / 2), base, s, windowsLit);
+      if (s.flat) flatRoof(p, x, top, s);
+      else roof(p, x, top, s);
+      if (s.chimney) {
+        const cx = x + s.w - 14;
+        p.rect(cx, top - 4, 7, 10, OUTLINE);
+        p.rect(cx + 1, top - 3, 5, 8, rgb('#a4573f'));
+        p.rect(cx + 1, top - 3, 5, 1, rgb('#d07a5c'));
+      }
+      if (s.sign) signboard(p, x, wallTop, s);
+      // The outline around the walls (the roof has its own).
+      for (let j = wallTop; j < base; j++) {
+        p.set(x - 1, j, OUTLINE);
+        p.set(x + s.w, j, OUTLINE);
+      }
+      p.rect(x - 1, base, s.w + 2, 1, OUTLINE);
     },
-  },
+  };
+}
+
+function window_(p: Pixels, x: number, y: number, w: number, h: number, wall: RGB) {
+  p.rect(x - 1, y - 1, w + 2, h + 2, tone(wall, -0.45));
+  p.rect(x, y, w, h, rgb('#78b4e6'));
+  p.rect(x, y + h - 2, w, 2, rgb('#4f86c2'));
+  p.set(x + 1, y + 1, rgb('#e6f6ff'));
+  p.set(x + 2, y + 1, rgb('#bfe3ff'));
+  p.set(x + 1, y + 2, rgb('#bfe3ff'));
+  if (w >= 8) p.rect(x + Math.floor(w / 2), y, 1, h, tone(wall, -0.2));
+  p.rect(x - 1, y + h + 1, w + 2, 1, tone(wall, 0.3));
+}
+
+function door(p: Pixels, cx: number, base: number, s: BuildingStyle, lit: Window[]) {
+  const kind = s.door ?? 'wood';
+  const w = kind === 'double' || kind === 'glass' ? 14 : kind === 'arch' ? 16 : 10;
+  const h = kind === 'arch' ? 16 : 13;
+  const x = cx - Math.floor(w / 2);
+  const y = base - h - 1;
+  p.rect(x - 1, y - 1, w + 2, h + 1, OUTLINE);
+  if (kind === 'glass') {
+    p.rect(x, y, w, h, rgb('#8fd0f0'));
+    p.rect(x + Math.floor(w / 2), y, 1, h, rgb('#e6f6ff'));
+    p.rect(x, y, w, 2, rgb('#c8ecff'));
+    lit.push({ x, y, w, h });
+  } else if (kind === 'arch') {
+    p.rect(x, y, w, h, rgb('#2b2338'));
+    p.rect(x, y, 2, 2, s.wallColor);
+    p.rect(x + w - 2, y, 2, 2, s.wallColor);
+  } else {
+    const wood = kind === 'double' ? rgb('#6a4a8a') : rgb('#8a5530');
+    p.rect(x, y, w, h, wood);
+    p.rect(x, y, 1, h, tone(wood, 0.3));
+    p.rect(x + 2, y + 2, w - 4, 4, tone(wood, -0.2));
+    if (kind === 'double') p.rect(x + Math.floor(w / 2), y, 1, h, tone(wood, -0.45));
+    else p.set(x + w - 3, y + 7, rgb('#f2d27a'));
+  }
+  // A step.
+  p.rect(x - 2, base - 1, w + 4, 2, rgb('#b8b0c2'));
+  p.rect(x - 2, base - 1, w + 4, 1, rgb('#e2dcea'));
+}
+
+/** A sloped roof seen from above and in front: shingle rows, a lit ridge, a dark eave, lit on the left. */
+function roof(p: Pixels, x: number, top: number, s: BuildingStyle) {
+  const x0 = x - 4;
+  const x1 = x + s.w + 3;
+  const y1 = top + s.roof + 1;
+  const c = s.roofColor;
+  for (let j = top; j <= y1; j++) {
+    for (let i = x0; i <= x1; i++) {
+      const row = j - top;
+      let col = mix(tone(c, 0.18), tone(c, -0.12), row / s.roof);
+      if (row <= 1) col = tone(c, 0.38);
+      else if ((row - 2) % 4 === 3) col = tone(c, -0.26);
+      else if ((row - 2) % 4 === 0 && (i + Math.floor((row - 2) / 4) * 3) % 6 === 0) col = tone(c, -0.18);
+      if (i <= x0 + 1) col = tone(col, 0.2);
+      if (i >= x1 - 2) col = tone(col, -0.22);
+      if (j >= y1 - 1) col = tone(c, -0.42);
+      p.set(i, j, col);
+    }
+  }
+  for (let i = x0 - 1; i <= x1 + 1; i++) {
+    p.set(i, top - 1, OUTLINE);
+    p.set(i, y1 + 1, OUTLINE);
+  }
+  for (let j = top - 1; j <= y1 + 1; j++) {
+    p.set(x0 - 1, j, OUTLINE);
+    p.set(x1 + 1, j, OUTLINE);
+  }
+}
+
+/** A tall building's flat roof: a light plate with a rim, an air vent, a water tank. */
+function flatRoof(p: Pixels, x: number, top: number, s: BuildingStyle) {
+  const c = s.roofColor;
+  p.rect(x - 2, top - 1, s.w + 4, s.roof + 2, OUTLINE);
+  p.rect(x - 1, top, s.w + 2, s.roof, tone(c, -0.15));
+  p.rect(x + 1, top + 2, s.w - 2, s.roof - 4, c);
+  p.rect(x + 1, top + 2, s.w - 2, 1, tone(c, 0.3));
+  p.rect(x + 6, top + 4, 8, 5, tone(c, -0.35));
+  p.rect(x + 7, top + 4, 6, 1, tone(c, 0.2));
+  p.rect(x + s.w - 16, top + 3, 9, 7, rgb('#9aa6b8'));
+  p.rect(x + s.w - 16, top + 3, 9, 2, rgb('#c8d2e0'));
+}
+
+function pokeBall(p: Pixels, cx: number, cy: number, r: number) {
+  for (let y = -r; y <= r; y++) {
+    for (let x = -r; x <= r; x++) {
+      const d = Math.hypot(x + 0.5 - 0.5, y + 0.5 - 0.5);
+      if (d > r + 0.3) continue;
+      const edge = d > r - 0.7;
+      p.set(cx + x, cy + y, edge || y === 0 ? OUTLINE : y < 0 ? (x < 0 && y < -r / 2 ? rgb('#ff8a7a') : rgb('#e8403a')) : rgb('#f6f6f6'));
+    }
+  }
+  p.rect(cx - 1, cy - 1, 3, 3, OUTLINE);
+  p.set(cx, cy, 0xffffff);
+}
+
+function signboard(p: Pixels, x: number, wallTop: number, s: BuildingStyle) {
+  const cx = x + Math.floor(s.w / 2);
+  if (s.sign === 'center') {
+    // A Poké Ball on the roof's front, and a red band over the door.
+    pokeBall(p, cx, wallTop - 8, 6);
+    p.rect(x + 2, wallTop + 1, s.w - 4, 3, rgb('#e8403a'));
+    p.rect(x + 2, wallTop + 1, s.w - 4, 1, rgb('#ff8a7a'));
+  } else if (s.sign === 'mart') {
+    p.rect(cx - 12, wallTop - 9, 24, 8, OUTLINE);
+    p.rect(cx - 11, wallTop - 8, 22, 6, rgb('#3b7fe0'));
+    for (let i = 0; i < 3; i++) p.rect(cx - 8 + i * 6, wallTop - 6, 4, 2, 0xffffff);
+  } else if (s.sign === 'gym' || s.sign === 'league') {
+    const gold = rgb('#f2c94c');
+    p.rect(cx - 7, wallTop - 11, 14, 9, OUTLINE);
+    p.rect(cx - 6, wallTop - 10, 12, 7, s.sign === 'league' ? rgb('#e8403a') : gold);
+    p.rect(cx - 6, wallTop - 10, 12, 1, 0xffffff);
+    p.rect(cx - 2, wallTop - 8, 4, 3, s.sign === 'league' ? gold : rgb('#8a5a10'));
+  }
+}
+
+function statue(x: number, base: number): Thing {
+  return {
+    base,
+    shadow: p => p.blendRect(x + 2, base, 8, 2, SHADOW, 0.3),
+    draw: p => {
+      const stone = rgb('#b7b2c6');
+      p.rect(x - 1, base - 16, 9, 17, OUTLINE);
+      p.rect(x, base - 6, 7, 6, tone(stone, -0.2));
+      p.rect(x + 1, base - 14, 5, 8, stone);
+      p.rect(x + 1, base - 14, 2, 8, tone(stone, 0.3));
+      p.rect(x, base - 15, 7, 2, tone(stone, 0.15));
+    },
+  };
+}
+
+const HOUSE_ROOFS = ['#d0553d', '#3f7cc0', '#4f9a4a', '#8d5bb0', '#d08a2e', '#c0465e'].map(rgb);
+const HOUSE_WALLS = ['#f3ead2', '#f2f0ea', '#ecd9b0'].map(rgb);
+
+/** How wide each kind of building is (art pixels). */
+const WIDTH: Record<Feature, number> = {
+  house: 50,
+  center: 74,
+  mart: 60,
+  gym: 90,
+  lab: 80,
+  museum: 96,
+  tower: 52,
+  store: 76,
+  tall: 52,
+  skyscraper: 70,
+  gate: 90,
+  league: 112,
+  volcano: 104,
 };
 
-/** Each city's skyline, left to right (landmarks, then services). */
-const FEATURES: Record<string, string[]> = {
-  pallet: ['house', 'lab', 'house', 'center'],
-  viridian: ['house', 'center', 'house', 'mart', 'gym', 'house'],
-  pewter: ['house', 'museum', 'center', 'mart', 'gym'],
-  cerulean: ['house', 'center', 'gym', 'mart', 'bridge'],
-  vermilion: ['house', 'center', 'mart', 'gym', 'ship'],
-  lavender: ['house', 'tower', 'center', 'mart', 'house'],
-  celadon: ['house', 'store', 'center', 'gym', 'tall', 'house'],
-  fuchsia: ['gate', 'house', 'center', 'mart', 'gym', 'house'],
-  saffron: ['tall', 'skyscraper', 'center', 'tall', 'gym', 'mart', 'tall'],
-  cinnabar: ['lab', 'center', 'mart', 'gym'],
-  indigo: ['house', 'league', 'center', 'mart'],
-};
+function feature(kind: Feature, x: number, base: number, random: () => number, lit: Window[], pal: Palette): Thing[] {
+  const house = (): BuildingStyle => ({
+    w: WIDTH.house,
+    wall: 22,
+    roof: 26,
+    roofColor: HOUSE_ROOFS[Math.floor(random() * HOUSE_ROOFS.length)],
+    wallColor: HOUSE_WALLS[Math.floor(random() * HOUSE_WALLS.length)],
+    windows: 1,
+    chimney: random() > 0.5,
+  });
+  switch (kind) {
+    case 'house':
+      return [building(x, base, house(), lit)];
+    case 'center':
+      return [building(x, base, { w: WIDTH.center, wall: 26, roof: 28, roofColor: rgb('#e04a40'), wallColor: rgb('#f6f4f0'), door: 'glass', windows: 2, sign: 'center' }, lit)];
+    case 'mart':
+      return [building(x, base, { w: WIDTH.mart, wall: 25, roof: 24, roofColor: rgb('#3d7fe0'), wallColor: rgb('#f6f4f0'), door: 'glass', windows: 1, sign: 'mart' }, lit)];
+    case 'gym':
+      return [
+        building(x, base, { w: WIDTH.gym, wall: 30, roof: 30, roofColor: rgb('#6f8aa0'), wallColor: rgb('#e9e0c8'), door: 'double', windows: 2, sign: 'gym' }, lit),
+        statue(x + 18, base + 6),
+        statue(x + WIDTH.gym - 26, base + 6),
+      ];
+    case 'lab':
+      return [building(x, base, { w: WIDTH.lab, wall: 28, roof: 26, roofColor: rgb('#8e98aa'), wallColor: rgb('#f4f6f8'), door: 'glass', windows: 2, chimney: true }, lit)];
+    case 'museum': {
+      const style: BuildingStyle = { w: WIDTH.museum, wall: 30, roof: 24, roofColor: rgb('#8a7a6a'), wallColor: rgb('#e4dccb'), door: 'double', windows: 0 };
+      const b = building(x, base, style, lit);
+      return [
+        {
+          ...b,
+          draw: p => {
+            b.draw(p);
+            // Columns along the front.
+            for (let i = 8; i < style.w - 8; i += 12) {
+              if (Math.abs(i - style.w / 2) < 10) continue;
+              p.rect(x + i - 1, base - style.wall, 6, style.wall - 3, OUTLINE);
+              p.rect(x + i, base - style.wall, 4, style.wall - 3, rgb('#f6f2e8'));
+              p.rect(x + i + 3, base - style.wall, 1, style.wall - 3, rgb('#c4bba8'));
+            }
+          },
+        },
+      ];
+    }
+    case 'tower': {
+      // Lavender's tower: three tiers, each narrower, purple roofs.
+      const tiers = [
+        { w: 52, wall: 22, roof: 14 },
+        { w: 40, wall: 18, roof: 12 },
+        { w: 28, wall: 14, roof: 12 },
+      ];
+      let b = base;
+      return tiers.map((t, i) => {
+        const tx = x + (52 - t.w) / 2;
+        const thing = building(tx, b, { w: t.w, wall: t.wall, roof: t.roof, roofColor: rgb('#7a4ab0'), wallColor: rgb('#e6dcef'), door: i === 0 ? 'arch' : undefined, windows: 1 }, lit);
+        const at = b;
+        b -= t.wall + t.roof - 4;
+        return { ...thing, base: base + i * 0.01, draw: i === 0 ? thing.draw : (p: Pixels) => tierOnly(p, tx, at, t, thing) };
+      });
+    }
+    case 'store':
+      return [building(x, base, { w: WIDTH.store, wall: 64, roof: 12, roofColor: rgb('#c8ccd8'), wallColor: rgb('#f0e6d2'), door: 'glass', floors: 4, flat: true }, lit)];
+    case 'tall':
+      return [building(x, base, { w: WIDTH.tall, wall: 48 + Math.floor(random() * 14), roof: 10, roofColor: rgb('#b8bccb'), wallColor: HOUSE_WALLS[Math.floor(random() * 3)], door: 'glass', floors: 3, flat: true }, lit)];
+    case 'skyscraper':
+      return [building(x, base, { w: WIDTH.skyscraper, wall: 82, roof: 12, roofColor: rgb('#aab8cc'), wallColor: rgb('#cfd8e6'), door: 'glass', floors: 6, flat: true }, lit)];
+    case 'gate':
+      return [
+        building(x, base, { w: WIDTH.gate, wall: 24, roof: 22, roofColor: rgb('#3f8f4a'), wallColor: rgb('#e8dcbc'), door: 'arch', windows: 2 }, lit),
+        tree(x - 6, base + 4, pal, 0.8),
+        tree(x + WIDTH.gate + 6, base + 4, pal, 0.8),
+      ];
+    case 'league':
+      return [
+        building(x, base, { w: WIDTH.league, wall: 34, roof: 34, roofColor: rgb('#3a3f8f'), wallColor: rgb('#ece6f6'), door: 'double', windows: 3, sign: 'league' }, lit),
+        statue(x + 22, base + 6),
+        statue(x + WIDTH.league - 30, base + 6),
+      ];
+    case 'volcano':
+      return [volcano(x + WIDTH.volcano / 2, base - 4)];
+  }
+}
+
+/** Upper tiers of the tower: drawn without their own shadow line on the ground. */
+function tierOnly(p: Pixels, _x: number, _base: number, _t: { w: number }, thing: Thing) {
+  thing.draw(p);
+}
+
+function volcano(cx: number, base: number): Thing {
+  const rock = [rgb('#4a3438'), rgb('#6e4a46'), rgb('#8e6252'), rgb('#ad7c62'), rgb('#c99a78')];
+  return {
+    base,
+    shadow: p => p.oval(cx + 8, base, 56, 8, SHADOW, 0.3),
+    draw: p => {
+      clumps(
+        p,
+        [
+          { x: cx - 30, y: base - 14, r: 20 },
+          { x: cx + 30, y: base - 14, r: 20 },
+          { x: cx, y: base - 30, r: 30 },
+          { x: cx - 10, y: base - 12, r: 18 },
+          { x: cx + 12, y: base - 12, r: 18 },
+        ],
+        rock,
+        rgb('#2a1a22'),
+      );
+      // The crater and its lava.
+      p.oval(cx, base - 52, 13, 5, rgb('#2a1a22'), 1);
+      p.oval(cx, base - 51, 10, 3.5, rgb('#ff6a2a'), 1);
+      p.oval(cx - 2, base - 52, 5, 1.5, rgb('#ffd27a'), 1);
+      // Lava streaks down the front.
+      for (let j = 0; j < 16; j++) {
+        p.set(cx - 4 + Math.round(Math.sin(j / 3) * 2), base - 47 + j, rgb('#ff7a2a'));
+        p.set(cx + 6 + Math.round(Math.cos(j / 4) * 2), base - 48 + j * 0.8, rgb('#e2502a'));
+      }
+    },
+  };
+}
+
+function ship(x: number, base: number): Thing {
+  // A cruise ship moored at the pier, seen from above and in front: a long white hull, a blue stripe, decks, a funnel.
+  const w = 72;
+  return {
+    base,
+    shadow: p => p.blendRect(x + 4, base, w, 4, rgb('#1a3a78'), 0.4),
+    draw: p => {
+      const hull = (y: number) => 3 + Math.max(0, Math.abs(y) - 3);
+      for (let j = -22; j <= 0; j++) {
+        const inset = j > -8 ? Math.floor((j + 8) / 2) : 0;
+        for (let i = inset; i < w - inset - (j < -14 ? 6 : 0); i++) {
+          const edge = i === inset || i === w - inset - 1 - (j < -14 ? 6 : 0) || j === -22 || j === 0;
+          p.set(x + i, base + j, edge ? OUTLINE : j > -6 ? rgb('#2f5fb0') : j > -8 ? rgb('#e8403a') : j < -19 ? rgb('#c7cfdc') : rgb('#f6f6f8'));
+        }
+      }
+      void hull;
+      // Cabins and windows on deck.
+      p.rect(x + 12, base - 34, 40, 13, OUTLINE);
+      p.rect(x + 13, base - 33, 38, 11, rgb('#f6f6f8'));
+      p.rect(x + 13, base - 33, 38, 2, rgb('#d6dce8'));
+      for (let i = 0; i < 6; i++) p.rect(x + 16 + i * 6, base - 29, 3, 3, rgb('#5a8ad0'));
+      for (let i = 0; i < 9; i++) p.rect(x + 6 + i * 7, base - 16, 3, 3, rgb('#5a8ad0'));
+      // The funnel.
+      p.rect(x + 38, base - 46, 11, 13, OUTLINE);
+      p.rect(x + 39, base - 45, 9, 11, rgb('#e8403a'));
+      p.rect(x + 39, base - 45, 9, 3, rgb('#2a2238'));
+      p.rect(x + 39, base - 42, 3, 8, rgb('#ff8a7a'));
+    },
+  };
+}
+
+// ── The town ─────────────────────────────────────────────────────────────────────────────────────────────────────
+
+function paintTown(cityId: string): Pixels {
+  const plan = PLANS[cityId] ?? PLANS.pallet;
+  const pal = paletteOf(plan);
+  const seed = hash(cityId);
+  const random = seeded(seed);
+  const p = new Pixels(W, H);
+  const g = new Ground2();
+  const things: Thing[] = [];
+  const lit: Window[] = [];
+  const glows: Glow[] = [];
+
+  // The ground: grass (or rock, sand, paving), the main road, and the water.
+  const base = plan.ground === 'sand' ? K.Sand : plan.ground === 'rock' ? K.Rock : plan.ground === 'paved' ? K.Plaza : K.Grass;
+  g.fill(0, 0, W, H, base);
+  if (plan.ground === 'sand') g.fill(0, 0, W, 60, K.Grass);
+  const right = plan.water.includes('seaRight') ? 404 : plan.water.includes('river') ? 418 : W;
+  if (plan.ground !== 'paved') g.fill(0, ROAD_TOP, W, ROAD_BOTTOM - ROAD_TOP, K.Path);
+  else g.fill(0, ROAD_TOP + 2, W, ROAD_BOTTOM - ROAD_TOP - 4, K.Path);
+  // A paved square in the middle of the road, and a path down to the second row.
+  g.fill(W / 2 - 60, ROAD_TOP - 2, 120, ROAD_BOTTOM - ROAD_TOP + 8, K.Plaza);
+  g.fill(W / 2 - 10, ROAD_BOTTOM, 20, ROW_B - ROAD_BOTTOM + 14, K.Path);
+  g.fill(40, ROW_B + 8, W - 80, 14, K.Path);
+  // Tall grass at the town's edges: the way out to the routes (where the hunting is).
+  if (plan.ground !== 'paved') {
+    g.fill(0, ROW_B + 26, 96, H, K.Tall);
+    if (!plan.water.includes('seaRight')) g.fill(W - 88, ROW_B + 30, 88, H, K.Tall);
+  }
+  if (plan.water.includes('seaBottom')) {
+    g.fill(0, 234, W, H, K.Water);
+    g.fill(0, 222, W, 12, K.Sand);
+  }
+  if (plan.water.includes('seaRight')) {
+    g.fill(right, 0, W - right, H, K.Water);
+    g.fill(right - 10, 0, 10, H, K.Sand);
+  }
+  if (plan.water.includes('river')) {
+    g.fill(right, 0, 30, H, K.Water);
+    // The bridge's planks carry the road over it (drawn as a thing, the ground under it stays path).
+    g.fill(right, ROAD_TOP + 2, 30, ROAD_BOTTOM - ROAD_TOP - 4, K.Path);
+  }
+  if (plan.water.includes('pond')) {
+    const px = plan.water.includes('river') ? 300 : 330;
+    for (let y = 0; y < 34; y++) {
+      for (let x = 0; x < 80; x++) {
+        if (((x - 40) / 40) ** 2 + ((y - 17) / 17) ** 2 < 1) g.fill(px + x, ROW_B - 40 + y, 1, 1, K.Water);
+      }
+    }
+  }
+
+  paintGround(p, g, pal, seed);
+
+  // The forest edge at the top: two rows of trees, a little irregular.
+  for (const [row, y] of [
+    [0, 20],
+    [1, 34],
+  ] as const) {
+    for (let x = -10 + row * 12; x < right + 10; x += 24) {
+      things.push(tree(x + Math.floor(random() * 6), y + Math.floor(random() * 4), pal));
+    }
+  }
+
+  // The main row of buildings, spread over the width, with trees, bushes or a lamp in the gaps.
+  const row = [...plan.row];
+  const usable = right - 24;
+  while (row.reduce((sum, f) => sum + WIDTH[f] + 30, 0) < usable - WIDTH.house) {
+    if (row.length % 2) row.push('house');
+    else row.unshift('house');
+  }
+  const total = row.reduce((sum, f) => sum + WIDTH[f], 0);
+  const gap = (usable - total) / (row.length + 1);
+  let x = 12 + gap;
+  const doors: number[] = [];
+  row.forEach((f, i) => {
+    things.push(...feature(f, Math.round(x), f === 'volcano' ? ROW_A - 6 : ROW_A, random, lit, pal));
+    if (f !== 'volcano') doors.push(Math.round(x + WIDTH[f] / 2));
+    // In the gap after it: a tree (wide gaps), or a bush with flowers and a lamp.
+    const gx = Math.round(x + WIDTH[f] + gap / 2);
+    if (i < row.length - 1 || gap > 24) {
+      if (gap >= 26) things.push(tree(gx, ROW_A - 2, pal, 0.85));
+      else things.push(bush(gx, ROW_A - 4, pal, HOUSE_ROOFS[i % HOUSE_ROOFS.length]));
+    }
+    x += WIDTH[f] + gap;
+  });
+  // A path from each door to the road, flower beds beside it, lamps along the road.
+  for (const d of doors) {
+    for (let j = ROW_A + 1; j < ROAD_TOP; j++) for (let i = d - 6; i < d + 6; i++) if (g.at(i, j) !== K.Plaza) p.set(i, j, j === ROW_A + 1 ? pal.path[0] : pal.path[1]);
+  }
+  for (let lx = 20; lx < right - 10; lx += 76) things.push(lamp(lx + Math.floor(random() * 8), ROAD_BOTTOM + 6, glows));
+  things.push(sign(W / 2 + 70, ROAD_BOTTOM + 14));
+
+  // The second row: smaller houses with gardens and fences, trees and bushes, boulders on rocky ground.
+  const bRow: number[] = [];
+  for (let bx = 24; bx < right - 60; bx += 108) bRow.push(bx);
+  const builtB: number[] = [];
+  bRow.forEach((bx, i) => {
+    if (plan.water.includes('pond') && bx + 50 > (plan.water.includes('river') ? 300 : 330) && bx < (plan.water.includes('river') ? 380 : 410)) return;
+    if (Math.abs(bx + 25 - W / 2) < 40) return;
+    builtB.push(bx);
+    things.push(...feature(plan.ground === 'paved' ? 'tall' : 'house', bx, ROW_B, random, lit, pal));
+    things.push(bush(bx + 64, ROW_B + 2, pal, i % 2 ? rgb('#ffd24a') : rgb('#ff6f8a')));
+  });
+  for (let fx = 30; fx < right - 40; fx += 150) things.push({ base: ROW_B + 26, draw: q => fence(q, fx, ROW_B + 26, 56) });
+  for (let i = 0; i < 9; i++) {
+    const tx = 10 + random() * (right - 20);
+    const ty = ROAD_BOTTOM + 30 + random() * 40;
+    // Not on the road down the middle, nor on a house.
+    if (Math.abs(tx - W / 2) < 30 || builtB.some(bx => tx > bx - 16 && tx < bx + WIDTH.house + 16)) continue;
+    if (plan.ground === 'rock') things.push(boulder(tx, ty, 0.8 + random() * 0.6));
+    else things.push(random() > 0.5 ? tree(tx, ty + 10, pal, 0.8) : bush(tx, ty, pal, random() > 0.5 ? rgb('#ff6f8a') : undefined));
+  }
+  if (plan.ground === 'rock') {
+    for (let i = 0; i < 6; i++) things.push(boulder(30 + i * 80 + random() * 20, ROW_A - 2 + random() * 3, 0.6));
+  }
+  // Flower beds along the road.
+  for (let fx = 8; fx < right - 30; fx += 60) {
+    if (Math.abs(fx - W / 2) < 70) continue;
+    flowerBed(p, fx, ROAD_BOTTOM + 4, 16, [rgb('#ff5a6e'), rgb('#ffd24a'), rgb('#ffffff'), rgb('#ff9ad0')], seed);
+  }
+  if (plan.water.includes('river')) things.push(bridge(right, pal));
+  if (cityId === 'vermilion') {
+    // A wooden pier out to the ship.
+    things.push({ base: ROAD_BOTTOM - 1, draw: q => pier(q, right - 10, ROAD_TOP + 4, W - right + 10, 14) });
+    things.push(ship(right + 2, ROAD_TOP - 2));
+  }
+
+  // Back to front: shadows first, then everything by the line it stands on.
+  things.sort((a, b) => a.base - b.base);
+  for (const t of things) t.shadow?.(p);
+  for (const t of things) t.draw(p);
+
+  // The time of day: tint everything, then light the windows and the lamps.
+  const { tint, lit: lights } = plan.light;
+  if (tint) {
+    p.map(c => {
+      const r = Math.min(255, ((c >> 16) & 255) * tint[0]);
+      const gg = Math.min(255, ((c >> 8) & 255) * tint[1]);
+      const b = Math.min(255, (c & 255) * tint[2]);
+      return (Math.round(r) << 16) | (Math.round(gg) << 8) | Math.round(b);
+    });
+  }
+  if (lights) {
+    for (const w of lit) {
+      for (let j = 0; j < w.h; j++) for (let i = 0; i < w.w; i++) p.set(w.x + i, w.y + j, j < 2 ? rgb('#fff4c2') : rgb('#ffd27a'));
+    }
+    for (const glow of glows) {
+      for (let j = -glow.r; j <= glow.r; j++) {
+        for (let i = -glow.r; i <= glow.r; i++) {
+          const d = Math.hypot(i, j) / glow.r;
+          if (d < 1 && bayer(glow.x + i, glow.y + j) > d) p.blend(glow.x + i, glow.y + j, rgb('#ffe2a0'), 0.18);
+        }
+      }
+      p.rect(glow.x - 2, glow.y - 1, 4, 3, rgb('#fff6d0'));
+    }
+  }
+  return p;
+}
+
+function bridge(x: number, pal: Palette): Thing {
+  return {
+    base: ROAD_BOTTOM,
+    draw: p => {
+      const wood = rgb('#b07a42');
+      for (let j = ROAD_TOP; j < ROAD_BOTTOM; j++) {
+        for (let i = x - 2; i < x + 32; i++) {
+          p.set(i, j, (i - x) % 5 === 4 ? tone(wood, -0.35) : j === ROAD_TOP ? tone(wood, 0.3) : wood);
+        }
+      }
+      for (const ry of [ROAD_TOP - 3, ROAD_BOTTOM]) {
+        p.rect(x - 3, ry, 36, 3, OUTLINE);
+        p.rect(x - 2, ry + 1, 34, 1, rgb('#d8a468'));
+      }
+      void pal;
+    },
+  };
+}
+
+function pier(p: Pixels, x: number, y: number, w: number, h: number) {
+  const wood = rgb('#a8743e');
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) p.set(x + i, y + j, i % 6 === 5 ? tone(wood, -0.35) : j === 0 ? tone(wood, 0.3) : wood);
+  p.rect(x, y + h, w, 1, OUTLINE);
+  p.blendRect(x, y + h + 1, w, 3, 0x1a3a78, 0.35);
+  for (let i = 0; i < w; i += 18) p.rect(x + i, y + h, 3, 4, rgb('#5e3a22'));
+}

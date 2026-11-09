@@ -55,10 +55,12 @@ export interface CpuState {
   last: InputMask;
   /** Its own action on the last frame (to notice the moment a block ends). */
   lastAction: ActionKind;
+  /** The round just started: its first plan is an opening, picked more freely (so no two rounds start the same). */
+  opening: boolean;
 }
 
 export function createCpu(me: FighterId, profile: AiProfile, seed: number): CpuState {
-  return { me, profile, rng: seed >>> 0, seen: [], plan: { kind: 'wait', until: 0 }, responses: {}, last: 0, lastAction: 'idle' };
+  return { me, profile, rng: seed >>> 0, seen: [], plan: { kind: 'wait', until: 0 }, responses: {}, last: 0, lastAction: 'idle', opening: true };
 }
 
 /** Forget the last round (a new Pokémon came in), keep the random sequence going. */
@@ -69,6 +71,7 @@ export const resetCpuMemory = (cpu: CpuState): CpuState => ({
   responses: {},
   last: 0,
   lastAction: 'idle',
+  opening: true,
 });
 
 export function observe(state: FightState, me: FighterId): Observation {
@@ -223,7 +226,9 @@ function decide(
   // ── 4. Neutral plan ──
   if (now >= cpu.plan.until) {
     const [min, max] = profile.planFrames;
-    const kind = choosePlan(profile, self, distance, roll);
+    // (Up close there is no time for an opening: the usual close-range plans.)
+    const kind = cpu.opening && distance >= CLOSE ? chooseOpening(profile, self, roll) : choosePlan(profile, self, distance, roll);
+    cpu.opening = false;
     // A jump-in only needs the takeoff; after landing it thinks again.
     const length = kind === 'jumpIn' ? JUMP.prejump + 1 : min + int(max - min + 1);
     cpu.plan = { kind, until: now + length };
@@ -233,6 +238,25 @@ function decide(
 
 /** Plans that are a single press: once pressed, the CPU thinks again as soon as it can act. */
 const ONE_SHOT: readonly PlanKind[] = ['tackle', 'special', 'big', 'dash', 'backdash'];
+
+/**
+ * The first move of a round: anything a person might do when the round starts (wait and watch, walk in, throw a
+ * special, jump in, back off, dash, guard), weighted by personality.
+ */
+function chooseOpening(profile: AiProfile, self: Fighter, roll: (c: number) => boolean): PlanKind {
+  return pick(
+    [
+      ['wait', 0.3 + profile.caution * 0.4],
+      ['approach', profile.aggression],
+      ['special', self.pp >= ELEMENTAL_COST ? profile.zoning * 0.6 : 0],
+      ['jumpIn', profile.jump * profile.aggression],
+      ['retreat', profile.zoning * 0.4],
+      ['dash', profile.aggression * 0.3],
+      ['guard', profile.caution * 0.4],
+    ],
+    roll,
+  );
+}
 
 function choosePlan(profile: AiProfile, self: Fighter, distance: number, roll: (c: number) => boolean): PlanKind {
   const canSpecial = self.pp >= ELEMENTAL_COST;
@@ -265,7 +289,11 @@ function choosePlan(profile: AiProfile, self: Fighter, distance: number, roll: (
             ['dash', profile.aggression * 0.3],
             ['wait', 0.2],
           ];
-  // Weighted pick, using rolls only (so the random sequence stays simple to follow).
+  return pick(weights, roll);
+}
+
+/** Weighted pick, using rolls only (so the random sequence stays simple to follow). */
+function pick(weights: [PlanKind, number][], roll: (c: number) => boolean): PlanKind {
   const total = weights.reduce((sum, [, w]) => sum + w, 0);
   let left = total;
   for (const [kind, weight] of weights) {

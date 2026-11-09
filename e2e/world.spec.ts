@@ -179,6 +179,16 @@ test.describe('the Pokémon Center, the box and potions', () => {
     expect(after.box).toHaveLength(1);
   });
 
+  test("the box shows each Pokémon's level in its slot's corner, without opening it", async ({ page }) => {
+    const data = fixture('save-v2-viridian.json');
+    await openGame(page, { scene: 'city' }, { save: data });
+    await page.getByTestId('city-box').click();
+    await page.getByTestId('party-slot-1').focus();
+    await page.keyboard.press('s');
+    const moved = (await save(page)).box[0];
+    await expect(page.getByTestId('boxed-0').locator('.slot-level')).toHaveText(`Lv${moved.level}`);
+  });
+
   test('the box: A picks a Pokémon up and puts it down: on another one they swap, on an empty place it moves; B puts it back', async ({ page }) => {
     const data = fixture('save-v2-viridian.json');
     await openGame(page, { scene: 'city' }, { save: data });

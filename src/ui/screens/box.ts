@@ -12,7 +12,10 @@ import { button, heading, hintBar, hpBar, pokemonSprite, screen, typePill, type 
 
 export interface BoxMon {
   name: string;
+  /** "Lv. 40" (the party's slots and the details). */
   level: string;
+  /** "Lv40": the short tag in a box slot's corner, so levels show without opening each one. */
+  levelTag: string;
   sprite: string;
   hp: number;
   maxHp: number;
@@ -64,6 +67,7 @@ function slot(mon: BoxMon, testid: string, wrapper: string, details: (mon: BoxMo
     },
     [
       pokemonSprite(mon.sprite, 'sprite slot-sprite'),
+      compact ? h('span', { class: 'slot-level', attrs: { 'aria-hidden': 'true' }, text: mon.levelTag }) : null,
       compact ? null : h('span', { class: 'slot-info' }, [h('strong', { text: mon.name }), h('small', { text: mon.level }), hpBar(mon.hp, mon.maxHp)]),
       mon.held ? h('span', { class: 'slot-held-mark', attrs: { 'aria-hidden': 'true' } }, [icon('arrow')]) : null,
     ],

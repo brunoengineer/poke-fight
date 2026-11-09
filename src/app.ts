@@ -1141,6 +1141,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     const mon = (p: Pokemon, spot: Spot): BoxMon => ({
       name: nameOf(p),
       level: t('party.level', { level: p.level }),
+      levelTag: t('hud.level', { level: p.level }),
       sprite: spriteUrl(p.speciesId),
       hp: p.hp,
       maxHp: maxHpOf(p),

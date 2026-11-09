@@ -2186,6 +2186,25 @@ kbd,
   margin: -1cqh;
 }
 
+/* A box slot's level, in its top-right corner: dark, so it reads on the glass and on a focused (white) slot. */
+.slot-level {
+  position: absolute;
+  top: 0.4cqh;
+  right: 0.4cqh;
+  padding: 0.3cqh 0.55cqh;
+  border-radius: 0.6cqh;
+  background: rgba(10, 12, 28, 0.72);
+  color: #fff;
+  font: 800 1.35cqh/1 var(--body);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.slot:focus .slot-level {
+  background: var(--ink);
+}
+
 .slot-info {
   flex: 1;
   display: grid;
@@ -2246,10 +2265,11 @@ kbd,
   }
 }
 
+/* Top-left: the top-right corner holds a box slot's level. */
 .slot-held-mark {
   position: absolute;
   top: -1cqh;
-  right: -1cqh;
+  left: -1cqh;
   display: grid;
   place-items: center;
   width: 2.8cqh;

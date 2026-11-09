@@ -3685,9 +3685,8 @@ kbd,
 }
 
 .tool-button {
-  display: grid;
-  place-items: center;
-  height: 8.4cqh;
+  display: flex;
+  align-items: center;
   padding: 0 0.6cqh;
   border: 0;
   border-radius: 1.6cqh;
@@ -3698,9 +3697,8 @@ kbd,
 
 /* Just the picture: hand-placed pixel art (render/gear.ts), scaled crisp, standing on a soft shadow. */
 .tool-image {
-  /* A bit taller than the bar: they stand up out of it. */
-  height: 10.4cqh;
-  margin-top: -2cqh;
+  /* As tall as the party strip beside them: its label (5.6cqh), its padding (0.8cqh above and below), its border. */
+  height: calc(7.2cqh + 2px);
   width: auto;
   image-rendering: pixelated;
   filter: drop-shadow(0 0.5cqh 0.3cqh rgba(0, 0, 0, 0.55));
@@ -3716,7 +3714,7 @@ kbd,
 
 .tool-button:focus .tool-image,
 .tool-button:hover .tool-image {
-  transform: translateY(-0.8cqh) scale(1.1);
+  transform: translateY(-0.4cqh) scale(1.06);
   filter:
     drop-shadow(0 0 0.3cqh #fff)
     drop-shadow(0 0 0.3cqh #fff)

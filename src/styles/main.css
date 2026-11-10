@@ -4437,7 +4437,12 @@ kbd,
   grid-template-rows: repeat(2, minmax(0, 1fr));
 }
 
-/* The cards are half as tall: the people stand inside, at the bottom right beside the title (not above the card). */
+/* Half as tall: the Pokémon use the card's top and a little behind the title's fade (city.ts artArea)… */
+.adventure.two-rows .place-pokemon {
+  inset: 0.6cqh 0.6cqh 6cqh;
+}
+
+/* …and the people stand inside, at the bottom right beside the title (not above the card). */
 .adventure.two-rows .place-person {
   right: calc(0.8cqh + var(--i) * 7cqh);
   bottom: 0;

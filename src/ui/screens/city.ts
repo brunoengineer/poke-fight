@@ -57,13 +57,49 @@ export function monSize(count: number): number {
   return 8;
 }
 
-function placeArt(art: PlaceArt | undefined) {
+/** The space a card's Pokémon have, in cqh (width, height). */
+export interface ArtArea {
+  w: number;
+  h: number;
+}
+
+/**
+ * The size for `count` sprites in a card's art area: monSize at most, smaller until all of them fit (fixed after the
+ * Hidden Grove made League cities two rows of short cards, whose Pokémon spilled out of them). The sprites have empty
+ * space around them and overlap a little (city.css .place-mon's negative margins): each takes about 74% of its size
+ * across and 66% down.
+ */
+export function fitMonSize(count: number, area: ArtArea): number {
+  for (let size = monSize(count); size > 4; size -= 0.25) {
+    const columns = Math.max(1, Math.floor(area.w / (size * 0.74)));
+    if (Math.ceil(count / columns) * size * 0.66 <= area.h) return size;
+  }
+  return 4;
+}
+
+/** The frame is 16:9: 177.8cqh wide. The cards' row spans this much of it (the screen's side margins removed). */
+const ROW_WIDTH = 169.8;
+const GAP = 2.2;
+/** The hunting cards' row: at most this tall (main.css .adventure); in two rows each card is half of it. */
+const ROW_HEIGHT = 38;
+
+/** The art area of a hunting card, from the layout: how many columns, one row or two (main.css .place-pokemon). */
+export function artArea(columns: number, twoRows: boolean): ArtArea {
+  const width = (ROW_WIDTH - (columns - 1) * GAP) / columns;
+  const height = twoRows ? (ROW_HEIGHT - GAP) / 2 : ROW_HEIGHT;
+  // Insets: 1cqh around and 9cqh for the title (two rows: 0.6cqh around and 6cqh, the sprites a little behind it).
+  return twoRows ? { w: width - 1.2, h: height - 6.6 } : { w: width - 2, h: height - 10 };
+}
+
+function placeArt(art: PlaceArt | undefined, area?: ArtArea) {
   if (!art) return undefined;
+  const count = art.pokemon?.length ?? 0;
+  const size = area ? fitMonSize(count, area) : monSize(count);
   return h('span', { class: 'place-art' }, [
     art.pokemon?.length
       ? h(
           'span',
-          { class: 'place-pokemon', testid: 'place-pokemon', style: { '--mon': `${monSize(art.pokemon.length)}cqh` } },
+          { class: 'place-pokemon', testid: 'place-pokemon', style: { '--mon': `${size}cqh` } },
           art.pokemon.map((p, i) => {
             const image = pokemonSprite(p.url, 'sprite place-mon', { silhouette: !p.seen });
             image.style.setProperty('--i', String(i));
@@ -81,11 +117,22 @@ function placeArt(art: PlaceArt | undefined) {
   ]);
 }
 
-const placeCard = (place: PlaceCard, size: CardSpec['size'], index: number) => {
-  const element = card({ ...place, size, art: placeArt(place.art) });
+const placeCard = (place: PlaceCard, size: CardSpec['size'], index: number, area?: ArtArea) => {
+  const element = card({ ...place, size, art: placeArt(place.art, area) });
   element.style.setProperty('--i', String(index));
   return element;
 };
+
+function adventureRow(places: PlaceCard[]) {
+  const twoRows = places.length > 5;
+  const columns = Math.min(5, Math.ceil(places.length / (twoRows ? 2 : 1)));
+  const area = artArea(columns, twoRows);
+  return h(
+    'div',
+    { class: `adventure${twoRows ? ' two-rows' : ''}`, style: { '--n': columns } },
+    places.map((p, i) => placeCard(p, 'hero', i, area)),
+  );
+}
 
 export function renderCity(root: HTMLElement, view: CityView) {
   const partyButton = h(
@@ -132,12 +179,8 @@ export function renderCity(root: HTMLElement, view: CityView) {
           h('nav', { class: 'system' }, view.system.map(spec => button({ ...spec, class: `icon-only ${spec.class ?? ''}` }))),
         ]),
         h('main', { class: 'places' }, [
-          // More than 5 cards (a sanctuary with many legendaries): two rows.
-          h(
-            'div',
-            { class: `adventure${view.adventure.length > 5 ? ' two-rows' : ''}`, style: { '--n': Math.min(5, Math.ceil(view.adventure.length / (view.adventure.length > 5 ? 2 : 1))) } },
-            view.adventure.map((p, i) => placeCard(p, 'hero', i)),
-          ),
+          // More than 5 cards (a sanctuary with many legendaries, a League city with its grove): two rows.
+          adventureRow(view.adventure),
           h('div', { class: 'services', style: { '--n': view.services.length } }, view.services.map((p, i) => placeCard(p, 'tile', i + view.adventure.length))),
         ]),
         h('footer', { class: 'city-footer' }, [

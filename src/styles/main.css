@@ -3480,15 +3480,6 @@ kbd,
   animation-delay: calc(250ms + var(--i) * 120ms);
 }
 
-/* Shown again (after a capture, an evolution…): everything stands where the first showing ended. */
-.xp-cards.settled :is(.xp-card, .fill, .xp-level, .level-chip) {
-  animation: none;
-}
-
-.xp-cards.settled .level-up .xp-level.from {
-  display: none;
-}
-
 .xp-card.level-up {
   background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 22%, transparent), rgba(255, 255, 255, 0.05) 70%);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gold) 45%, transparent);
@@ -3602,6 +3593,21 @@ kbd,
   100% {
     width: calc(var(--to) * 100%);
   }
+}
+
+/*
+ * Shown again (after a capture, an evolution…): everything stands where the first showing ended. After every XP
+ * animation and more specific than them, so a level up's own (later, same-weight) rules can't start it again.
+ */
+.xp-cards.settled .xp-card,
+.xp-cards.settled .xp-card .xp-progress .fill,
+.xp-cards.settled .xp-card .xp-level,
+.xp-cards.settled .xp-card .level-chip {
+  animation: none;
+}
+
+.xp-cards.settled .xp-card.level-up .xp-level.from {
+  display: none;
 }
 
 .xp-line.news {

@@ -51,6 +51,27 @@ test('every hunting card shows all the species of its ground, as many as it says
 });
 
 test.describe('hunting and catching', () => {
+  test('the XP bars fill once per battle, a level up included: back after a throw, they stand still', async ({ page }) => {
+    // One XP short of Lv. 6 (medium-slow: 179): any win levels Charmander up.
+    const data = start() as SaveData & { party: { xp: number }[] };
+    data.party[0].xp = 178;
+    await openGame(page, { scene: 'city' }, { save: { ...data, bag: { 'poke-ball': 1 } } });
+    await page.getByTestId('hunt-grass').click();
+    await winBattle(page);
+    const card = page.getByTestId('xp-0');
+    await expect(card).toHaveClass(/level-up/);
+    await expect(card.locator('.fill')).toHaveCSS('animation-name', 'xp-level');
+    await page.getByTestId('throw-poke-ball').click();
+    await page.getByTestId('capture-done').click();
+    await expect(page.getByTestId('results-xp')).toHaveClass(/settled/);
+    // Nothing plays again: the bar, the levels, the card itself; the old level is gone, the new one shows.
+    await expect(card.locator('.fill')).toHaveCSS('animation-name', 'none');
+    await expect(card).toHaveCSS('animation-name', 'none');
+    await expect(card.locator('.xp-level.to')).toHaveCSS('animation-name', 'none');
+    await expect(card.locator('.xp-level.from')).toBeHidden();
+    await expect(card.locator('.xp-level.to')).toBeVisible();
+  });
+
   test('a wild Pokémon in the grass: beat it, throw a Poké Ball; it may break free, so hunt again until one is caught', async ({ page }) => {
     // A common Pokémon is caught about 30% of the time with a Poké Ball: 3–4 fights on average.
     await openGame(page, { scene: 'city' }, { save: { ...start(), bag: { 'poke-ball': 12 } } });

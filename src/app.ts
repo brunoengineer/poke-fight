@@ -487,12 +487,12 @@ export function startApp(elements: AppElements, options: TestOptions) {
     backdrop.set({ image: art.backdrop, town: here.id, theme: art.color, mode: 'scene' });
     // Everything that can appear here (and the party) starts loading now, so a hunt starts with its sprites ready.
     const rod = ownsRod(s);
-    const possible = (['grass', 'cave', 'water'] as HuntKind[]).flatMap(kind => encounterTable(here, kind, rod).map(e => e.speciesId));
+    const possible = (['grass', 'cave', 'water', 'rare'] as HuntKind[]).flatMap(kind => encounterTable(here, kind, rod).map(e => e.speciesId));
     preloadSprites([...new Set([...possible, ...s.party.map(p => p.speciesId)])]);
 
-    const huntColors: Record<HuntKind, string> = { grass: '#3fae5a', cave: '#9a6b45', water: '#2f8fe0' };
-    const huntIcons: Record<HuntKind, IconName> = { grass: 'grass', cave: 'cave', water: 'rod' };
-    const adventure: PlaceCard[] = (['grass', 'cave', 'water'] as HuntKind[])
+    const huntColors: Record<HuntKind, string> = { grass: '#3fae5a', cave: '#9a6b45', water: '#2f8fe0', rare: '#d9a521' };
+    const huntIcons: Record<HuntKind, IconName> = { grass: 'grass', cave: 'cave', water: 'rod', rare: 'star' };
+    const adventure: PlaceCard[] = (['grass', 'cave', 'water', 'rare'] as HuntKind[])
       .filter(kind => here.hunts[kind])
       .map(kind => {
         // Water shows what the best rod could catch; without a rod, what an Old Rod would.
@@ -1330,7 +1330,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
       ? { id: 'cave', backdrop: HUNT_BACKDROPS.cave }
       : kind === 'water'
         ? { id: 'sea', backdrop: location === 'cerulean' ? 'river' : HUNT_BACKDROPS.water }
-        : location === 'pewter'
+        : location === 'pewter' || kind === 'rare'
           ? { id: 'forest', backdrop: HUNT_BACKDROPS.forest }
           : { id: 'route', backdrop: HUNT_BACKDROPS.grass };
 

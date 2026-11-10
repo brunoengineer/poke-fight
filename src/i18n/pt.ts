@@ -363,6 +363,7 @@ const base: Record<BaseKey, string> = {
   'city.indigo.tagline': 'A última estrada termina aqui',
   'place.grass': 'Mato alto',
   'place.cave': 'Caverna',
+  'place.rare': 'Bosque Escondido',
   'place.water': 'Pesca',
   'place.levels': 'Nv. {min}–{max} · {count} espécies',
   'place.rod': 'Com a {rod}',

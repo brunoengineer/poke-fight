@@ -103,6 +103,7 @@ const CITIES: City[] = [
       grass: ['kanto-route-23-area'],
       water: ['kanto-route-23-area'],
       cave: ['kanto-victory-road-2-1f', 'kanto-victory-road-2-2f', 'kanto-victory-road-2-3f'],
+      rare: ['kanto-hidden-grove'],
     },
   },
 ];
@@ -257,6 +258,23 @@ export const KANTO: Region = {
       ['saffron', 'kanto-sanctuary'],
     ],
   },
+  // The Hidden Grove, by the League (decided after milestone 14: every species can be obtained): this generation's
+  // Pokémon nothing else reaches (the starters not chosen, the games' gifts and fossils, babies, evolutions this game
+  // can't do). Base forms at Lv. 30–36, evolved ones at 40–46. Checked by game/obtainable.test.ts.
+  grove: [
+    ['bulbasaur', 30, 36],
+    ['charmander', 30, 36],
+    ['squirtle', 30, 36],
+    ['hitmonlee', 40, 46],
+    ['hitmonchan', 40, 46],
+    ['lapras', 30, 36],
+    ['eevee', 30, 36],
+    ['porygon', 30, 36],
+    ['omanyte', 30, 36],
+    ['kabuto', 30, 36],
+    ['aerodactyl', 30, 36],
+    ['snorlax', 40, 46],
+  ],
   sanctuary: {
     id: 'kanto-sanctuary',
     art: { backdrop: 'space', color: '#b388ff' },

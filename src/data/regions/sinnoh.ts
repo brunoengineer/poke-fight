@@ -171,6 +171,7 @@ const CITIES: City[] = [
       grass: ['sinnoh-route-224-area'],
       water: ['sinnoh-pokemon-league-area', 'sinnoh-route-224-area'],
       cave: ['sinnoh-victory-road-1f', 'sinnoh-victory-road-2f', 'sinnoh-victory-road-b1f'],
+      rare: ['sinnoh-hidden-grove'],
     },
   },
   {
@@ -406,6 +407,40 @@ export const SINNOH: Region = {
       ['celestic', 'sinnoh-sanctuary'],
     ],
   },
+  // The Hidden Grove, by the League (decided after milestone 14: every species can be obtained): this generation's
+  // Pokémon nothing else reaches (the starters not chosen, the games' gifts and fossils, babies, evolutions this game
+  // can't do). Base forms at Lv. 30–36, evolved ones at 40–46. Checked by game/obtainable.test.ts.
+  grove: [
+    ['turtwig', 30, 36],
+    ['chimchar', 30, 36],
+    ['piplup', 30, 36],
+    ['cranidos', 30, 36],
+    ['shieldon', 30, 36],
+    ['burmy', 30, 36],
+    ['combee', 30, 36],
+    ['cherubi', 30, 36],
+    ['ambipom', 40, 46],
+    ['drifloon', 30, 36],
+    ['happiny', 30, 36],
+    ['spiritomb', 30, 36],
+    ['munchlax', 30, 36],
+    ['riolu', 30, 36],
+    ['skorupi', 30, 36],
+    ['carnivine', 30, 36],
+    ['mantyke', 30, 36],
+    ['weavile', 40, 46],
+    ['magnezone', 40, 46],
+    ['lickilicky', 40, 46],
+    ['tangrowth', 40, 46],
+    ['yanmega', 40, 46],
+    ['leafeon', 40, 46],
+    ['glaceon', 40, 46],
+    ['gliscor', 40, 46],
+    ['mamoswine', 40, 46],
+    ['probopass', 40, 46],
+    ['rotom', 30, 36],
+    ['phione', 30, 36],
+  ],
   sanctuary: {
     // Spear Pillar, at the top of Mt. Coronet: ruined columns and a lone tower in the snow, under the stars.
     id: 'sinnoh-sanctuary',

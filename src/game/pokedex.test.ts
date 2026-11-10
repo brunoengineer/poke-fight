@@ -59,7 +59,10 @@ describe('the Pokédex', () => {
     expect(pidgey[0]).toMatchObject({ cityId: 'pallet', where: 'grass', rod: null });
     expect(whereToFind(id('magikarp'), KANTO).find(f => f.where === 'water')).toMatchObject({ rod: 'old-rod' });
     expect(whereToFind(id('tauros'), KANTO)).toEqual([expect.objectContaining({ cityId: 'fuchsia', where: 'safari' })]);
-    expect(whereToFind(id('bulbasaur'), KANTO)).toEqual([]);
+    // The starters not chosen live in the Hidden Grove, by the League.
+    expect(whereToFind(id('bulbasaur'), KANTO)).toEqual([{ cityId: 'indigo', where: 'rare', rod: null, minLevel: 30, maxLevel: 36 }]);
+    // An evolution found nowhere in the wild says nothing (its Pokédex page shows how it evolves).
+    expect(whereToFind(id('venusaur'), KANTO)).toEqual([]);
   });
 });
 

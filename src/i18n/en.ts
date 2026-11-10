@@ -363,6 +363,7 @@ const base = {
   'city.indigo.tagline': 'The last road ends here',
   'place.grass': 'Tall grass',
   'place.cave': 'Cave',
+  'place.rare': 'Hidden Grove',
   'place.water': 'Fishing',
   'place.levels': 'Lv. {min}–{max} · {count} kinds',
   'place.rod': 'With the {rod}',

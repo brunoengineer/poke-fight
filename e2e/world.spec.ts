@@ -51,6 +51,19 @@ test('every hunting card shows all the species of its ground, as many as it says
 });
 
 test.describe('hunting and catching', () => {
+  test("the Hidden Grove at the League: the Pokémon nothing else reaches (the starters not chosen, fossils, Lapras…)", async ({ page }) => {
+    const badges = ['boulder', 'cascade', 'thunder', 'rainbow', 'soul', 'marsh', 'volcano', 'earth'];
+    await openGame(page, { scene: 'city' }, { save: { ...start(), location: 'indigo', badges } });
+    const grove = page.getByTestId('hunt-rare');
+    await expect(grove).toContainText('Hidden Grove');
+    await expect(grove).toContainText('Lv. 30–46 · 12 kinds');
+    await grove.click();
+    expect(await scene(page)).toMatchObject({ scene: 'fight', mode: 'wild' });
+    const wild = (await snapshot(page)).fighters[1].name;
+    const groveKanto = ['Bulbasaur', 'Charmander', 'Squirtle', 'Hitmonlee', 'Hitmonchan', 'Lapras', 'Eevee', 'Porygon', 'Omanyte', 'Kabuto', 'Aerodactyl', 'Snorlax'];
+    expect(groveKanto).toContain(wild);
+  });
+
   test('the XP bars fill once per battle, a level up included: back after a throw, they stand still', async ({ page }) => {
     // One XP short of Lv. 6 (medium-slow: 179): any win levels Charmander up.
     const data = start() as SaveData & { party: { xp: number }[] };

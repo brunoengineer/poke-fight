@@ -96,7 +96,7 @@ export function whereToFind(id: number, region: Region): FoundAt[] {
     return true;
   };
   for (const city of region.cities) {
-    for (const kind of ['grass', 'cave'] as const) if (city.hunts[kind]) add(city.id, kind, null, encounterTable(city, kind, null));
+    for (const kind of ['grass', 'cave', 'rare'] as const) if (city.hunts[kind]) add(city.id, kind, null, encounterTable(city, kind, null));
     if (city.hunts.water) for (const rod of RODS) if (add(city.id, 'water', rod, encounterTable(city, 'water', rod))) break;
     if (city.safari) add(city.id, 'safari', null, tableForAreas(city.safari, 'walk'));
   }

@@ -4432,9 +4432,17 @@ kbd,
   text-transform: uppercase;
 }
 
-/* A sanctuary with more legendaries than fit in a row: two rows of cards. */
+/* More cards than fit in a row (a sanctuary's legendaries, a League city's six places): two rows of cards. */
 .adventure.two-rows {
   grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+/* The cards are half as tall: the people stand inside, at the bottom right beside the title (not above the card). */
+.adventure.two-rows .place-person {
+  right: calc(0.8cqh + var(--i) * 7cqh);
+  bottom: 0;
+  width: 16cqh;
+  height: 16cqh;
 }
 
 /* ── Bag ─────────────────────────────────────────────────────────────────────────────────────────────────────── */

@@ -3,7 +3,8 @@
 
 import { wildEncounters } from '../data/pokedex';
 import { RODS, type RodId } from '../data/items';
-import { regionOf, type City, type HuntKind } from '../data/regions';
+import { REGIONS, regionOf, type City, type HuntKind } from '../data/regions';
+import { speciesBySlug } from '../data/pokedex';
 import type { Rng } from '../engine/rng';
 import { createPokemon, type Pokemon } from './pokemon';
 import type { Stats } from './stats';
@@ -32,8 +33,18 @@ const INDEX = (() => {
     byMethod.set(e.method, list);
     list.push({ speciesId: e.speciesId, minLevel: e.minLevel, maxLevel: e.maxLevel, weight: e.chance });
   }
+  // Each region's Hidden Grove (its data, not the games' tables): every Pokémon in it as likely as the others.
+  for (const region of REGIONS) {
+    const entries = region.grove.map(([slug, minLevel, maxLevel]) => ({ speciesId: speciesBySlug(slug).id, minLevel, maxLevel, weight: 1 }));
+    index.set(groveArea(region.id), new Map([['walk', entries]]));
+  }
   return index;
 })();
+
+/** The Hidden Grove's area id in a region (hunted in its League city: `hunts.rare`). */
+export function groveArea(regionId: string): string {
+  return `${regionId}-hidden-grove`;
+}
 
 export const hasEncounters = (area: string, method: Method) => (INDEX.get(area)?.get(method)?.length ?? 0) > 0;
 
@@ -117,7 +128,7 @@ export const FRESH = 2;
 
 /** Every species in a city's hunting grounds (every kind, every rod, the Safari Zone). */
 function citySpecies(city: City): number[] {
-  const kinds: HuntKind[] = ['grass', 'cave'];
+  const kinds: HuntKind[] = ['grass', 'cave', 'rare'];
   const tables = [
     ...kinds.flatMap(kind => encounterTable(city, kind, null)),
     ...RODS.flatMap(rod => encounterTable(city, 'water', rod)),

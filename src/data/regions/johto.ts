@@ -118,6 +118,7 @@ const CITIES: City[] = [
       grass: ['mt-silver-outside'],
       water: ['tohjo-falls-area', 'mt-silver-1f'],
       cave: ['tohjo-falls-area', 'mt-silver-1f', 'mt-silver-1f-top'],
+      rare: ['johto-hidden-grove'],
     },
   },
 ];
@@ -310,6 +311,22 @@ export const JOHTO: Region = {
       ['violet', 'johto-sanctuary'],
     ],
   },
+  // The Hidden Grove, by the League (decided after milestone 14: every species can be obtained): this generation's
+  // Pokémon nothing else reaches (the starters not chosen, the games' gifts and fossils, babies, evolutions this game
+  // can't do). Base forms at Lv. 30–36, evolved ones at 40–46. Checked by game/obtainable.test.ts.
+  grove: [
+    ['chikorita', 30, 36],
+    ['cyndaquil', 30, 36],
+    ['totodile', 30, 36],
+    ['igglybuff', 30, 36],
+    ['togepi', 30, 36],
+    ['shuckle', 30, 36],
+    ['mantine', 40, 46],
+    ['tyrogue', 30, 36],
+    ['smoochum', 30, 36],
+    ['elekid', 30, 36],
+    ['magby', 30, 36],
+  ],
   sanctuary: {
     id: 'johto-sanctuary',
     art: { backdrop: 'space', color: '#ffb347' },

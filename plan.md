@@ -631,6 +631,15 @@ World map (cities unlocked by badges)
   each its own Red/Blue table). **Rare bites** (decided after milestone 11): in Red/Blue the Old Rod only ever
   catches Magikarp and the Good Rod the same Poliwag and Goldeen everywhere; here each rod also hooks the better
   rods' Pokémon of that water 30% of the time, at its own levels (Cerulean's Old Rod: Psyduck and Krabby too).
+- **Every species can be obtained** (decided after milestone 14: 111 of the 493 couldn't be). Each League city has
+  a **Hidden Grove** (a fourth hunting ground, gold, after the League's 8 badges) with its generation's Pokémon that
+  nothing else reaches: the starters not chosen, the games' gifts and fossils (Lapras, Eevee, Porygon, Omanyte,
+  Kabuto, Aerodactyl, Togepi, Shuckle, Castform, Beldum, Riolu, Spiritomb, Rotom…), the babies (no eggs here), and
+  the evolutions this game can't do (by place, by a known move, by a held item: Magnezone, Leafeon, Glaceon,
+  Mamoswine, Weavile, Milotic, Shedinja…), plus an older species whose only way in is a newer baby (Snorlax from
+  Munchlax, Mantine from Mantyke). Base forms Lv. 30–36, evolved ones Lv. 40–46; their evolutions happen as usual.
+  Kanto 12, Johto 11, Hoenn 10, Sinnoh 29 (`Region.grove`, area `<region>-hidden-grove`). `game/obtainable.test.ts`
+  fails if any species becomes unreachable, or a grove holds one that is wild elsewhere.
 - **Variety** (decided after milestone 11, `huntTable` in `game/encounters.ts`): the Red/Blue tables put Pidgey,
   Rattata and Spearow on nearly every route and make each city's own Pokémon rare (Lavender's Vulpix 3%). What you
   actually meet is weighted so every new city feels new; the levels stay the games':

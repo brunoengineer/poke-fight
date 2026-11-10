@@ -9,7 +9,8 @@ import type { ItemId } from '../items';
 
 export type RegionId = 'kanto' | 'johto' | 'hoenn' | 'sinnoh';
 
-export type HuntKind = 'grass' | 'water' | 'cave';
+/** Where wild Pokémon are hunted: tall grass, a cave, the water (with a rod), or the League's Hidden Grove. */
+export type HuntKind = 'grass' | 'water' | 'cave' | 'rare';
 
 /** [species slug, level] */
 export type TeamSpec = readonly (readonly [species: string, level: number])[];
@@ -173,4 +174,9 @@ export interface Region {
   towns: Record<string, TownPlan>;
   map: RegionMap;
   sanctuary: Sanctuary;
+  /**
+   * The Hidden Grove's Pokémon [slug, min level, max level]: the area `<region id>-hidden-grove`, hunted in the League
+   * city (its `hunts.rare`). Everything of this generation that can't be obtained another way.
+   */
+  grove: readonly (readonly [string, number, number])[];
 }

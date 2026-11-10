@@ -30,7 +30,7 @@ export const TRAINING_TEAM = 3;
 
 /** Every species found in this city's hunting grounds (grass, caves, water with any rod, the Safari Zone). */
 export function cityPokemon(city: City): number[] {
-  const walk = [...(city.hunts.grass ?? []), ...(city.hunts.cave ?? []), ...(city.safari ?? [])];
+  const walk = [...(city.hunts.grass ?? []), ...(city.hunts.cave ?? []), ...(city.hunts.rare ?? []), ...(city.safari ?? [])];
   const methods: [readonly string[], readonly Method[]][] = [
     [walk, ['walk']],
     [city.hunts.water ?? [], RODS],

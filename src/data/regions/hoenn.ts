@@ -157,6 +157,7 @@ const CITIES: City[] = [
     hunts: {
       water: ['ever-grande-city-area', 'hoenn-route-128-area'],
       cave: ['hoenn-victory-road-1f', 'hoenn-victory-road-b1f', 'hoenn-victory-road-b2f', 'meteor-falls-backsmall-room', 'artisan-cave-area'],
+      rare: ['hoenn-hidden-grove'],
     },
   },
 ];
@@ -358,6 +359,21 @@ export const HOENN: Region = {
       ['mauville', 'hoenn-sanctuary'],
     ],
   },
+  // The Hidden Grove, by the League (decided after milestone 14: every species can be obtained): this generation's
+  // Pokémon nothing else reaches (the starters not chosen, the games' gifts and fossils, babies, evolutions this game
+  // can't do). Base forms at Lv. 30–36, evolved ones at 40–46. Checked by game/obtainable.test.ts.
+  grove: [
+    ['treecko', 30, 36],
+    ['torchic', 30, 36],
+    ['mudkip', 30, 36],
+    ['shedinja', 40, 46],
+    ['lileep', 30, 36],
+    ['anorith', 30, 36],
+    ['feebas', 30, 36],
+    ['milotic', 40, 46],
+    ['castform', 30, 36],
+    ['beldum', 30, 36],
+  ],
   sanctuary: {
     id: 'hoenn-sanctuary',
     art: { backdrop: 'space', color: '#4fd1a5' },

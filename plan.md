@@ -488,13 +488,36 @@ own, and a legendary on your team gets its boss attack. Four steps, each reviewe
    on the floor during the charge; a strike puts a reticle on the opponent that follows it, then locks (and flashes)
    12 frames before. The CPU guards what it can't jump (anything taller than a body, or falling from above), and
    uses the short-reach forms only close (burst < 85 px, blizzard < 150, barrage < 200, rush < 160).
-3. **Signature moves**: back, down, forward + attack (today's free elemental) becomes a move of their own for
-   Pikachu, Charizard, Blaziken, Lucario, Gengar, Gardevoir, Kingler, Dragonite, Lapras, Flygon and Garchomp.
-   Greninja and Zoroark were asked for, but the game covers generations 1–4: Blaziken and Garchomp replace them.
-   Same rule as the free elemental: no PP spent, none earned, about the elemental's power.
-4. **Legendary moves**: a legendary on the player's team gets up, down, back, forward + attack: its boss attack
-   (Quake, Meteor, Nova, Vortex…), cut down to a player's move. It works with any PP above 0, always empties the
-   bar, and hits harder the fuller the bar was (a full bar ≈ a big special).
+3. ✅ **Signature moves** (`game/signatures.ts`): back, down, forward + attack (on the ground) is, for eleven famous
+   Pokémon, a move of their own instead of the free elemental special. Greninja and Zoroark were asked for, but the
+   game covers generations 1–4: Blaziken and Garchomp replace them. Each one is a big special's form (its timing and
+   reach), all eleven different, of the Pokémon's type, hitting like an elemental special: power 90 (with the
+   same-type bonus), no knockdown, free (no PP spent, none earned). Only the species named (not Raichu, not
+   Charmeleon). Its name shows in a banner during the charge; the party screen lists it with its input.
+
+   | Pokémon | Move | Form |
+   |---|---|---|
+   | Pikachu | Thunder | strike (a bolt on the opponent's spot) |
+   | Charizard | Blast Burn | solar (a giant fire beam) |
+   | Blaziken | Blaze Kick | tornado |
+   | Lucario | Aura Sphere | projectile |
+   | Gengar | Night Shade | burst (a dark dome) |
+   | Gardevoir | Psychic | beam |
+   | Kingler | Crabhammer | surf (a wave) |
+   | Dragonite | Draco Meteor | barrage |
+   | Lapras | Sheer Cold | blizzard |
+   | Flygon | Earth Power | quake |
+   | Garchomp | Dragon Rush | rush |
+4. ✅ **Legendary moves**: a legendary on the player's team (any one of a sanctuary) has **down, down + attack** (up,
+   down, back, forward was planned, but up jumps: the move would start in the air, where a big special can't; down does
+   nothing else, so ↓↓ can't happen by accident). Its first boss attack, as the closest big special form: Slash → a
+   wave (surf), Nova → a dome (burst), Meteor → a barrage, Quake → a quake, Rampage → a rush, Vortex → a tornado; of
+   its first type. It needs some PP, spends all of it, and hits as a big special does scaled by the bar (a full bar =
+   a big special, ≈ half the HP bar; at least a fifth of that). A hit during its charge gives the PP back. The banner
+   shows the attack's name ("Nova!").
+
+The CPU doesn't use either (they need a motion; the fight lab's numbers are unchanged). The endgame save has Mewtwo in
+Kanto's box to try one.
 
 ## 5. Progression systems
 
@@ -970,7 +993,7 @@ Each milestone ends with something playable, tests, and green CI.
 | 10 | ✅ **Juice & polish** | Stages per place, trainers' Poké Ball entrance, new HUD, particles and screen shake, sound effects, original music, cries, mute, rebinding UI, menu navigation by keys and controller, modern menus. **Balance pass deferred**: it needs playtest data |
 | 11 | ✅ **Design overhaul** | A console-style 16:9 frame, the places' art behind the menus and as fight stages, trainer and character sprites, every screen redesigned (city hub of cards, Center with Nurse Joy, Mart, box grid, illustrated map, party with HP bars and reordering, results, League hall), controller-first spatial navigation with glyph hints |
 | 12 | ✅ **Regions** | Johto, Hoenn and Sinnoh (their cities, gyms, Leagues, starters, towns and maps; generations 2–4 data), a journey per region, the plane, regions opened by Leagues, the Legends' Sanctuary with boss legendaries (Master Ball only, XP for the whole party) |
-| 13 | **Moves by type** | Elemental specials drawn by type (✅), big specials by type with real hits (✅), signature moves for 11 famous Pokémon, legendary moves (§4.9) |
+| 13 | ✅ **Moves by type** | Elemental specials drawn by type, big specials by type with real hits, signature moves for 11 famous Pokémon (←↓→ + attack), legendary moves (↓↓ + attack) (§4.9) |
 | 14 | ✅ **Combat depth + fight lab** | PP from damage taken, back attacks after a dash through, parry and counter, big specials that hit for about half the bar (a fifth through a guard), a smarter CPU (guards specials, parries, comes back when far behind, uses dashes), the economy repriced, and the fight lab (`npm run sim`, `docs/fight-lab.md`) |
 
 Milestones 1–3 come **before** any Pokémon content on purpose: if the fight doesn't feel good with rectangles, the

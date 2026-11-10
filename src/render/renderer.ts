@@ -5,7 +5,7 @@
 // a boss's attacks (render/boss.ts) → particles (render/fx.ts) → the HUD → banners (a boss attack's name), "Super
 // effective!", the entrance's Poké Balls and "FIGHT!", K.O. → debug (F1).
 
-import { activeHitbox, bodyBox, currentMove, isGuarding, isInvincible, movePhase, projectileBox, type WorldBox } from '../fight/boxes';
+import { activeBig, activeHitbox, bodyBox, currentMove, isGuarding, isInvincible, movePhase, projectileBox, type WorldBox } from '../fight/boxes';
 import type { BattleEvent } from '../fight/battle';
 import { ELEMENTAL_COST, PP_MAX, ROUND_FRAMES, SUB } from '../fight/constants';
 import { Button, has, type InputMask } from '../fight/input';
@@ -380,7 +380,7 @@ function drawMoveEffects(ctx: CanvasRenderingContext2D, f: Fighter, hasSprite: b
 
   if (f.action === 'big' && move?.rush && phase === 'active') {
     ctx.globalAlpha = 0.28;
-    ctx.fillStyle = elementLook(f.loadout.big.type).energy;
+    ctx.fillStyle = elementLook(activeBig(f).type).energy;
     const body = bodyBox(f);
     for (const back of [30, 18, 8]) fillBox(ctx, { ...body, x1: body.x1 - f.facing * back * SUB, x2: body.x2 - f.facing * back * SUB });
     ctx.globalAlpha = 1;
@@ -389,18 +389,19 @@ function drawMoveEffects(ctx: CanvasRenderingContext2D, f: Fighter, hasSprite: b
   if (charging && move) {
     // The type's glow, with the projectile itself forming in it (a fireball, a bubble, a stone…).
     const slot = f.action === 'big' ? 'big' : 'elemental';
-    const { type, shape } = f.loadout[slot];
+    const { type, shape } = slot === 'big' ? activeBig(f) : f.loadout.elemental;
     drawChargeLook(ctx, type, sx(f.x) + f.facing * 22, sy(f.y) - 26, f.actionFrame / move.startup, slot === 'big', f.facing, f.actionFrame, shape === 'projectile');
   }
 
   const hitbox = activeHitbox(f);
   const slot = f.action === 'big' ? 'big' : f.action === 'elemental' ? 'elemental' : null;
-  if (hitbox && slot && f.loadout[slot].shape === 'beam') {
+  const look = slot === 'big' ? activeBig(f) : slot ? f.loadout.elemental : null;
+  if (hitbox && look && look.shape === 'beam') {
     // From the attacker's front to the far end, in the type's look (flames, foam, lightning, ice, psychic rings…).
     const [near, far] = f.facing === 1 ? [sx(hitbox.x1), sx(hitbox.x2)] : [sx(hitbox.x2), sx(hitbox.x1)];
-    drawBeamLook(ctx, f.loadout[slot].type, near, far, sy(hitbox.y2), sy(hitbox.y1), f.actionFrame, 0.88 + 0.12 * Math.sin(f.actionFrame));
+    drawBeamLook(ctx, look.type, near, far, sy(hitbox.y2), sy(hitbox.y1), f.actionFrame, 0.88 + 0.12 * Math.sin(f.actionFrame));
   } else if (hitbox && !hasSprite) {
-    ctx.fillStyle = slot ? typeColor(f.loadout[slot].type) : '#ffffff';
+    ctx.fillStyle = look ? typeColor(look.type) : '#ffffff';
     ctx.globalAlpha = 0.6;
     fillBox(ctx, hitbox);
     ctx.globalAlpha = 1;
@@ -674,18 +675,31 @@ function drawBossTag(ctx: CanvasRenderingContext2D, x: number, mirror: boolean, 
 }
 
 /** The attack's name in a red ribbon when it starts, and how to survive it under it. */
+/** A move with a name of its own (a signature or legendary move): the banner shows during its charge. */
+function moveBanner(view: SandboxView): { name: string; hint: string; age: number; length: number } | null {
+  const f = view.battle.round.fighters.find(x => x.action === 'big' && x.bigKind !== 'big');
+  if (!f) return null;
+  const length = currentMove(f)?.startup ?? 40;
+  if (f.actionFrame > length) return null;
+  const name = f.bigKind === 'signature' ? `${f.loadout.signature?.name}!` : t(`boss.attack.${f.loadout.legend?.attack}` as MessageKey);
+  return { name, hint: f.name, age: f.actionFrame, length };
+}
+
 function drawBossBanner(ctx: CanvasRenderingContext2D, view: SandboxView) {
   if (view.battle.phase !== 'fight') return;
   const a = view.battle.round.fighters.find(f => f.boss?.current)?.boss?.current;
-  if (!a || a.frame > BOSS_BANNER_FRAMES) return;
-  const age = a.frame;
+  const own = a && a.frame <= BOSS_BANNER_FRAMES ? null : moveBanner(view);
+  if ((!a || a.frame > BOSS_BANNER_FRAMES) && !own) return;
+  const age = own ? own.age : a!.frame;
+  const length = own ? own.length : BOSS_BANNER_FRAMES;
   const pop = age < 6 ? 0.5 + (age / 6) * 0.65 : age < 10 ? 1.15 - ((age - 6) / 4) * 0.15 : 1;
-  const alpha = age > BOSS_BANNER_FRAMES - 12 ? (BOSS_BANNER_FRAMES - age) / 12 : 1;
-  const name = t(`boss.attack.${a.id}`);
-  const hint = t(`boss.hint.${a.id}`);
+  const alpha = age > length - 12 ? Math.max(0, (length - age) / 12) : 1;
+  const name = own ? own.name : t(`boss.attack.${a!.id}`);
+  const hint = own ? own.hint : t(`boss.hint.${a!.id}`);
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.translate(VIEW_W / 2, 72);
+  // A player's own move: a little lower, under the fight's intro ("A wild Rattata appeared!"), which it can overlap.
+  ctx.translate(VIEW_W / 2, own ? 104 : 72);
   ctx.scale(pop, pop);
   ctx.font = font(18);
   const w = Math.ceil(ctx.measureText(name).width) + 56;

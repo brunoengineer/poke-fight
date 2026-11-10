@@ -40,7 +40,7 @@ import { bestRod, chances, encounterTable, huntTable, rollEncounter, tableForAre
 import { canChallenge, gymTeam, leaderPrize } from './game/gym';
 import { canEnterLeague, LEAGUE_SIZE, leagueOpponent, leaguePrize, type LeagueOpponent } from './game/league';
 import { bigShape, elementalShape } from './game/moves';
-import { displayHp, maxHpOf, statsOf, toFighter, type Pokemon } from './game/pokemon';
+import { displayHp, loadoutOf, maxHpOf, statsOf, toFighter, type Pokemon } from './game/pokemon';
 import { evolve, heal, itemEvolution, levelEvolution, setSpecial, specialOptions, useRareCandy } from './game/progress';
 import { SAFARI_BALLS, SAFARI_ENTRANCE, SAFARI_SECONDS } from './game/safari';
 import { cleanName, createStarter, DEFAULT_NAMES, MAX_NAME_LENGTH, trainingOpponents } from './game/story';
@@ -2125,6 +2125,32 @@ export function startApp(elements: AppElements, options: TestOptions) {
   let partySelected = 0;
   let partyMoving: number | null = null;
 
+  /** A Pokémon's move of its own, for the party screen: its signature move, or its legendary move. */
+  const ownMove = (p: Pokemon): PartyMember['own'] => {
+    const { signature, legend } = loadoutOf(p);
+    if (signature) {
+      return {
+        label: t('party.signature'),
+        name: signature.name,
+        type: signature.type,
+        typeLabel: t(`type.${signature.type}` as MessageKey),
+        detail: t('party.signatureDetail', { shape: t(`shape.${signature.shape}` as MessageKey) }),
+        color: typeColor(signature.type),
+      };
+    }
+    if (legend) {
+      return {
+        label: t('party.legend'),
+        name: t(`boss.attack.${legend.attack}` as MessageKey),
+        type: legend.type,
+        typeLabel: t(`type.${legend.type}` as MessageKey),
+        detail: t('party.legendDetail', { shape: t(`shape.${legend.shape}` as MessageKey) }),
+        color: typeColor(legend.type),
+      };
+    }
+    return null;
+  };
+
   function showParty(focus?: string, swapped?: [number, number]) {
     if (!save) return;
     const s = save;
@@ -2177,6 +2203,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
           options: specialOptions(p).map(slug => moveInfo(slug, slot)),
           onChoose: choose(slot),
         })),
+        own: ownMove(p),
         actions: [
           ...potions.map(id => ({
             label: t('party.use', { item: itemName(id), count: countOf(s.bag, id) }),

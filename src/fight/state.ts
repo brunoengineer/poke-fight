@@ -44,7 +44,20 @@ export interface AttackInfo {
 export interface Loadout {
   elemental: { name: string; type: string; power: number; category: 'physical' | 'special'; shape: ElementalShape };
   big: { name: string; type: string; power: number; category: 'physical' | 'special'; shape: BigShape };
+  /**
+   * A famous Pokémon's own move (plan.md §4.9): back, down, forward + attack, on the ground. Free like the motion's
+   * elemental special (no PP spent, none earned), in one of the big special's forms.
+   */
+  signature?: { name: string; type: string; power: number; category: 'physical' | 'special'; shape: BigShape };
+  /**
+   * A legendary's move (plan.md §4.9): down, down + attack. Its boss attack (BossAttackId) as a big special form; it
+   * needs some PP, spends all of it, and hits as hard as the bar was full.
+   */
+  legend?: { attack: string; type: string; category: 'physical' | 'special'; shape: BigShape };
 }
+
+/** Which move a fighter's 'big' action is: the big special, its signature move, or its legendary move. */
+export type BigKind = 'big' | 'signature' | 'legend';
 
 export const DEFAULT_LOADOUT: Loadout = {
   elemental: { name: 'Ember', type: 'fire', power: 40, category: 'special', shape: 'projectile' },
@@ -101,9 +114,12 @@ export interface Fighter {
   /** Directions held on the last frames, newest first, for the back, down, forward motion (fight/motion.ts). */
   directions: InputMask[];
   /** Frames a press is still remembered for; 0 = nothing buffered. `motion`: the attack button right after the motion. */
-  buffer: { physical: number; special: number; big: number; dash: number; motion: number };
+  buffer: { physical: number; special: number; big: number; dash: number; motion: number; legend: number };
   /** The current elemental special came from the motion: it cost no PP, and landing it earns none. */
   freeSpecial: boolean;
+  /** What its 'big' action is (the big special, a signature move, a legendary move), and what a legendary move paid. */
+  bigKind: BigKind;
+  legendPaid: number;
   /** A strike's spot (x, sub-pixels), locked during its charge (fight/frame-data.ts StrikeData); null otherwise. */
   target: number | null;
   /** Frames left to parry: guard was freshly pressed this recently (PARRY.window). */
@@ -176,7 +192,7 @@ export type FightEvent =
   /** The defender parried the attacker's hit (fight/frame-data.ts PARRY). */
   | { type: 'parry'; attacker: FighterId; defender: FighterId; source: HitSource }
   | { type: 'block'; attacker: FighterId; defender: FighterId; chip: number; source: HitSource; bossAttack?: BossAttackId }
-  | { type: 'special'; fighter: FighterId; slot: SpecialSlot }
+  | { type: 'special'; fighter: FighterId; slot: SpecialSlot; kind?: BigKind }
   | { type: 'ko'; loser: FighterId }
   | { type: 'timeout' }
   /** A boss attack's telegraph starts, its active part starts, or it is over (sounds and effects follow these). */
@@ -241,7 +257,9 @@ function createFighter(id: FighterId, x: number, setup: FighterSetup): Fighter {
     combo: 0,
     held: 0,
     directions: [],
-    buffer: { physical: 0, special: 0, big: 0, dash: 0, motion: 0 },
+    buffer: { physical: 0, special: 0, big: 0, dash: 0, motion: 0, legend: 0 },
+    bigKind: 'big',
+    legendPaid: 0,
     freeSpecial: false,
     target: null,
     parry: 0,

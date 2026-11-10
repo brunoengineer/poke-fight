@@ -17,7 +17,8 @@ export const ENDGAME_SAVE_KEY = 'poke-fight.endgame.save';
 const TEAMS: Record<RegionId, { party: string[]; box: string[] }> = {
   kanto: {
     party: ['charizard', 'blastoise', 'venusaur', 'alakazam', 'gengar', 'dragonite'],
-    box: ['pikachu', 'eevee', 'kadabra', 'snorlax', 'lapras', 'scyther'],
+    // Mewtwo: a legendary in the box, to try its legendary move (↓↓ + attack). Pikachu and Lapras have signature moves.
+    box: ['mewtwo', 'pikachu', 'eevee', 'kadabra', 'snorlax', 'lapras', 'scyther'],
   },
   johto: {
     party: ['typhlosion', 'feraligatr', 'meganium', 'tyranitar', 'ampharos', 'heracross'],

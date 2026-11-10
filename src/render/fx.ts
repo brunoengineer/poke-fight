@@ -2,7 +2,7 @@
 // for the eyes: fed by the fight's events and state after each simulated frame, never touching the fight itself.
 
 import { BOSS_ATTACK, VORTEX } from '../fight/boss';
-import { activeHitbox } from '../fight/boxes';
+import { activeBig, activeHitbox } from '../fight/boxes';
 import { BODY_HEIGHT, SUB } from '../fight/constants';
 import { BIG, type BigShape } from '../fight/frame-data';
 import type { ActionKind, FightEvent, FightState, Fighter, Projectile } from '../fight/state';
@@ -174,7 +174,7 @@ export function createFx(): Fx {
   };
   const bigEffects = (f: Fighter) => {
     if (f.action !== 'big') return;
-    const { shape, type } = f.loadout.big;
+    const { shape, type } = activeBig(f);
     const move = BIG[shape];
     const into = f.actionFrame - move.startup;
     if (into < 1 || into > move.active) return;
@@ -214,7 +214,7 @@ export function createFx(): Fx {
             e.source === 'boss'
               ? typeColor(attacker.types[0] ?? null)
               : special
-                ? elementLook(e.source === 'big' ? attacker.loadout.big.type : attacker.loadout.elemental.type).energy
+                ? elementLook(e.source === 'big' ? activeBig(attacker).type : attacker.loadout.elemental.type).energy
                 : '#ffffff';
           if (e.effectiveness === 0) {
             ring(x, y, 'rgba(200,200,220,0.8)', 10);
@@ -223,7 +223,7 @@ export function createFx(): Fx {
           burst(x, y, e.big ? 28 : special ? 16 : 10, ['#ffffff', special ? color : '#ffe27a', color], e.big ? 4 : 2.6);
           // A special also bursts in its own matter: embers, drops, leaves, stones, smoke…
           if (special) {
-            const type = e.source === 'big' ? attacker.loadout.big.type : attacker.loadout.elemental.type;
+            const type = e.source === 'big' ? activeBig(attacker).type : attacker.loadout.elemental.type;
             for (let k = 0; k < (e.big ? 14 : 8); k++) trailOf(type, x + (random() - 0.5) * 12, y + (random() - 0.5) * 12, (random() - 0.5) * 2, e.big);
           }
           ring(x, y, color, e.big ? 34 : 16, e.big ? 22 : 14);
@@ -308,7 +308,7 @@ export function createFx(): Fx {
             life: 10,
             max: 10,
             size: 2,
-            color: elementLook(big ? f.loadout.big.type : f.loadout.elemental.type).energy,
+            color: elementLook(big ? activeBig(f).type : f.loadout.elemental.type).energy,
             gravity: 0,
             kind: 'glow',
           });
@@ -346,11 +346,12 @@ export function createFx(): Fx {
       // Beams shed some along their length.
       for (const f of round.fighters) {
         const slot = f.action === 'big' ? 'big' : f.action === 'elemental' ? 'elemental' : null;
-        const box = slot && f.loadout[slot].shape === 'beam' ? activeHitbox(f) : null;
-        if (!box || !slot) continue;
+        const look = slot === 'big' ? activeBig(f) : slot ? f.loadout.elemental : null;
+        const box = look && look.shape === 'beam' ? activeHitbox(f) : null;
+        if (!box || !slot || !look) continue;
         for (let k = 0; k < 2; k++) {
           const x = box.x1 / SUB + random() * ((box.x2 - box.x1) / SUB);
-          trailOf(f.loadout[slot].type, x, FLOOR_Y - (box.y1 + box.y2) / 2 / SUB, f.facing, slot === 'big');
+          trailOf(look.type, x, FLOOR_Y - (box.y1 + box.y2) / 2 / SUB, f.facing, slot === 'big');
         }
       }
 

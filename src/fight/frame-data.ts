@@ -252,6 +252,20 @@ export const BIG: Record<BigShape, MoveData> = {
   },
 };
 
+/**
+ * A signature move (plan.md §4.9): a big special's form (BIG, the same timing and reach) that hits like an elemental
+ * special: ordinary damage from its power, a normal hitstun, no knockdown, and no PP earned (it was free).
+ */
+export const SIGNATURE_HIT: HitData = { hitstun: 20, blockstun: 16, knockback: px(3), hitstop: 9, ppGain: 0, chip: true, big: false };
+
+export function signatureMove(shape: BigShape): MoveData {
+  const m = BIG[shape];
+  return { ...m, hit: SIGNATURE_HIT, ...(m.barrage ? { barrage: { ...m.barrage, hit: SIGNATURE_HIT } } : {}) };
+}
+
+/** A legendary move: how much of a big special it does, by how full the PP bar was (at least LEGEND_MIN of it). */
+export const LEGEND_MIN = 0.2;
+
 // ── Movement ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
 export const WALK = { forward: px(2), back: px(1.75) };

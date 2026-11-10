@@ -5,8 +5,8 @@
 //   - Projectiles carry their own box.
 
 import { BODY_HALF_WIDTH, BODY_HEIGHT, STAGE_HEIGHT } from './constants';
-import { AIR_PHYSICAL, BACKDASH, BIG, ELEMENTAL, PHYSICAL, type Box, type MoveData } from './frame-data';
-import type { ActionKind, Fighter, Loadout, Projectile } from './state';
+import { AIR_PHYSICAL, BACKDASH, BIG, ELEMENTAL, PHYSICAL, signatureMove, type BigShape, type Box, type MoveData } from './frame-data';
+import type { ActionKind, BigKind, Fighter, Loadout, Projectile } from './state';
 
 /** Same shape as Box, but in world coordinates (x1 < x2, y1 < y2). */
 export type WorldBox = Box;
@@ -43,8 +43,23 @@ export function moveOf(action: ActionKind, loadout: Loadout): MoveData | null {
   }
 }
 
+/** What a 'big' action is: its type, power, category and form (the big special, a signature or a legendary move). */
+export function activeBig(f: Pick<Fighter, 'loadout' | 'bigKind'>): { type: string; power: number; category: 'physical' | 'special'; shape: BigShape } {
+  const { signature, legend, big } = f.loadout;
+  if (f.bigKind === 'signature' && signature) return signature;
+  // A legendary move's power: it hits as a big special does (fight/damage.ts bigDamage), scaled by the PP paid.
+  if (f.bigKind === 'legend' && legend) return { ...legend, power: 100 };
+  return big;
+}
+
 /** The move the fighter is doing, if any. */
-export const currentMove = (f: Fighter) => moveOf(f.action, f.loadout);
+export function currentMove(f: Fighter): MoveData | null {
+  if (f.action !== 'big') return moveOf(f.action, f.loadout);
+  const { shape } = activeBig(f);
+  return f.bigKind === 'signature' ? signatureMove(shape) : BIG[shape];
+}
+
+export type { BigKind };
 
 export type MovePhase = 'startup' | 'active' | 'recovery';
 
@@ -79,7 +94,7 @@ export function passesThrough(f: Fighter): boolean {
   return (
     f.action === 'ko' ||
     f.action === 'dash' ||
-    (f.action === 'big' && f.loadout.big.shape === 'rush') ||
+    (f.action === 'big' && activeBig(f).shape === 'rush') ||
     (f.action === 'bossAttack' && f.boss?.current?.id === 'rampage')
   );
 }

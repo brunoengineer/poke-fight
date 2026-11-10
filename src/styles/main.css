@@ -2882,6 +2882,17 @@ kbd,
     background 140ms;
 }
 
+/* A move of its own (signature, legendary): not chosen, so not a button; a gold edge marks it as special. */
+.special-card.own {
+  cursor: default;
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 14%, transparent), rgba(255, 255, 255, 0.04) 70%);
+}
+
+.special-card.own > small:first-child {
+  color: var(--gold);
+}
+
 .special-card small {
   font-size: 1.45cqh;
   color: var(--dim);

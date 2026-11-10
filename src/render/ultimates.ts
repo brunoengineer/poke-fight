@@ -6,6 +6,7 @@
 // still growing in would freeze smaller than what hit.
 
 import { BODY_HEIGHT, SUB } from '../fight/constants';
+import { activeBig } from '../fight/boxes';
 import { BIG } from '../fight/frame-data';
 import type { Fighter, FightState, Projectile } from '../fight/state';
 import { drawBeamLook, drawProjectileLook, elementLook, glow, hash, jagged, rgba, tongue, twinkle } from './elements';
@@ -291,7 +292,7 @@ function drawTornado(ctx: Ctx, type: string | null, x: number, half: number, hei
  */
 export function drawBigTelegraph(ctx: Ctx, f: Fighter, round: FightState, layer: 'floor' | 'front') {
   if (f.action !== 'big') return;
-  const { shape, type } = f.loadout.big;
+  const { shape, type } = activeBig(f);
   const l = elementLook(type);
   const move = BIG[shape];
   if (
@@ -377,7 +378,7 @@ export function drawBigTelegraph(ctx: Ctx, f: Fighter, round: FightState, layer:
 /** A big special that hits with a box (solar, blizzard, burst, strike), on its active frames and fading after. */
 export function drawBigAttack(ctx: Ctx, f: Fighter) {
   if (f.action !== 'big') return;
-  const { shape, type } = f.loadout.big;
+  const { shape, type } = activeBig(f);
   const move = BIG[shape];
   const into = f.actionFrame - move.startup; // 1 on the first active frame
   if (into < 1) return;
@@ -413,7 +414,7 @@ function drawSolar(ctx: Ctx, f: Fighter, into: number, fade: number) {
   const mid = (top + bottom) / 2;
   const half = (bottom - top) / 2;
   ctx.globalAlpha = fade;
-  drawBeamLook(ctx, f.loadout.big.type, near, far, mid - half, mid + half, into, 0.92 + 0.08 * Math.sin(into));
+  drawBeamLook(ctx, activeBig(f).type, near, far, mid - half, mid + half, into, 0.92 + 0.08 * Math.sin(into));
   // A golden core and a sun at the source.
   ctx.globalCompositeOperation = 'lighter';
   const core = ctx.createLinearGradient(0, mid - half * 0.4, 0, mid + half * 0.4);
@@ -436,7 +437,7 @@ function drawSolar(ctx: Ctx, f: Fighter, into: number, fade: number) {
 
 /** Ice: a storm over the area in front: an icy haze, snow driving forward, shards. */
 function drawBlizzard(ctx: Ctx, f: Fighter, into: number, fade: number) {
-  const l = elementLook(f.loadout.big.type);
+  const l = elementLook(activeBig(f).type);
   const [light, main] = l.colors;
   const box = BIG.blizzard.hitbox!;
   const x0 = sx(f.x);
@@ -477,7 +478,7 @@ function drawBlizzard(ctx: Ctx, f: Fighter, into: number, fade: number) {
 
 /** Psychic, Dark, Fairy: a dome of energy all around the attacker. */
 function drawBurst(ctx: Ctx, f: Fighter, into: number, fade: number) {
-  const l = elementLook(f.loadout.big.type);
+  const l = elementLook(activeBig(f).type);
   const [light, main, deep] = l.colors;
   const radius = BIG.burst.hitbox!.x2 / PX;
   // A flash wave runs out to the edge on the first frames.

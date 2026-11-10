@@ -57,6 +57,10 @@ const base = {
   'party.maxLevel': 'Max level',
   'party.elemental': 'Elemental ({keySpecial})',
   'party.big': 'Big special ({keyBig})',
+  'party.signature': 'Signature move (←↓→ + {keyPhysical})',
+  'party.signatureDetail': 'Free · {shape}',
+  'party.legend': 'Legendary move (↓↓ + {keyPhysical})',
+  'party.legendDetail': 'All your PP · {shape}',
   'party.language': 'Language',
   'party.close': 'Close',
 

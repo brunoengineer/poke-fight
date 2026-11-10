@@ -26,6 +26,29 @@ export function pushDirections(history: readonly InputMask[], mask: InputMask): 
 }
 
 /**
+ * Whether the history ends with down, down (two separate presses: down, let go, down again) within MOTION.window
+ * frames, the attack at most MOTION.press frames after the second down: a legendary's move (plan.md §4.9). Down does
+ * nothing else in this game, so it can't happen by accident, and it never moves the fighter. (Up, down, back,
+ * forward was planned, but up jumps.)
+ */
+export function doubleDownDone(history: readonly InputMask[]): boolean {
+  const down = (i: number) => i < history.length && has(history[i], Button.Down);
+  // The second press: the oldest frame of the newest run of down, reached at most MOTION.press frames ago.
+  let i = 0;
+  while (i <= MOTION.press && !down(i)) i++;
+  if (i > MOTION.press) return false;
+  while (down(i + 1)) i++;
+  const second = i;
+  // A frame without down before it, then the first press.
+  let j = second + 1;
+  if (down(j)) return false;
+  while (j < history.length && !down(j)) j++;
+  if (!down(j)) return false;
+  while (down(j + 1)) j++;
+  return j - second + 1 <= MOTION.window;
+}
+
+/**
  * Whether the history (newest first; index 0 is the frame of the press) ends with back, down, forward.
  * A diagonal counts as both of its directions: down-back covers "back, down", down-forward covers "down, forward".
  * Each step is the first frame it is reached after the previous one, so holding forward for a while and then pressing

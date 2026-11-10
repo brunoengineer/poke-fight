@@ -14,7 +14,7 @@
 //      distance and style, and pick a new one when it runs out.
 
 import { createRng } from '../../engine/rng';
-import { moveOf, movePhase } from '../boxes';
+import { activeBig, moveOf, movePhase } from '../boxes';
 import { BODY_HALF_WIDTH, ELEMENTAL_COST, PP_MAX, px, SUB } from '../constants';
 import { DASH, JUMP, type BigShape } from '../frame-data';
 import { Button, has, type InputMask } from '../input';
@@ -24,7 +24,7 @@ import { boosted, BOOST, type AiProfile } from './profiles';
 /** What the CPU sees of the opponent and the projectiles (the delayed part). */
 export interface Observation {
   frame: number;
-  opponent: Pick<Fighter, 'x' | 'y' | 'vx' | 'vy' | 'action' | 'actionFrame' | 'facing' | 'loadout'>;
+  opponent: Pick<Fighter, 'x' | 'y' | 'vx' | 'vy' | 'action' | 'actionFrame' | 'facing' | 'loadout' | 'bigKind'>;
   projectiles: Pick<Projectile, 'id' | 'owner' | 'x' | 'vx' | 'y1' | 'y2' | 'vy' | 'halfWidth'>[];
 }
 
@@ -80,7 +80,7 @@ export function observe(state: FightState, me: FighterId): Observation {
   const o = state.fighters[me === 0 ? 1 : 0];
   return {
     frame: state.frame,
-    opponent: { x: o.x, y: o.y, vx: o.vx, vy: o.vy, action: o.action, actionFrame: o.actionFrame, facing: o.facing, loadout: o.loadout },
+    opponent: { x: o.x, y: o.y, vx: o.vx, vy: o.vy, action: o.action, actionFrame: o.actionFrame, facing: o.facing, loadout: o.loadout, bigKind: o.bigKind },
     projectiles: state.projectiles.filter(p => p.owner !== me).map(p => ({ id: p.id, owner: p.owner, x: p.x, vx: p.vx, y1: p.y1, y2: p.y2, vy: p.vy, halfWidth: p.halfWidth })),
   };
 }
@@ -224,7 +224,7 @@ function decide(
   // than CHARGE_ALERT it arrives faster than a reaction (measured: a normal CPU let 67–80% of the projectiles thrown
   // from 70–150 px land), so its charge is the warning.
   const charging = (opp.action === 'elemental' || opp.action === 'big') && oppPhase === 'startup';
-  const chargedShape = opp.action === 'big' ? opp.loadout.big.shape : opp.loadout.elemental.shape;
+  const chargedShape = opp.action === 'big' ? activeBig(opp).shape : opp.loadout.elemental.shape;
   if (charging && (chargedShape !== 'projectile' || distance < CHARGE_ALERT)) {
     if (respond('charge', actionStart, [['guard', profile.guard]]) === 'guard') {
       // (No parry on purpose here: the release is only estimated through its reaction delay, so it guards now.)

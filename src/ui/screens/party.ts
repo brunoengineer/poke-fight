@@ -38,6 +38,8 @@ export interface PartyMember {
   xpText: string;
   stats: { label: string; value: number }[];
   specials: PartySpecial[];
+  /** A move of its own (a signature or legendary move): shown with its input, not chosen. */
+  own: { label: string; name: string; type: string; typeLabel: string; detail: string; color: string } | null;
   actions: ButtonSpec[];
 }
 
@@ -142,6 +144,13 @@ export function renderParty(root: HTMLElement, view: PartyView) {
               ],
             ),
           ),
+          m.own
+            ? h('div', { class: 'special-card own', testid: `own-move-${index}`, style: { '--c': m.own.color } }, [
+                h('small', { text: m.own.label }),
+                h('strong', { text: m.own.name }),
+                h('span', { class: 'pills' }, [typePill(m.own.type, m.own.typeLabel), h('small', { text: m.own.detail })]),
+              ])
+            : null,
         ]),
       ]),
       h('div', { class: 'summary-items' }, [

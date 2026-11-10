@@ -12,14 +12,17 @@
 // connect with is applied in 6 with everything else.
 
 import { bossAttackInfo, BOSS_ATTACK, BOSS_HP_MULTIPLIER, scheduleBoss, updateBoss, type BossAttackId, type BossHit } from './boss';
-import { activeHitbox, bodyBox, currentMove, isGuarding, isInvincible, moveOf, overlaps, passesThrough, projectileBox } from './boxes';
+import { activeBig, activeHitbox, bodyBox, currentMove, isGuarding, isInvincible, moveOf, overlaps, passesThrough, projectileBox } from './boxes';
 import { BODY_HALF_WIDTH, BODY_HEIGHT, BUFFER_FRAMES, CHIP_DIVISOR, ELEMENTAL_COST, PP_MAX, PP_PER_HP_PERCENT, STAGE_WIDTH } from './constants';
 import { BIG_DAMAGE, bigDamage, computeDamage, scaledDamage } from './damage';
 import {
   AIR_CONTROL,
   AIR_HIT,
   BACK_ATTACK,
+  BIG,
+  LEGEND_MIN,
   PARRY,
+  signatureMove,
   AIR_PHYSICAL_POWER,
   BACKDASH,
   DASH,
@@ -35,7 +38,7 @@ import {
   type SpecialSlot,
 } from './frame-data';
 import { Button, cleanDirections, has, type InputMask } from './input';
-import { motionDone, pushDirections } from './motion';
+import { doubleDownDone, motionDone, pushDirections } from './motion';
 import type { ActionKind, AttackInfo, FightEvent, FightState, Fighter, HitSource } from './state';
 
 export interface StepResult {
@@ -90,8 +93,10 @@ function readInput(f: Fighter, mask: InputMask) {
   f.directions = pushDirections(f.directions, mask);
   // The attack button right after back, down, forward is the free elemental special instead of a tackle. The motion
   // is checked when the button is pressed (with the facing of that moment), then buffered like any press.
+  // Down, down + attack: a legendary's move, when it has one and some PP (otherwise the press is a tackle).
   if (has(pressed, Button.Physical)) {
-    if (motionDone(f.directions, f.facing)) f.buffer.motion = BUFFER_FRAMES;
+    if (f.loadout.legend && f.pp > 0 && doubleDownDone(f.directions)) f.buffer.legend = BUFFER_FRAMES;
+    else if (motionDone(f.directions, f.facing)) f.buffer.motion = BUFFER_FRAMES;
     else f.buffer.physical = BUFFER_FRAMES;
   }
   if (has(pressed, Button.Special)) f.buffer.special = BUFFER_FRAMES;
@@ -143,9 +148,13 @@ function think(f: Fighter, opponentX: number, events: FightEvent[]) {
     const forward = f.facing === 1 ? Button.Right : Button.Left;
     const back = f.facing === 1 ? Button.Left : Button.Right;
 
-    // The motion first: it is the harder input, so it is the one the player meant.
-    if (f.buffer.motion > 0) {
-      startSpecial(f, 'elemental', events, true);
+    // The motions first: they are the harder inputs, so they are what the player meant.
+    if (f.buffer.legend > 0 && f.pp > 0) {
+      startBig(f, 'legend', events);
+    } else if (f.buffer.motion > 0) {
+      // A famous Pokémon's signature move (on the ground); everyone else, the free elemental special.
+      if (f.loadout.signature) startBig(f, 'signature', events);
+      else startSpecial(f, 'elemental', events, true);
     } else if (f.buffer.physical > 0) {
       f.buffer.physical = 0;
       f.contact = null;
@@ -189,7 +198,7 @@ function think(f: Fighter, opponentX: number, events: FightEvent[]) {
   }
 
   if (f.action === 'prejump') f.jumpDirection = heldDirection(f);
-  for (const key of ['physical', 'special', 'big', 'dash', 'motion'] as const) {
+  for (const key of ['physical', 'special', 'big', 'dash', 'motion', 'legend'] as const) {
     if (f.buffer[key] > 0) f.buffer[key]--;
   }
 }
@@ -206,10 +215,32 @@ function startSpecial(f: Fighter, slot: SpecialSlot, events: FightEvent[], free 
   f.freeSpecial = free;
   f.target = null;
   f.contact = null;
+  if (slot === 'big') f.bigKind = 'big';
   // In the air it lasts until landing, like the air attack.
   setAction(f, slot, airborne ? 0 : moveLength(moveOf(slot, f.loadout)!));
   events.push({ type: 'special', fighter: f.id, slot });
 }
+
+/**
+ * A signature move (free: the motion's) or a legendary move (it takes all the PP there is, and hits as hard as the bar
+ * was full). Both are the big action in another form, on the ground.
+ */
+function startBig(f: Fighter, kind: 'signature' | 'legend', events: FightEvent[]) {
+  f.buffer[kind === 'signature' ? 'motion' : 'legend'] = 0;
+  f.freeSpecial = kind === 'signature';
+  f.legendPaid = kind === 'legend' ? f.pp : 0;
+  if (kind === 'legend') f.pp = 0;
+  f.bigKind = kind;
+  f.target = null;
+  f.contact = null;
+  setAction(f, 'big', moveLength(currentMoveOf(f, kind)));
+  events.push({ type: 'special', fighter: f.id, slot: 'big', kind });
+}
+
+const currentMoveOf = (f: Fighter, kind: 'signature' | 'legend') => {
+  const shape = activeBig({ loadout: f.loadout, bigKind: kind }).shape;
+  return kind === 'signature' ? signatureMove(shape) : BIG[shape];
+};
 
 /**
  * PP pays only for a special that comes out (decided after milestone 12: losing it to a hit during the charge felt
@@ -217,8 +248,9 @@ function startSpecial(f: Fighter, slot: SpecialSlot, events: FightEvent[], free 
  */
 function refundUnfired(f: Fighter) {
   if ((f.action !== 'elemental' && f.action !== 'big') || f.freeSpecial) return;
-  if (f.actionFrame > moveOf(f.action, f.loadout)!.startup) return;
-  f.pp = Math.min(PP_MAX, f.pp + (f.action === 'elemental' ? ELEMENTAL_COST : PP_MAX));
+  if (f.actionFrame > currentMove(f)!.startup) return;
+  const paid = f.action === 'elemental' ? ELEMENTAL_COST : f.bigKind === 'legend' ? f.legendPaid : PP_MAX;
+  f.pp = Math.min(PP_MAX, f.pp + paid);
 }
 
 /** A horizontal speed, adjusted by the Pokémon's speed (mobility %). Frame data never changes. */
@@ -371,7 +403,7 @@ function spawnProjectiles(state: FightState) {
           y1: f.y + p.y1,
           y2: f.y + p.y2,
           vx: dir * p.speed,
-          ...(slot === 'big' ? { form: f.loadout.big.shape } : {}),
+          ...(slot === 'big' ? { form: activeBig(f).shape } : {}),
           hit: slot === 'elemental' ? earned(f, move.hit) : move.hit,
         });
       }
@@ -385,7 +417,7 @@ function spawnProjectiles(state: FightState) {
           id: id++,
           owner: f.id,
           slot,
-          attack: { ...attack, part: b.share },
+          attack: { ...attack, part: (attack.part ?? 1) * b.share },
           x: f.x,
           halfWidth: b.halfWidth,
           y1: f.y + b.fromY,
@@ -393,7 +425,7 @@ function spawnProjectiles(state: FightState) {
           vx: f.facing * Math.round(distance / b.flight),
           vy: Math.round((b.gravity * b.flight) / 2 - b.fromY / b.flight),
           gravity: b.gravity,
-          form: f.loadout.big.shape,
+          form: activeBig(f).shape,
           hit: b.hit,
         });
       }
@@ -405,7 +437,9 @@ function spawnProjectiles(state: FightState) {
 const earned = (f: Fighter, hit: HitData): HitData => (f.freeSpecial ? { ...hit, ppGain: 0 } : hit);
 
 function specialAttack(f: Fighter, slot: 'elemental' | 'big'): AttackInfo {
-  const { power, type, category } = f.loadout[slot];
+  const { power, type, category } = slot === 'big' ? activeBig(f) : f.loadout.elemental;
+  // A legendary move hits as hard as the PP bar was full when it started (at least LEGEND_MIN of a big special).
+  if (slot === 'big' && f.bigKind === 'legend') return { power, type, category, part: Math.max(LEGEND_MIN, f.legendPaid / PP_MAX) };
   return { power, type, category };
 }
 
@@ -578,7 +612,7 @@ function applyHit(state: FightState, connection: Connection, events: FightEvent[
   defender.combo++;
   defender.bonus = null;
   defender.hp = Math.max(0, defender.hp - damage);
-  defender.buffer = { physical: 0, special: 0, big: 0, dash: 0, motion: 0 };
+  defender.buffer = { physical: 0, special: 0, big: 0, dash: 0, motion: 0, legend: 0 };
   attacker.pp = Math.min(PP_MAX, attacker.pp + hit.ppGain);
   defender.pp = Math.min(PP_MAX, defender.pp + Math.floor((damage * 100 * PP_PER_HP_PERCENT) / defender.maxHp));
   state.hitstop = Math.max(state.hitstop, hit.hitstop);

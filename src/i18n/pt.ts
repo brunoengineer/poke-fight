@@ -57,6 +57,10 @@ const base: Record<BaseKey, string> = {
   'party.maxLevel': 'Nível máximo',
   'party.elemental': 'Elemental ({keySpecial})',
   'party.big': 'Especial forte ({keyBig})',
+  'party.signature': 'Golpe exclusivo (←↓→ + {keyPhysical})',
+  'party.signatureDetail': 'Grátis · {shape}',
+  'party.legend': 'Golpe lendário (↓↓ + {keyPhysical})',
+  'party.legendDetail': 'Todo o seu PP · {shape}',
   'party.language': 'Idioma',
   'party.close': 'Fechar',
 

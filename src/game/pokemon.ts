@@ -6,6 +6,7 @@ import type { FighterSetup, Loadout } from '../fight/state';
 import { bigShape, defaultSpecials, elementalShape, movesKnownAt, type SpecialChoice } from './moves';
 import { mobility, statsAt, uniformIvs, type Stats } from './stats';
 import { xpForLevel } from './xp';
+import { legendOf, signatureOf } from './signatures';
 
 export interface Pokemon {
   speciesId: number;
@@ -55,7 +56,15 @@ function slot<T extends 'elemental' | 'big'>(slug: string, which: T): Loadout[T]
 }
 
 export function loadoutOf(p: Pokemon): Loadout {
-  return { elemental: slot(p.specials.elemental, 'elemental'), big: slot(p.specials.big, 'big') };
+  const signature = signatureOf(p.speciesId);
+  const legend = legendOf(p.speciesId, species(p.speciesId).types);
+  return {
+    elemental: slot(p.specials.elemental, 'elemental'),
+    big: slot(p.specials.big, 'big'),
+    // Only the Pokémon that have one get the key (everyone else's loadout stays exactly as it was).
+    ...(signature ? { signature } : {}),
+    ...(legend ? { legend } : {}),
+  };
 }
 
 /** Everything the fight needs from this Pokémon (PP is the fight's own: each Pokémon enters with half a bar). */

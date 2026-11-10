@@ -52,6 +52,8 @@ export interface TestApi {
   save(): Save;
   /** Where the app is: the scene, the kind of fight, and the tutorial's current step. */
   scene(): { scene: string; mode: string | null; tutorialStep: string | null };
+  /** Versus: a stand-in for a second controller, holding these buttons (a mask; null: none connected). */
+  versusPad(mask: number | null): void;
   /** Whether the clock only moves through step(). */
   manualClock: boolean;
   seed: number;

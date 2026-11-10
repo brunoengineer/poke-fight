@@ -759,6 +759,19 @@ function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView, trail: (id: 0
     ctx.strokeStyle = 'rgba(160,175,255,0.25)';
     ctx.lineWidth = 1;
     ctx.stroke();
+    // Versus: who plays this side, in their color, on the panel's outer edge.
+    if (battle.versus) {
+      const tag = t('versus.player', { n: f.id + 1 });
+      ctx.font = font(8);
+      const w = Math.ceil(ctx.measureText(tag).width) + 12;
+      const x = mirror ? left + width - w : left;
+      roundRect(ctx, x, 47, w, 12, 6);
+      ctx.fillStyle = PLAYER_COLORS[f.id];
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.fillText(tag, x + w / 2, 49);
+    }
     // A legendary: a gold frame and a crown before its name.
     const crown = f.boss ? 13 : 0;
     if (f.boss) {
@@ -870,7 +883,8 @@ function drawHud(ctx: CanvasRenderingContext2D, view: SandboxView, trail: (id: 0
   }
 
   // Player 1's switch: ready (with its key), or used until a Pokémon faints.
-  if (view.switching && battle.phase === 'fight' && battle.teams[0].filter(m => m.hp > 0).length > 1) {
+  // (Never in Versus: there is no switching there.)
+  if (view.switching && !battle.versus && battle.phase === 'fight' && battle.teams[0].filter(m => m.hp > 0).length > 1) {
     const ready = battle.switchReady;
     const text = t(ready ? 'hud.switch' : 'hud.switchUsed');
     ctx.save();
@@ -942,6 +956,8 @@ function drawPhase(ctx: CanvasRenderingContext2D, view: SandboxView, pad: boolea
     gradient.addColorStop(0, '#ffffff');
     gradient.addColorStop(1, '#ff6fae');
     outlined(ctx, t(battle.round.timeOver ? 'fight.time' : 'fight.ko'), 0, 0, gradient, '#2a0f3a', 5);
+  } else if (battle.phase === 'choose' && battle.versus) {
+    drawVersusChoose(ctx, view);
   } else if (battle.phase === 'choose') {
     const team = battle.teams[0];
     const top = 70;
@@ -982,6 +998,70 @@ function drawPhase(ctx: CanvasRenderingContext2D, view: SandboxView, pad: boolea
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
   }
   ctx.restore();
+}
+
+/** Player colors in Versus (the selection screen's too). */
+const PLAYER_COLORS = ['#ff5d6c', '#4f9dff'] as const;
+
+/**
+ * Versus: whoever lost a Pokémon picks the next one, each on their own side of the screen (player 1 left, player 2
+ * right), in their color; a side that already chose says so.
+ */
+function drawVersusChoose(ctx: CanvasRenderingContext2D, view: SandboxView) {
+  const { battle } = view;
+  const versus = battle.versus!;
+  ([0, 1] as const).forEach(side => {
+    const team = battle.teams[side];
+    const color = PLAYER_COLORS[side];
+    const width = 200;
+    const left = side === 0 ? 24 : VIEW_W - 24 - width;
+    const top = 70;
+    const choosing = versus.choosing[side];
+    // A side that didn't lose its Pokémon has nothing to choose: no box at all.
+    if (!versus.needed[side]) return;
+    const height = choosing ? 46 + team.length * 18 : 34;
+    ctx.save();
+    roundRect(ctx, left, top - 12, width, height, 9);
+    ctx.fillStyle = 'rgba(12,14,36,0.94)';
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = choosing ? 1.5 : 1;
+    ctx.globalAlpha = choosing ? 1 : 0.5;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'left';
+    ctx.font = font(10);
+    const player = t('versus.player', { n: side + 1 });
+    if (!choosing) {
+      outlined(ctx, `${player} · ${t('versus.chosen')}`, left + 12, top - 4, color, 'rgba(0,0,0,0.5)', 2);
+      ctx.restore();
+      return;
+    }
+    outlined(ctx, t('versus.choose', { player }), left + 12, top - 4, color, 'rgba(0,0,0,0.5)', 2);
+    team.forEach((member, i) => {
+      const y = top + 14 + i * 18;
+      const selected = i === versus.cursors[side];
+      const fainted = member.hp === 0;
+      if (selected) {
+        roundRect(ctx, left + 8, y - 4, width - 16, 16, 5);
+        ctx.fillStyle = `${color}55`;
+        ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.stroke();
+      }
+      ctx.font = font(9, selected ? 'bold' : 'normal');
+      ctx.fillStyle = fainted ? '#6b6f7a' : selected ? '#ffffff' : '#b9c0e0';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${selected ? '▶ ' : '  '}${member.name}`, left + 14, y);
+      ctx.textAlign = 'right';
+      ctx.fillText(fainted ? t('battle.fainted') : `${displayHp(member.hp)}/${displayHp(member.maxHp)}`, left + width - 14, y);
+    });
+    ctx.textAlign = 'center';
+    ctx.font = font(8, 'normal');
+    ctx.fillStyle = '#9aa3c7';
+    ctx.fillText(t(side === 0 ? 'versus.chooseKeys' : 'versus.choosePad'), left + width / 2, top + 18 + team.length * 18);
+    ctx.restore();
+  });
 }
 
 // ── Debug overlay (F1) ────────────────────────────────────────────────────────────────────────────────────────────

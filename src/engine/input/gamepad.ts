@@ -79,3 +79,37 @@ export function readFirstPad(): PadReading {
   if (!pad) return { mask: 0, start: false, view: false, menu: NO_MENU_PAD };
   return { mask: padMask(pad), start: pad.buttons[PAD.Start]?.pressed === true, view: pad.buttons[PAD.Back]?.pressed === true, menu: padMenu(pad) };
 }
+
+/** Every connected controller, in the browser's order (Versus: player 2 needs its own). */
+export function readPads(): PadReading[] {
+  const pads = typeof navigator.getGamepads === 'function' ? navigator.getGamepads() : [];
+  return pads.flatMap(pad =>
+    pad?.connected ? [{ mask: padMask(pad), start: pad.buttons[PAD.Start]?.pressed === true, view: pad.buttons[PAD.Back]?.pressed === true, menu: padMenu(pad) }] : [],
+  );
+}
+
+/**
+ * Who plays with what in Versus (plan.md §4.10): with two controllers, player 1 has the first (and the keyboard) and
+ * player 2 the second; with one, player 1 has the keyboard and player 2 the controller; with none, player 2 waits for
+ * one. Indexes into readPads().
+ */
+export function versusSeats(pads: number): { p1Pad: number | null; p2Pad: number | null } {
+  if (pads >= 2) return { p1Pad: 0, p2Pad: 1 };
+  if (pads === 1) return { p1Pad: null, p2Pad: 0 };
+  return { p1Pad: null, p2Pad: null };
+}
+
+/** A menu reading from an input mask (a fake controller in the browser tests). */
+export function maskMenu(mask: InputMask): MenuPad {
+  return {
+    ...NO_MENU_PAD,
+    up: (mask & Button.Up) !== 0,
+    down: (mask & Button.Down) !== 0,
+    left: (mask & Button.Left) !== 0,
+    right: (mask & Button.Right) !== 0,
+    a: (mask & Button.Confirm) !== 0,
+    b: (mask & Button.Cancel) !== 0,
+    lb: (mask & Button.Dash) !== 0,
+    rb: (mask & Button.Guard) !== 0,
+  };
+}

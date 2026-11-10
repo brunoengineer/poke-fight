@@ -521,6 +521,28 @@ signature move is a plan of its own (more for zoners, where its form reaches); i
 its form's reach. A legendary boss keeps to its own attacks (fight/boss.ts). Fight lab: tackles' share of the damage
 66% → 58%, fairness and the ladder unchanged. The endgame save has Mewtwo in Kanto's box to try one.
 
+### 4.10 Versus (milestone 16)
+
+Two players on one machine (decided 2026-11-10). From the title: **Versus**.
+
+- **Selection**: two big grids side by side (Player 1 red, Player 2 blue), each with its own cursor, moved by its own
+  device at the same time (the DOM's single focus can't do that, so the screen is built once and updated in place;
+  the state is `game/versus.ts`). Each player picks **3 Pokémon** (in fighting order; the same species can't be in a
+  team twice, both teams may share one), then presses pick again: **Ready!**. Both ready: "Fight!". Back undoes (ready,
+  then the last pick); with nothing left, Player 1 leaves. LB / RB (Q / E) jump between generations. The focused
+  Pokémon shows its types and its move of its own (signature or legendary).
+- **Who can be picked**: every species of the regions opened in the journey (Kanto's 151 without a save; Johto's
+  after Kanto's League…). All at **Lv. 100**, perfect IVs (only the Pokémon chosen differ).
+- **Devices** (`versusSeats`): two controllers: P1 the first (and the keyboard), P2 the second; one controller: P1 the
+  keyboard, P2 the controller; none: P2's panel waits ("connect a controller"). The browser tests use a stand-in
+  controller (`window.__pf.versusPad`).
+- **The fight**: the usual fight, both sides people. **No switching** (Tab says so); when a Pokémon faints, **its player
+  picks the next one** (both, if both fainted; nobody when one is left), each on their side of the screen with their
+  own input (`BattleState.versus`). The HUD tags each side "Player 1" / "Player 2". No XP, no money, nothing saved.
+- **The winner**: "Player 1 wins!" (or a draw) in the winner's color, both teams (fainted ones grey); **Choose again**
+  goes back to the selection with the same teams picked (one press each to be ready for a rematch), or the title. Esc
+  in the fight goes back to the selection too.
+
 ## 5. Progression systems
 
 - **XP**: official formula (`base_experience · level / 7`, ×1.5 for trainer battles), growth rates from the data
@@ -1006,6 +1028,7 @@ Each milestone ends with something playable, tests, and green CI.
 | 13 | ✅ **Moves by type** | Elemental specials drawn by type, big specials by type with real hits, signature moves for 11 famous Pokémon (←↓→ + attack), legendary moves (↓↓ + attack) (§4.9) |
 | 14 | ✅ **Combat depth + fight lab** | PP from damage taken, back attacks after a dash through, parry and counter, big specials that hit for about half the bar (a fifth through a guard), a smarter CPU (guards specials, parries, comes back when far behind, uses dashes), the economy repriced, and the fight lab (`npm run sim`, `docs/fight-lab.md`) |
 | 15 | ✅ **Gym trainers, CPU signature moves, balance check** | Two gym trainers before every leader in a row (no healing; potions matter); the CPU types signature and legendary moves; a measured balance pass (below) |
+| 16 | ✅ **Versus** | Two players: pick 3 Pokémon each (Lv. 100, from the regions opened in the journey) on two grids at once, fight without switching (whoever loses a Pokémon picks the next), the winner, and back to the selection; keyboard + controller or two controllers (§4.10) |
 
 Milestones 1–3 come **before** any Pokémon content on purpose: if the fight doesn't feel good with rectangles, the
 sprites won't save it.

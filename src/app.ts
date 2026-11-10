@@ -8,13 +8,17 @@ import { backdropUrl, badgeUrl, CHANSEY, HUNT_BACKDROPS, trainerClassFor, itemUr
 import { createSilentAudio, createWebAudio } from './audio/audio';
 import { fightCues, freshCues, type SoundId } from './audio/cues';
 import type { SongId } from './audio/music';
-import { readFirstPad, type MenuPad, NO_MENU_PAD } from './engine/input/gamepad';
+import { maskMenu, readFirstPad, readPads, versusSeats, type MenuPad, NO_MENU_PAD, type PadReading } from './engine/input/gamepad';
+import { freshSide, generationStarts, versusAct, versusRoster, versusTeam, type VersusAction, type VersusSide } from './game/versus';
+import { legendOf, signatureOf } from './game/signatures';
+import { renderVersusSelect, renderVersusWinner, type VersusSelectState } from './ui/screens/versus';
 import { attachKeyboard } from './engine/input/keyboard';
 import { createKeyLatch } from './engine/input/keys';
 import { createFixedStep } from './engine/loop';
 import { createRng } from './engine/rng';
 import type { Style } from './fight/ai/profiles';
-import type { TeamMember } from './fight/battle';
+import type { BattleEvent, TeamMember } from './fight/battle';
+import type { InputMask } from './fight/input';
 import { afterBattle, type ReportLine, type XpGain } from './game/after-battle';
 import { addCaught, canPlace, canRelease, canSendToBox, canTakeFromBox, place, release, sendToBox, swapInParty, takeFromBox, type Place, type Spot } from './game/box';
 import { catchValue, throwBall } from './game/capture';
@@ -97,7 +101,7 @@ type Said = Line & { speaker: string; /** The speaker's sprite (Showdown name). 
  * money), a gym leader (a badge), a wild Pokémon (hunting: XP and a chance to catch it), a Safari Zone Pokémon
  * (30 seconds, Safari Balls), and the rival tutorial.
  */
-type FightMode = 'demo' | 'trainer' | 'gym' | 'wild' | 'safari' | 'league' | 'tutorial' | 'legendary';
+type FightMode = 'demo' | 'trainer' | 'gym' | 'wild' | 'safari' | 'league' | 'tutorial' | 'legendary' | 'versus';
 type Scene = 'title' | 'story' | 'starter' | 'fight' | 'city' | 'menu';
 
 interface ResultsState {
@@ -297,6 +301,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     }
     choices.push({ label: t('title.new'), description: t('title.newText'), testid: 'new-game', icon: 'star', primary: !save, onClick: () => newGame() });
     choices.push({ label: t('title.training'), description: t('title.trainingText'), testid: 'training', icon: 'battle', onClick: startDemo });
+    choices.push({ label: t('title.versus'), description: t('title.versusText'), testid: 'versus-mode', icon: 'party', onClick: () => goVersus() });
     choices.push({ label: t('title.options'), description: t('title.optionsText'), testid: 'options', icon: 'gear', onClick: () => showOptions(goTitle) });
     renderTitle(overlayRoot, {
       subtitle: t(notice ?? 'title.subtitle'),
@@ -314,6 +319,212 @@ export function startApp(elements: AppElements, options: TestOptions) {
         : null,
       footer: t('title.footer'),
       hints: [hints.select],
+    });
+  }
+
+  // ── Versus (plan.md §4.10) ──────────────────────────────────────────────────────────────────────────────────────
+  // Two players: the selection (two grids, a cursor each), the fight (no switching; whoever lost a Pokémon picks the
+  // next), the winner, and back to the selection. Who plays with what: versusSeats (engine/input/gamepad.ts).
+
+  interface VersusRun {
+    roster: number[];
+    sides: [VersusSide, VersusSide];
+    /** The selection on screen (null while fighting or on the winner's screen). */
+    ui: { update: (state: VersusSelectState) => void } | null;
+    /** Both ready: the fight is about to start. */
+    starting: boolean;
+    /** Pads seen when the screen was drawn (it is drawn again when one connects). */
+    pads: number;
+  }
+  let versusRun: VersusRun | null = null;
+  /** The browser tests' stand-in for a second controller (test mode only). */
+  let fakePad: InputMask | null = null;
+
+  /** Every controller now, the tests' fake one last. */
+  const padsNow = (): PadReading[] => {
+    const pads = readPads();
+    return fakePad === null ? pads : [...pads, { mask: fakePad, start: false, view: false, menu: maskMenu(fakePad) }];
+  };
+
+  const versusSelecting = () => versusRun?.ui !== null && versusRun !== null && scene === 'menu';
+
+  function goVersus(keep?: [VersusSide, VersusSide]) {
+    leaveFight();
+    scene = 'menu';
+    show();
+    backdrop.set({ image: 'spl', theme: '#8f6bff', mode: 'interior' });
+    const roster = versusRoster(save?.champions ?? []);
+    versusRun = { roster, sides: keep ?? [freshSide(), freshSide()], ui: null, starting: false, pads: padsNow().length };
+    drawVersus();
+  }
+
+  function drawVersus() {
+    const run = versusRun;
+    if (!run) return;
+    run.pads = padsNow().length;
+    const seats = versusSeats(run.pads);
+    const ownMoveOf = (id: number) => {
+      const sig = signatureOf(id);
+      if (sig) return t('versus.signature', { move: sig.name });
+      const legend = legendOf(id, species(id).types);
+      return legend ? t('versus.legend', { move: t(`boss.attack.${legend.attack}` as MessageKey) }) : null;
+    };
+    run.ui = renderVersusSelect(overlayRoot, {
+      title: t('versus.title'),
+      entries: run.roster.map(id => ({
+        id,
+        name: species(id).name,
+        sprite: spriteUrl(id),
+        types: species(id).types.map(type => ({ type, label: t(`type.${type}` as MessageKey) })),
+        own: ownMoveOf(id),
+      })),
+      generations: generationStarts(run.roster).map((start, i) => ({ start, label: t('versus.gen', { n: i + 1 }) })),
+      players: [
+        {
+          name: t('versus.player', { n: 1 }),
+          device: seats.p1Pad === null ? t('versus.keyboard') : `${t('versus.keyboard')} · ${t('versus.pad', { n: seats.p1Pad + 1 })}`,
+          hint: t('versus.hintKeys'),
+        },
+        {
+          name: t('versus.player', { n: 2 }),
+          device: seats.p2Pad === null ? null : t('versus.pad', { n: seats.p2Pad + 1 }),
+          hint: t('versus.hintPad'),
+        },
+      ],
+      labels: {
+        team: t('versus.team'),
+        ready: t('versus.ready'),
+        pressReady: t('versus.pressReady'),
+        waiting: t('versus.waiting'),
+        level: t('versus.level'),
+        fight: t('versus.fight'),
+      },
+      back: { label: t('versus.back'), testid: 'vs-back', icon: 'exit', onClick: goTitle },
+      hints: [],
+      onCell: (side, index) => {
+        if (!versusRun || versusRun.starting) return;
+        versusRun.sides[side] = { ...versusRun.sides[side], cursor: index };
+        versusAction(side, 'confirm');
+      },
+    });
+    run.ui.update({ sides: run.sides, starting: run.starting });
+  }
+
+  /** One player's action on the selection (from its keyboard or controller). */
+  function versusAction(side: 0 | 1, action: VersusAction) {
+    const run = versusRun;
+    if (!run || !run.ui || run.starting) return;
+    // Player 2 can't act without a controller (its panel waits).
+    if (side === 1 && versusSeats(run.pads).p2Pad === null) return;
+    const next = versusAct(run.sides[side], action, run.roster);
+    if (next === 'leave') {
+      if (side === 0) goTitle();
+      return;
+    }
+    if (next === run.sides[side]) return;
+    run.sides[side] = next;
+    audio.play(action === 'confirm' || action === 'back' ? 'confirm' : 'select');
+    if (run.sides[0].ready && run.sides[1].ready) {
+      run.starting = true;
+      audio.play('ballThrow');
+      window.setTimeout(startVersusFight, 1100);
+    }
+    run.ui.update({ sides: run.sides, starting: run.starting });
+  }
+
+  function startVersusFight() {
+    const run = versusRun;
+    if (!run || !run.starting) return;
+    run.ui = null;
+    run.starting = false;
+    enterFight('versus', versusTeam(run.sides[0].picks), versusTeam(run.sides[1].picks), {
+      versus: true,
+      stage: { id: 'stadium', backdrop: 'spl' },
+      rivalLook: LOOKS.rival,
+    });
+  }
+
+  /** The battle is over: the winner's screen. */
+  function showVersusWinner() {
+    const run = versusRun;
+    if (!sandbox || !run) return goTitle();
+    const battle = sandbox.view().battle;
+    scene = 'menu';
+    show();
+    const teamOf = (side: 0 | 1) => ({
+      label: t('versus.player', { n: side + 1 }),
+      team: battle.teams[side].map(m => ({ sprite: spriteUrl(m.speciesId ?? 0), name: m.name, fainted: m.hp === 0 })),
+    });
+    const winner = battle.winner === 'draw' || battle.winner === null ? null : battle.winner;
+    renderVersusWinner(overlayRoot, {
+      title: t('versus.title'),
+      headline: winner === null ? t('versus.draw') : t('versus.wins', { player: t('versus.player', { n: winner + 1 }) }),
+      color: winner === 0 ? '#ff5d6c' : winner === 1 ? '#4f9dff' : '#ffcf4a',
+      winner: winner === null ? teamOf(0) : teamOf(winner),
+      loser: winner === null ? teamOf(1) : teamOf(winner === 0 ? 1 : 0),
+      buttons: [
+        // Back to the selection, the same teams picked (not ready): a rematch is one press away.
+        { label: t('versus.again'), testid: 'vs-again', icon: 'swap', primary: true, onClick: () => goVersus(keepPicks(run)) },
+        { label: t('versus.toTitle'), testid: 'vs-title', icon: 'exit', back: true, onClick: goTitle },
+      ],
+      hints: [hints.select, { pad: 'b', key: 'Esc', label: t('versus.toTitle') }],
+    });
+  }
+
+  const keepPicks = (run: VersusRun): [VersusSide, VersusSide] => [
+    { ...run.sides[0], ready: false },
+    { ...run.sides[1], ready: false },
+  ];
+
+  /** The keyboard on the selection: player 1. */
+  const VERSUS_KEYS: Record<string, VersusAction> = {
+    ArrowUp: 'up',
+    KeyW: 'up',
+    ArrowDown: 'down',
+    KeyS: 'down',
+    ArrowLeft: 'left',
+    KeyA: 'left',
+    ArrowRight: 'right',
+    KeyD: 'right',
+    KeyJ: 'confirm',
+    Enter: 'confirm',
+    KeyL: 'back',
+    Escape: 'back',
+    Backspace: 'back',
+    KeyQ: 'prevGen',
+    KeyE: 'nextGen',
+  };
+
+  /** Controllers on the selection: each seat's own, directions repeating while held (the grids are long). */
+  const versusPadState: { before: MenuPad; held: Record<string, number> }[] = [
+    { before: NO_MENU_PAD, held: {} },
+    { before: NO_MENU_PAD, held: {} },
+  ];
+  function versusPads() {
+    const run = versusRun;
+    if (!run) return;
+    const pads = padsNow();
+    // A controller connected (or gone): the panels say who plays with what.
+    if (pads.length !== run.pads && run.ui) drawVersus();
+    const seats = versusSeats(pads.length);
+    ([seats.p1Pad, seats.p2Pad] as const).forEach((index, side) => {
+      const state = versusPadState[side];
+      const menu = index === null ? NO_MENU_PAD : pads[index].menu;
+      const actions: VersusAction[] = [];
+      for (const direction of ['up', 'down', 'left', 'right'] as const) {
+        const frames = menu[direction] ? (state.held[direction] ?? 0) + 1 : 0;
+        state.held[direction] = frames;
+        // Once on the press, then every few frames after a moment held.
+        if (frames === 1 || (frames > 14 && frames % 4 === 0)) actions.push(direction);
+      }
+      const edge = (button: keyof MenuPad) => menu[button] && !state.before[button];
+      if (edge('a')) actions.push('confirm');
+      if (edge('b')) actions.push('back');
+      if (edge('lb')) actions.push('prevGen');
+      if (edge('rb')) actions.push('nextGen');
+      state.before = menu;
+      if (actions.length) input.usePad();
+      for (const action of actions) versusAction(side as 0 | 1, action);
     });
   }
 
@@ -1292,6 +1503,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
     stage?: StageSpec;
     /** Who stands on the opponent's side (none for a wild Pokémon, which leaps in by itself). */
     rivalLook?: TrainerLook | null;
+    /** Two players (Versus): player 2's input comes from its own device, no CPU. */
+    versus?: boolean;
   }
 
   /** `?entrance=0` (the browser tests' default) skips the trainers throwing their Poké Balls. */
@@ -1329,6 +1542,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
       trainers,
       // The training tools (infinite PP, switching the opponent…) are for the practice demo only, never the journey.
       tools: next === 'demo',
+      versus: setup.versus,
     });
     preloadSprites([...player, ...opponents].map(member => member.speciesId));
     renderer.reset();
@@ -1815,7 +2029,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
   /** Esc during a fight: back to where it was started from (running away; not in the tutorial or the League). */
   function leaveCurrentFight() {
     if (scene !== 'fight' || modal !== 'none' || mode === 'tutorial' || mode === 'league') return;
-    if (mode === 'demo') goTitle();
+    if (mode === 'versus' && versusRun) goVersus(keepPicks(versusRun));
+    else if (mode === 'demo') goTitle();
     else if (mode === 'safari') showSafari();
     else {
       gymRun = null;
@@ -2019,6 +2234,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
 
   function battleFinished() {
     if (!sandbox) return;
+    if (mode === 'versus') return showVersusWinner();
     const battle = sandbox.view().battle;
     const outcome = battle.winner === 0 ? 'win' : battle.winner === 1 ? 'loss' : 'draw';
     const finished = mode;
@@ -2418,6 +2634,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     if (result === 'ok') audio.play('select');
     else if (result === 'used') toast(t('switch.used'));
     else if (result === 'alone') toast(t('switch.alone'));
+    else if (result === 'versus') toast(t('versus.noSwitch'));
   }
 
   /** A short message over the fight that fades by itself. */
@@ -2466,6 +2683,15 @@ export function startApp(elements: AppElements, options: TestOptions) {
   const ARROWS: Record<string, Direction> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
   window.addEventListener('keydown', event => {
     if (overlayRoot.hidden || event.ctrlKey || event.altKey || event.metaKey) return;
+    // The Versus selection: the keyboard is player 1's.
+    if (versusSelecting()) {
+      const action = VERSUS_KEYS[event.code];
+      if (action) {
+        event.preventDefault();
+        versusAction(0, action);
+      }
+      return;
+    }
     if (event.target instanceof HTMLElement && event.target.matches('input, select, textarea')) return;
     const direction = ARROWS[event.code];
     if (direction) {
@@ -2482,10 +2708,19 @@ export function startApp(elements: AppElements, options: TestOptions) {
   let cueMemory = freshCues();
   const simulate = () => {
     if (scene !== 'fight' || modal !== 'none' || !sandbox) return;
-    const pad = readFirstPad().mask;
-    // The fight's own hints (the switch menu) follow the device in use.
-    if (pad !== 0) input.usePad();
-    const events = sandbox.tick(keys.sample() | pad);
+    let events: BattleEvent[];
+    if (mode === 'versus') {
+      // Each player its own device (versusSeats).
+      const pads = padsNow();
+      const seats = versusSeats(pads.length);
+      const p1 = keys.sample() | (seats.p1Pad === null ? 0 : pads[seats.p1Pad].mask);
+      events = sandbox.tick(p1, seats.p2Pad === null ? 0 : pads[seats.p2Pad].mask);
+    } else {
+      const pad = readFirstPad().mask;
+      // The fight's own hints (the switch menu) follow the device in use.
+      if (pad !== 0) input.usePad();
+      events = sandbox.tick(keys.sample() | pad);
+    }
     const view = sandbox.view();
     renderer.onTick(view, events);
     const cues = fightCues(cueMemory, { fighters: view.battle.round.fighters, entrance: view.entrance, trainers: view.trainers }, events);
@@ -2521,7 +2756,10 @@ export function startApp(elements: AppElements, options: TestOptions) {
   function onAnimationFrame(now: number) {
     const pad = readFirstPad();
     // In menus: the d-pad moves on screen, A presses, B goes back, X / Y / LB / RB are the screen's shortcuts (Y: party).
-    if (!overlayRoot.hidden) {
+    // The Versus selection reads every controller itself (two cursors at once).
+    const selecting = versusSelecting();
+    if (selecting) versusPads();
+    if (!overlayRoot.hidden && !selecting) {
       const pressed = (button: keyof MenuPad) => pad.menu[button] && !padBefore[button];
       const any = (Object.keys(pad.menu) as (keyof MenuPad)[]).some(pressed) || (pad.start && !startWasHeld);
       if (any) input.usePad();
@@ -2545,7 +2783,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     viewWasHeld = pad.view;
     padBefore = pad.menu;
     // A controller's Start presses the open menu's main button.
-    if (pad.start && !startWasHeld && !overlayRoot.hidden) pressFocusedOrPrimary();
+    if (pad.start && !startWasHeld && !overlayRoot.hidden && !selecting) pressFocusedOrPrimary();
     startWasHeld = pad.start;
     audio.music(songNow());
     if (!options.manualClock && last !== undefined) clock.advance(now - last);
@@ -2586,6 +2824,9 @@ export function startApp(elements: AppElements, options: TestOptions) {
       },
       save: () => structuredClone(save) as Save,
       scene: () => ({ scene, mode: scene === 'fight' ? mode : null, tutorialStep: tutorial?.step() ?? null }),
+      versusPad(mask) {
+        fakePad = mask;
+      },
       manualClock: options.manualClock,
       seed: options.seed,
     });

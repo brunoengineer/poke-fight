@@ -8,6 +8,9 @@
 //              - 'switch':  it asked to switch mid-round (requestSwitch); Guard / B / Esc or the same Pokémon cancels.
 //   over   → one team has no Pokémon left
 //
+// Versus (two players, plan.md §4.10): no switching at all, and the side that lost a Pokémon picks the next one,
+// each player with its own input (both, if both fainted). Nobody picks when only one is left.
+//
 // Switching (decided after milestone 11): player 1 can switch once mid-round; after that, only once a Pokémon has
 // fainted (on either side) can it switch again. A switch doesn't start a new round: the clock keeps running, the
 // opponent stays where it is (doing what it was doing), and the new Pokémon comes in where the old one stood.
@@ -51,6 +54,8 @@ export interface BattleState {
   roundFrames: number;
   /** For each opponent (by team index), player 1's Pokémon that fought it: they share its XP (game/rewards.ts). */
   fought: number[][];
+  /** Two players (null otherwise): who must pick their next Pokémon, their cursors, and player 2's held input. */
+  versus: { choosing: [boolean, boolean]; cursors: [number, number]; held: InputMask; /** Who had to choose after this KO. */ needed: [boolean, boolean] } | null;
 }
 
 export type BattleEvent =
@@ -70,6 +75,8 @@ const alive = (team: readonly TeamMember[]) => team.flatMap((m, i) => (m.hp > 0 
 export interface BattleOptions {
   /** Each round's timer (default: 99 seconds; the Safari Zone is shorter). */
   roundFrames?: number;
+  /** Two players: no switching, and each side picks its own next Pokémon. */
+  versus?: boolean;
 }
 
 export function createBattle(teams: readonly [readonly TeamMember[], readonly TeamMember[]], options: BattleOptions = {}): BattleState {
@@ -93,6 +100,7 @@ export function createBattle(teams: readonly [readonly TeamMember[], readonly Te
     winner: null,
     roundFrames,
     fought: copy[1].map(() => []),
+    versus: options.versus ? { choosing: [false, false], cursors: [active[0], active[1]], held: 0, needed: [false, false] } : null,
   };
   noteWhoFights(battle);
   return battle;
@@ -113,6 +121,12 @@ export function battleStep(previous: BattleState, inputs: readonly [InputMask, I
   const p1 = cleanDirections(inputs[0]);
   const pressed = p1 & ~battle.held;
   battle.held = p1;
+  let pressed2 = 0;
+  if (battle.versus) {
+    const p2 = cleanDirections(inputs[1]);
+    pressed2 = p2 & ~battle.versus.held;
+    battle.versus.held = p2;
+  }
 
   switch (battle.phase) {
     case 'fight': {
@@ -134,6 +148,10 @@ export function battleStep(previous: BattleState, inputs: readonly [InputMask, I
       break;
     }
     case 'choose': {
+      if (battle.versus) {
+        chooseVersus(battle, [pressed, pressed2], events);
+        break;
+      }
       const choices = alive(battle.teams[0]);
       const at = Math.max(0, choices.indexOf(battle.cursor));
       const switching = battle.chooseReason === 'switch';
@@ -169,6 +187,28 @@ export function battleStep(previous: BattleState, inputs: readonly [InputMask, I
   return { battle, events };
 }
 
+/**
+ * Versus: each player still choosing moves its cursor over its team's Pokémon able to fight (up / down) and confirms
+ * (the attack button or A / Enter). When nobody is choosing any more, the next round starts.
+ */
+function chooseVersus(battle: BattleState, pressed: [InputMask, InputMask], events: BattleEvent[]) {
+  const versus = battle.versus!;
+  for (const side of [0, 1] as const) {
+    if (!versus.choosing[side]) continue;
+    const choices = alive(battle.teams[side]);
+    const at = Math.max(0, choices.indexOf(versus.cursors[side]));
+    const press = pressed[side];
+    if (has(press, Button.Physical) || has(press, Button.Confirm)) {
+      battle.active[side] = versus.cursors[side];
+      versus.choosing[side] = false;
+    } else {
+      if (has(press, Button.Down)) versus.cursors[side] = choices[(at + 1) % choices.length];
+      if (has(press, Button.Up)) versus.cursors[side] = choices[(at - 1 + choices.length) % choices.length];
+    }
+  }
+  if (!versus.choosing[0] && !versus.choosing[1]) startRound(battle, events, battle.roundFrames);
+}
+
 function saveHp(battle: BattleState) {
   for (const side of [0, 1] as const) {
     battle.teams[side][battle.active[side]].hp = battle.round.fighters[side].hp;
@@ -181,6 +221,27 @@ function afterKo(battle: BattleState, events: BattleEvent[]) {
     battle.phase = 'over';
     battle.winner = left[0].length === 0 && left[1].length === 0 ? 'draw' : left[0].length === 0 ? 1 : 0;
     events.push({ type: 'battleOver' });
+    return;
+  }
+  if (battle.versus) {
+    // Each side that lost its Pokémon picks the next one (nothing to pick with only one left).
+    const choosing = ([0, 1] as const).map(side => battle.teams[side][battle.active[side]].hp === 0) as [boolean, boolean];
+    for (const side of [0, 1] as const) {
+      if (choosing[side] && left[side].length === 1) {
+        battle.active[side] = left[side][0];
+        choosing[side] = false;
+      }
+      battle.versus.cursors[side] = choosing[side] ? left[side][0] : battle.active[side];
+    }
+    battle.versus.choosing = choosing;
+    battle.versus.needed = [choosing[0], choosing[1]];
+    if (choosing[0] || choosing[1]) {
+      battle.phase = 'choose';
+      battle.phaseFrame = 0;
+      battle.chooseReason = 'fainted';
+      return;
+    }
+    startRound(battle, events, battle.roundFrames);
     return;
   }
   // A faint (on either side) gives player 1 its switch back.
@@ -203,7 +264,9 @@ function afterKo(battle: BattleState, events: BattleEvent[]) {
  * Player 1 asks to switch mid-round: the fight pauses on the choose screen. Refused (and nothing changes) when the
  * switch was already used since the last faint, when nobody else can fight, or outside a running round.
  */
-export function requestSwitch(previous: BattleState): { battle: BattleState; result: 'ok' | 'used' | 'alone' | 'busy' } {
+export function requestSwitch(previous: BattleState): { battle: BattleState; result: 'ok' | 'used' | 'alone' | 'busy' | 'versus' } {
+  // No switching in Versus: who fights is only picked after a faint.
+  if (previous.versus) return { battle: previous, result: 'versus' };
   if (previous.phase !== 'fight' || previous.round.winner !== null) return { battle: previous, result: 'busy' };
   if (alive(previous.teams[0]).length < 2) return { battle: previous, result: 'alone' };
   if (!previous.switchReady) return { battle: previous, result: 'used' };

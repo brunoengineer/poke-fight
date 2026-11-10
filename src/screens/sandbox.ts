@@ -102,11 +102,11 @@ export interface SandboxView {
 }
 
 export interface Sandbox {
-  /** Simulates one frame with player 1's input. Returns that frame's events. */
-  tick(p1: InputMask): BattleEvent[];
+  /** Simulates one frame with player 1's input (and, in Versus, player 2's). Returns that frame's events. */
+  tick(p1: InputMask, p2?: InputMask): BattleEvent[];
   reset(): void;
   /** Player 1 asks to switch Pokémon mid-round (the battle's rules decide; never during the entrance). */
-  trySwitch(): 'ok' | 'used' | 'alone' | 'busy';
+  trySwitch(): 'ok' | 'used' | 'alone' | 'busy' | 'versus';
   /** Back to the fight from the switch menu (Esc). Returns false when no switch menu is open. */
   cancelSwitch(): boolean;
   /** A new battle with this player team (after the party changed: XP, evolution, specials, healing). */
@@ -119,6 +119,8 @@ export interface Sandbox {
 }
 
 export interface SandboxOptions {
+  /** Two players (plan.md §4.10): player 2 is a person too (tick's second input), no switching. */
+  versus?: boolean;
   player?: TeamMember[];
   opponentTeam?: TeamMember[];
   opponent?: Opponent;
@@ -158,7 +160,7 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
   let player = options.player ?? PLAYER_TEAM;
   const opponentTeam = (options.opponentTeam ?? OPPONENT_TEAM).map(m => (options.boss ? makeBoss(m, options.boss) : m));
   const seed = options.seed ?? 1;
-  const newBattle = () => createBattle([player, opponentTeam], { roundFrames: options.roundFrames });
+  const newBattle = () => createBattle([player, opponentTeam], { roundFrames: options.roundFrames, versus: options.versus });
 
   let battle = newBattle();
   let history: HistoryEntry[] = [];
@@ -184,7 +186,9 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
   const director = options.director ?? null;
   const tools = options.tools ?? director === null;
 
+  let human2: InputMask = 0;
   const player2Input = (): InputMask => {
+    if (options.versus) return human2;
     if (director) return battle.phase === 'fight' ? director.input(battle.round) : 0;
     if (!cpu) return dummyInput(opponent as DummyMode, battle.round.frame + 1);
     // The CPU only plays during the fight itself (not on the KO pause or the menus).
@@ -195,7 +199,8 @@ export function createSandbox(options: SandboxOptions = {}): Sandbox {
   };
 
   return {
-    tick(p1) {
+    tick(p1, p2 = 0) {
+      human2 = p2;
       // While the trainers throw their Poké Balls, the fight waits (inputs do nothing).
       if (entrance) {
         entrance = entrance.frame + 1 >= ENTRANCE.total ? null : { ...entrance, frame: entrance.frame + 1 };

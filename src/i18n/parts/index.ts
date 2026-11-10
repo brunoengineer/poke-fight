@@ -9,7 +9,8 @@ import * as johto from './johto';
 import * as motion from './motion';
 import * as regions from './regions';
 import * as sinnoh from './sinnoh';
+import * as versus from './versus';
 
-export const partsEn = { ...items.en, ...boss.en, ...regions.en, ...johto.en, ...hoenn.en, ...sinnoh.en, ...motion.en, ...gyms.en };
+export const partsEn = { ...items.en, ...boss.en, ...regions.en, ...johto.en, ...hoenn.en, ...sinnoh.en, ...motion.en, ...gyms.en, ...versus.en };
 
-export const partsPt: Record<keyof typeof partsEn, string> = { ...items.pt, ...boss.pt, ...regions.pt, ...johto.pt, ...hoenn.pt, ...sinnoh.pt, ...motion.pt, ...gyms.pt };
+export const partsPt: Record<keyof typeof partsEn, string> = { ...items.pt, ...boss.pt, ...regions.pt, ...johto.pt, ...hoenn.pt, ...sinnoh.pt, ...motion.pt, ...gyms.pt, ...versus.pt };

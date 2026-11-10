@@ -214,3 +214,55 @@ describe('battle', () => {
     expect(after.teams[0][0].hp).toBe(after.round.fighters[0].hp);
   });
 });
+
+describe('versus (two players)', () => {
+  /** Player 2's Pokémon have so little HP that one tackle knocks each out. */
+  const versus = () => createBattle([team('A', 3), team('B', 3, 10)], { versus: true });
+  /** Runs until the first KO's pause is over (player 1 brawls, player 2 stands). */
+  const firstKo = () => {
+    let battle = versus();
+    for (let i = 1; i <= 400 && battle.phase !== 'choose'; i++) battle = battleStep(battle, [brawl(i), 0]).battle;
+    return battle;
+  };
+
+  it('no switching: Tab does nothing', () => {
+    expect(requestSwitch(versus()).result).toBe('versus');
+  });
+
+  it('the side that lost its Pokémon picks the next one, with its own input; the other side does not choose', () => {
+    let battle = firstKo();
+    expect(battle.phase).toBe('choose');
+    expect(battle.versus!.choosing).toEqual([false, true]);
+    // Player 1's presses do nothing for player 2.
+    battle = battleStep(battle, [Down, 0]).battle;
+    battle = battleStep(battle, [Physical, 0]).battle;
+    expect(battle.phase).toBe('choose');
+    // Player 2: down (to its third), then confirm.
+    expect(battle.versus!.cursors[1]).toBe(1);
+    battle = battleStep(battle, [0, Down]).battle;
+    battle = battleStep(battle, [0, 0]).battle;
+    expect(battle.versus!.cursors[1]).toBe(2);
+    battle = battleStep(battle, [0, Physical]).battle;
+    expect(battle.phase).toBe('fight');
+    expect(battle.active).toEqual([0, 2]);
+    expect(battle.round.fighters[1].name).toBe('B3');
+  });
+
+  it('with only one Pokémon left, nobody has to pick: the round just starts', () => {
+    const battle = createBattle([team('A', 1), team('B', 2, 10)], { versus: true });
+    battle.teams[1][1].hp = 0;
+    battle.teams[1].push(member('B9', 10));
+    let b = battle;
+    // Only B1 and B9 alive: after B1 faints, B9 is the only one, so it comes in by itself.
+    b.teams[1].splice(1, 1);
+    for (let i = 1; i <= 400 && b.rounds === 1; i++) b = battleStep(b, [brawl(i), 0]).battle;
+    expect(b.phase).toBe('fight');
+    expect(b.round.fighters[1].name).toBe('B9');
+  });
+
+  it('the last Pokémon down ends it', () => {
+    let battle = createBattle([team('A', 1), team('B', 1, 10)], { versus: true });
+    for (let i = 1; i <= 400 && battle.phase !== 'over'; i++) battle = battleStep(battle, [brawl(i), 0]).battle;
+    expect(battle.winner).toBe(0);
+  });
+});

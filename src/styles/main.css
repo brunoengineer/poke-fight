@@ -5539,3 +5539,473 @@ html[data-test] *::after {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
   pointer-events: none;
 }
+
+/* ── Versus ───────────────────────────────────────────────────────────────────────────────────────────────────── */
+
+.versus-screen {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 1.6cqh;
+}
+
+.vs-head {
+  display: grid;
+  justify-items: center;
+}
+
+.vs-title {
+  margin: 0;
+  font-size: 6cqh;
+  letter-spacing: 0.08em;
+  background: linear-gradient(90deg, #ff8a95, #ffffff 45%, #ffffff 55%, #8fc0ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0.5cqh 1.4cqh rgba(0, 0, 0, 0.5));
+}
+
+.vs-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8cqh minmax(0, 1fr);
+  min-height: 0;
+}
+
+.vs-mid {
+  display: grid;
+  place-items: center;
+}
+
+.vs-emblem {
+  display: grid;
+  place-items: center;
+  width: 9cqh;
+  height: 9cqh;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #ffd25e 45%, #e08a1e);
+  color: var(--ink);
+  font-size: 4cqh;
+  font-style: italic;
+  box-shadow: 0 0 0 0.5cqh rgba(255, 255, 255, 0.25), 0 0 5cqh color-mix(in srgb, var(--gold) 55%, transparent);
+  animation: vs-pulse 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes vs-pulse {
+  to {
+    transform: scale(1.08) rotate(-4deg);
+  }
+}
+
+.vs-panel {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  gap: 1.2cqh;
+  min-height: 0;
+  padding: 1.8cqh 2cqh 1.4cqh;
+  border-radius: 2.4cqh;
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--pc) 26%, transparent), transparent 45%),
+    var(--glass-strong);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pc) 45%, transparent), 0 2cqh 5cqh rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  transition: box-shadow 200ms;
+}
+
+.vs-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1cqh;
+}
+
+.vs-player {
+  font-size: 4.2cqh;
+  font-style: italic;
+  color: var(--pc);
+  text-shadow: 0 0 2.4cqh color-mix(in srgb, var(--pc) 60%, transparent);
+}
+
+.vs-device {
+  padding: 0.5cqh 1.2cqh;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.1);
+  font: 700 1.5cqh/1 var(--body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* The team: three slots, the picked Pokemon standing on them. */
+.vs-team {
+  display: grid;
+  grid-template-columns: auto repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 1.2cqh;
+}
+
+.vs-team .label {
+  writing-mode: vertical-rl;
+  rotate: 180deg;
+  color: var(--faint);
+}
+
+.vs-slot {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: end;
+  height: 13cqh;
+  border: 0.25cqh dashed rgba(255, 255, 255, 0.18);
+  border-radius: 1.8cqh;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.vs-slot::before {
+  content: attr(data-n);
+  position: absolute;
+  top: 0.8cqh;
+  left: 1cqh;
+  font: 800 italic 2.2cqh/1 var(--display);
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.vs-slot.filled {
+  border: 0;
+  background: radial-gradient(70% 55% at 50% 80%, color-mix(in srgb, var(--pc) 45%, transparent), transparent 70%), rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pc) 55%, transparent);
+  animation: pop 320ms var(--ease-pop) both;
+}
+
+.vs-slot.filled::before {
+  color: var(--pc);
+}
+
+.vs-slot-sprite {
+  width: 12cqh;
+  height: 12cqh;
+  margin-bottom: -2.4cqh;
+  filter: drop-shadow(0 0.6cqh 0.5cqh rgba(0, 0, 0, 0.45));
+}
+
+.vs-slot small {
+  position: relative;
+  margin-bottom: 0.6cqh;
+  font: 800 italic 1.7cqh/1 var(--display);
+  text-transform: uppercase;
+}
+
+/* The Pokemon under the cursor. */
+.vs-focus {
+  display: flex;
+  align-items: center;
+  gap: 1.2cqh;
+  min-height: 9cqh;
+  padding: 0 1cqh;
+  border-radius: 1.6cqh;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.vs-focus-sprite {
+  width: 11cqh;
+  height: 11cqh;
+  margin: -1.4cqh -0.6cqh;
+}
+
+.vs-focus-text {
+  display: grid;
+  gap: 0.6cqh;
+}
+
+.vs-focus-text strong {
+  font-size: 3cqh;
+  font-style: italic;
+  text-transform: uppercase;
+}
+
+.vs-own {
+  font: 700 1.5cqh/1 var(--body);
+  color: var(--gold);
+}
+
+/* The grid of every Pokemon this player can pick. */
+.vs-grid-wrap {
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: none;
+  border-radius: 1.4cqh;
+  mask-image: linear-gradient(transparent, #000 2cqh, #000 calc(100% - 2cqh), transparent);
+}
+
+.vs-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: 0.6cqh;
+  padding: 1.4cqh 0.4cqh;
+}
+
+.vs-gen {
+  grid-column: 1 / -1;
+  margin: 0.8cqh 0 0.2cqh;
+  font: 800 1.4cqh/1 var(--body);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.vs-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 1.2cqh;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition:
+    transform 120ms var(--ease-pop),
+    background 120ms;
+}
+
+.vs-cell-sprite {
+  width: 125%;
+  height: 125%;
+  margin: -12%;
+  pointer-events: none;
+}
+
+.vs-cell.cursor {
+  z-index: 1;
+  background: color-mix(in srgb, var(--pc) 35%, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 0 0 0.45cqh var(--pc), 0 0 2.4cqh color-mix(in srgb, var(--pc) 70%, transparent);
+  transform: scale(1.12);
+}
+
+.vs-cell.picked .vs-cell-sprite {
+  filter: drop-shadow(0 0 0.6cqh var(--pc));
+}
+
+.vs-cell-mark:not(:empty) {
+  position: absolute;
+  top: -0.6cqh;
+  right: -0.6cqh;
+  display: grid;
+  place-items: center;
+  width: 2.6cqh;
+  height: 2.6cqh;
+  border-radius: 50%;
+  background: var(--pc);
+  color: #fff;
+  font: 800 1.5cqh/1 var(--body);
+  box-shadow: 0 0.3cqh 0.8cqh rgba(0, 0, 0, 0.4);
+}
+
+.vs-panel-hint {
+  margin: 0;
+  text-align: center;
+  font: 600 1.6cqh/1.3 var(--body);
+  color: var(--dim);
+}
+
+.vs-panel.full .vs-panel-hint {
+  color: var(--gold);
+  font-weight: 800;
+  animation: vs-blink 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes vs-blink {
+  to {
+    opacity: 0.55;
+  }
+}
+
+/* Ready: the panel glows and a stamp drops on it. */
+.vs-stamp {
+  position: absolute;
+  inset: 40% 8% auto;
+  display: none;
+  padding: 1.4cqh;
+  border: 0.5cqh solid var(--pc);
+  border-radius: 1.6cqh;
+  background: rgba(8, 10, 26, 0.88);
+  color: var(--pc);
+  font: 900 italic 6cqh/1 var(--display);
+  text-align: center;
+  text-transform: uppercase;
+  rotate: -6deg;
+  box-shadow: 0 0 5cqh color-mix(in srgb, var(--pc) 55%, transparent);
+}
+
+.vs-panel.ready {
+  box-shadow: inset 0 0 0 0.4cqh var(--pc), 0 0 5cqh color-mix(in srgb, var(--pc) 45%, transparent);
+}
+
+.vs-panel.ready .vs-stamp {
+  display: block;
+  animation: vs-stamp 360ms var(--ease-pop) both;
+}
+
+@keyframes vs-stamp {
+  from {
+    opacity: 0;
+    transform: scale(2);
+  }
+}
+
+/* Nobody on this side yet. */
+.vs-join {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 4cqh;
+  background: rgba(6, 8, 20, 0.78);
+  backdrop-filter: blur(0.6cqh);
+  text-align: center;
+}
+
+.vs-join strong {
+  font-size: 3.2cqh;
+  font-style: italic;
+  color: var(--pc);
+  animation: vs-blink 1s ease-in-out infinite alternate;
+}
+
+.vs-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Both ready: "Fight!" across the screen before the battle. */
+.vs-fight {
+  position: absolute;
+  inset: 40% 0 auto;
+  display: none;
+  padding: 2cqh 0;
+  background: linear-gradient(90deg, transparent, rgba(8, 10, 26, 0.92) 20%, rgba(8, 10, 26, 0.92) 80%, transparent);
+  color: var(--gold);
+  font-size: 10cqh;
+  font-style: italic;
+  text-align: center;
+  text-transform: uppercase;
+  text-shadow: 0 0 4cqh color-mix(in srgb, var(--gold) 70%, transparent);
+}
+
+.versus-screen.starting .vs-fight {
+  display: block;
+  animation: vs-fight 500ms var(--ease-pop) both;
+}
+
+@keyframes vs-fight {
+  from {
+    opacity: 0;
+    letter-spacing: 0.6em;
+  }
+}
+
+/* ── Versus: the winner ── */
+
+.versus-winner-screen {
+  display: grid;
+  grid-template-rows: auto auto auto auto 1fr;
+  justify-items: center;
+  gap: 2.4cqh;
+  overflow: hidden;
+}
+
+.vs-rays {
+  position: absolute;
+  inset: -40%;
+  z-index: -1;
+  background: repeating-conic-gradient(from 0deg at 50% 45%, color-mix(in srgb, var(--theme) 13%, transparent) 0 8deg, transparent 8deg 18deg);
+  /* Strong in the middle, gone at the edges: the light is on the winner, not on the whole screen. */
+  mask-image: radial-gradient(closest-side at 50% 45%, #000 20%, transparent 100%);
+  animation: vs-spin 40s linear infinite;
+}
+
+.vs-crown {
+  width: 7cqh;
+  height: 7cqh;
+  margin: 3cqh 0 -2cqh;
+  color: var(--theme);
+  filter: drop-shadow(0 0 2cqh color-mix(in srgb, var(--theme) 70%, transparent));
+  animation: pop 500ms var(--ease-pop) 200ms both;
+}
+
+.versus-winner-screen .vs-foot {
+  justify-self: stretch;
+  align-self: end;
+}
+
+.vs-result .label {
+  font: 800 1.6cqh/1 var(--body);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+@keyframes vs-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+.vs-headline {
+  margin: 0;
+  font-size: 11cqh;
+  font-style: italic;
+  text-transform: uppercase;
+  color: var(--theme);
+  text-shadow: 0 0 5cqh color-mix(in srgb, var(--theme) 60%, transparent), 0 0.8cqh 0 rgba(0, 0, 0, 0.35);
+  animation: vs-stamp 520ms var(--ease-pop) both;
+}
+
+.vs-result {
+  display: grid;
+  justify-items: center;
+  gap: 1cqh;
+}
+
+.vs-result-team {
+  display: flex;
+  gap: 3cqh;
+}
+
+.vs-result-mon {
+  display: grid;
+  justify-items: center;
+  animation: rise 500ms var(--ease-out) both;
+  animation-delay: calc(300ms + var(--i) * 120ms);
+}
+
+.vs-result.winner .sprite {
+  width: 24cqh;
+  height: 24cqh;
+  margin-bottom: -3cqh;
+  filter: drop-shadow(0 0 2cqh color-mix(in srgb, var(--theme) 55%, transparent));
+}
+
+.vs-result.loser .sprite {
+  width: 13cqh;
+  height: 13cqh;
+  margin-bottom: -1.6cqh;
+}
+
+.vs-result-mon small {
+  font: 800 italic 2.2cqh/1 var(--display);
+  text-transform: uppercase;
+}
+
+.vs-result.loser {
+  opacity: 0.7;
+}
+
+.vs-result-mon.fainted .sprite {
+  filter: grayscale(1) brightness(0.6);
+}
+
+.vs-winner-buttons {
+  display: flex;
+  gap: 1.6cqh;
+}

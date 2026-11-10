@@ -113,7 +113,7 @@ const CITIES: City[] = [
     // The Pokémon League, past Tohjo Falls; Mt. Silver rises beside it.
     id: 'johto-league',
     badges: 8,
-    shop: [...MART, 'ultra-ball', 'hyper-potion'],
+    shop: [...MART, 'ultra-ball', 'hyper-potion', 'rare-candy'],
     hunts: {
       grass: ['mt-silver-outside'],
       water: ['tohjo-falls-area', 'mt-silver-1f'],

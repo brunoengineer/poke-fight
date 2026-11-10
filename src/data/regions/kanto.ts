@@ -98,7 +98,7 @@ const CITIES: City[] = [
   {
     id: 'indigo',
     badges: 8,
-    shop: [...MART, 'ultra-ball', 'hyper-potion'],
+    shop: [...MART, 'ultra-ball', 'hyper-potion', 'rare-candy'],
     hunts: {
       grass: ['kanto-route-23-area'],
       water: ['kanto-route-23-area'],

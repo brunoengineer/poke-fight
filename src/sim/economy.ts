@@ -17,6 +17,7 @@ const GOALS: [string, ItemId][] = [
   ['Great Ball', 'great-ball'],
   ['Ultra Ball', 'ultra-ball'],
   ['Hyper Potion', 'hyper-potion'],
+  ['Rare Candy', 'rare-candy'],
   ['Evolution stone', 'fire-stone'],
   ['Super Rod', 'super-rod'],
   ['Master Ball', 'master-ball'],

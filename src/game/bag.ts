@@ -5,6 +5,7 @@ import { ITEMS, type ItemId } from '../data/items';
 import { canUsePotion, countOf, type Bag } from './economy';
 import type { Pokemon } from './pokemon';
 import { itemEvolution } from './progress';
+import { MAX_LEVEL } from './xp';
 
 export type Pocket = 'medicine' | 'balls' | 'evolution' | 'key';
 
@@ -13,6 +14,7 @@ export const POCKETS: readonly Pocket[] = ['medicine', 'balls', 'evolution', 'ke
 export function pocketOf(id: ItemId): Pocket {
   switch (ITEMS[id].kind) {
     case 'potion':
+    case 'candy':
       return 'medicine';
     case 'ball':
       return 'balls';
@@ -37,9 +39,9 @@ export function bagContents(bag: Bag): BagPocket[] {
 }
 
 /** Items used on a Pokémon from the bag (balls are thrown after a battle, rods fish: they are used elsewhere). */
-export const usableFromBag = (id: ItemId) => ITEMS[id].kind === 'potion' || ITEMS[id].kind === 'evolution';
+export const usableFromBag = (id: ItemId) => ITEMS[id].kind !== 'ball' && ITEMS[id].kind !== 'rod';
 
-export type UseCheck = { ok: true } | { ok: false; reason: 'fainted' | 'fullHp' | 'noEffect' };
+export type UseCheck = { ok: true } | { ok: false; reason: 'fainted' | 'fullHp' | 'noEffect' | 'maxLevel' };
 
 /**
  * Whether this item would do something to this Pokémon (and why not). `last`: the region's Pokédex ends there, and
@@ -50,6 +52,10 @@ export function checkUse(id: ItemId, pokemon: Pokemon, last = Infinity): UseChec
   if (item.kind === 'potion') {
     if (canUsePotion(pokemon)) return { ok: true };
     return { ok: false, reason: pokemon.hp === 0 ? 'fainted' : 'fullHp' };
+  }
+  if (item.kind === 'candy') {
+    if (pokemon.hp === 0) return { ok: false, reason: 'fainted' };
+    return pokemon.level >= MAX_LEVEL ? { ok: false, reason: 'maxLevel' } : { ok: true };
   }
   if (item.kind === 'evolution') {
     const evolution = itemEvolution(pokemon, id as Parameters<typeof itemEvolution>[1]);

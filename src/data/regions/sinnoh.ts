@@ -166,7 +166,7 @@ const CITIES: City[] = [
   {
     id: 'sinnoh-league',
     badges: 8,
-    shop: LATE_MART,
+    shop: [...LATE_MART, 'rare-candy'],
     hunts: {
       grass: ['sinnoh-route-224-area'],
       water: ['sinnoh-pokemon-league-area', 'sinnoh-route-224-area'],

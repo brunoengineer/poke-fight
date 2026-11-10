@@ -86,7 +86,7 @@ describe('save version 3', () => {
 
   it('refuses bad money, unknown items and bad Pokédex entries', () => {
     expect(broken(save(), s => (s.money = -1))).toMatchObject({ reason: 'invalid' });
-    expect(broken(save(), s => ((s.bag as Record<string, number>)['rare-candy'] = 1))).toMatchObject({ reason: 'invalid' });
+    expect(broken(save(), s => ((s.bag as Record<string, number>)['golden-banana'] = 1))).toMatchObject({ reason: 'invalid' });
     expect(broken(save(), s => (s.bag = { 'poke-ball': 0 }))).toMatchObject({ reason: 'invalid' });
     expect(broken(save(), s => s.dex.caught.push(999))).toMatchObject({ reason: 'invalid' });
   });

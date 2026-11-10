@@ -41,7 +41,7 @@ import { canChallenge, gymTeam, leaderPrize } from './game/gym';
 import { canEnterLeague, LEAGUE_SIZE, leagueOpponent, leaguePrize, type LeagueOpponent } from './game/league';
 import { bigShape, elementalShape } from './game/moves';
 import { displayHp, maxHpOf, statsOf, toFighter, type Pokemon } from './game/pokemon';
-import { evolve, heal, itemEvolution, setSpecial, specialOptions } from './game/progress';
+import { evolve, heal, itemEvolution, levelEvolution, setSpecial, specialOptions, useRareCandy } from './game/progress';
 import { SAFARI_BALLS, SAFARI_ENTRANCE, SAFARI_SECONDS } from './game/safari';
 import { cleanName, createStarter, DEFAULT_NAMES, MAX_NAME_LENGTH, trainingOpponents } from './game/story';
 import { MAX_LEVEL, xpForLevel } from './game/xp';
@@ -693,7 +693,9 @@ export function startApp(elements: AppElements, options: TestOptions) {
       const note = check.ok
         ? item.kind === 'potion'
           ? t('bag.heals', { hp: Math.min(item.heal, displayHp(maxHpOf(p) - p.hp)) })
-          : t('bag.canEvolve')
+          : item.kind === 'candy'
+            ? t('bag.toLevel', { level: p.level + 1 })
+            : t('bag.canEvolve')
         : t(`bag.${check.reason}`);
       return {
         testid: `use-${id}-${index}`,
@@ -731,6 +733,39 @@ export function startApp(elements: AppElements, options: TestOptions) {
     });
   }
 
+  /**
+   * A Rare Candy on a party Pokémon: one level (and its new moves). If that reaches a level evolution, it evolves
+   * right away, as a candy does in the games; then `then`.
+   */
+  function feedCandy(index: number, then: () => void) {
+    if (!save) return;
+    const p = save.party[index];
+    const grown = p ? useRareCandy(p) : null;
+    if (!grown) return;
+    const evolution = levelEvolution(grown.pokemon);
+    const to = evolution && evolution.to <= regionNow().lastSpecies ? evolution.to : null;
+    update(current => ({ ...current, bag: removeItem(current.bag, 'rare-candy'), party: current.party.map((q, i) => (i === index ? grown.pokemon : q)) }));
+    audio.play('levelUp');
+    const learned = grown.levelUps.flatMap(l => l.moves).map(m => move(m).name);
+    const news = () => {
+      toast(t('bag.grew', { name: nameOf(grown.pokemon), level: grown.pokemon.level }));
+      for (const m of learned) toast(t('results.move', { name: nameOf(grown.pokemon), move: m }));
+    };
+    if (to === null) {
+      then();
+      news();
+      return;
+    }
+    preloadSprites([to]);
+    const evolved = evolve(grown.pokemon, to);
+    update(current => ({ ...current, party: current.party.map((q, i) => (i === index ? evolved.pokemon : q)), dex: register(current, [], [to]) }));
+    partyChanged = true;
+    playEvolution(grown.pokemon, evolved.pokemon, () => {
+      then();
+      news();
+    });
+  }
+
   /** Uses an item from the bag on a party Pokémon: a potion heals it; a stone or the Link Cable evolves it. */
   function useFromBag(id: ItemId, index: number) {
     if (!save) return;
@@ -745,6 +780,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
       toast(t('bag.healed', { name: nameOf(p), hp: displayHp(healed.hp - p.hp) }));
       return;
     }
+    if (item.kind === 'candy') return feedCandy(index, () => showBag(id));
     const to = itemEvolution(p, id as EvolutionItemId)!.to;
     preloadSprites([to]);
     const evolved = evolve(p, to).pokemon;
@@ -2118,6 +2154,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
         showParty(`special-${slot}-${index}`);
       };
       const potions = (['potion', 'super-potion', 'hyper-potion'] as PotionId[]).filter(id => countOf(s.bag, id) > 0 && canUsePotion(p));
+      const candy = countOf(s.bag, 'rare-candy') > 0 && checkUse('rare-candy', p).ok;
       // Nothing evolves past the region's Pokédex.
       const evolvers = EVOLUTION_ITEMS.filter(id => countOf(s.bag, id) > 0 && (itemEvolution(p, id)?.to ?? Infinity) <= regionNow().lastSpecies);
       return {
@@ -2156,6 +2193,20 @@ export function startApp(elements: AppElements, options: TestOptions) {
               showParty(`member-${index}`);
             },
           })),
+          ...(candy
+            ? [
+                {
+                  label: t('party.use', { item: itemName('rare-candy'), count: countOf(s.bag, 'rare-candy') }),
+                  testid: `use-rare-candy-${index}`,
+                  icon: 'star' as const,
+                  onClick: () => {
+                    partyChanged = true;
+                    partySelected = index;
+                    feedCandy(index, () => showParty(`member-${index}`));
+                  },
+                },
+              ]
+            : []),
           ...evolvers.map(id => ({
             label: t('party.evolveWith', { item: itemName(id) }),
             testid: `evolve-${id}-${index}`,

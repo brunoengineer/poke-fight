@@ -153,7 +153,7 @@ const CITIES: City[] = [
     // The Artisan Cave (Smeargle) is out at the Battle Frontier, reached after the League.
     id: 'ever-grande',
     badges: 8,
-    shop: LATE_MART,
+    shop: [...LATE_MART, 'rare-candy'],
     hunts: {
       water: ['ever-grande-city-area', 'hoenn-route-128-area'],
       cave: ['hoenn-victory-road-1f', 'hoenn-victory-road-b1f', 'hoenn-victory-road-b2f', 'meteor-falls-backsmall-room', 'artisan-cave-area'],

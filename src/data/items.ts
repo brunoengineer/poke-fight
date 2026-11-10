@@ -19,13 +19,16 @@ export type CableId = 'link-cable';
 /** Evolves Pokémon that evolve by friendship in the games (decided with generations 2–4: an item). */
 export type BellId = 'soothe-bell';
 export type EvolutionItemId = StoneId | CableId | BellId;
-export type ItemId = BallId | PotionId | RodId | EvolutionItemId;
+/** +1 level (decided after milestone 14: leveling up late took too long), sold at the League city's mart. */
+export type CandyId = 'rare-candy';
+export type ItemId = BallId | PotionId | RodId | EvolutionItemId | CandyId;
 
 export type Item =
   | { id: BallId; kind: 'ball'; price: number; /** Catch multiplier; Infinity = always catches. */ bonus: number }
   | { id: PotionId; kind: 'potion'; price: number; /** Real HP restored. */ heal: number }
   | { id: RodId; kind: 'rod'; price: number }
-  | { id: EvolutionItemId; kind: 'evolution'; price: number };
+  | { id: EvolutionItemId; kind: 'evolution'; price: number }
+  | { id: CandyId; kind: 'candy'; price: number };
 
 export const ITEMS: Record<ItemId, Item> = {
   'poke-ball': { id: 'poke-ball', kind: 'ball', price: 200, bonus: 1 },
@@ -53,6 +56,8 @@ export const ITEMS: Record<ItemId, Item> = {
   'shiny-stone': { id: 'shiny-stone', kind: 'evolution', price: 5000 },
   'dawn-stone': { id: 'dawn-stone', kind: 'evolution', price: 5000 },
   'link-cable': { id: 'link-cable', kind: 'evolution', price: 5000 },
+  // About one Elite-Four-level battle each (plan.md §5, Economy).
+  'rare-candy': { id: 'rare-candy', kind: 'candy', price: 2000 },
   'soothe-bell': { id: 'soothe-bell', kind: 'evolution', price: 5000 },
 };
 

@@ -48,6 +48,16 @@ export function gainXp(pokemon: Pokemon, amount: number): XpResult {
   return { pokemon: p, levelUps };
 }
 
+/**
+ * A Rare Candy: exactly one level (its XP set to the start of the next level), learning that level's moves. Not for a
+ * fainted Pokémon, nor one at the top level (null then).
+ */
+export function useRareCandy(pokemon: Pokemon): XpResult | null {
+  if (pokemon.hp === 0 || pokemon.level >= MAX_LEVEL) return null;
+  const s = species(pokemon.speciesId);
+  return gainXp(pokemon, xpForLevel(s.growthRate, pokemon.level + 1) - pokemon.xp);
+}
+
 /** A level evolution this Pokémon has reached (stones and trades: itemEvolution). */
 export function levelEvolution(pokemon: Pokemon): Evolution | null {
   if (pokemon.hp === 0) return null;

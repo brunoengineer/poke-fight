@@ -665,7 +665,9 @@ World map (cities unlocked by badges)
   `npm run sim -- economy`). Prices are set against targets in **battle-field battles** at the stage an item is
   bought (one battle ≈ 2 minutes): an evolution item ≈ 5 battles when first sold and ≈ 3 by Saffron (₽5,000, every
   evolution item); a Master Ball ≈ 15 battles at the sanctuary (₽30,000: each legendary is a half-hour goal); an Ultra
-  Ball or a Hyper Potion ≈ 1 battle in mid-game. Gym, Elite Four and Champion prizes (99 × their best level) are
+  Ball or a Hyper Potion ≈ 1 battle in mid-game. **Rare Candy** (decided after milestone 14: leveling up late took
+  too long): ₽2,000, +1 level (its moves too; reaching a level evolution, it evolves at once, as in the games), sold
+  only at each region's League city mart: about one battle there per level. Gym, Elite Four and Champion prizes (99 × their best level) are
   one-time and unchanged. **Losing** (wild or trainer): half the money is lost, the party is healed, back to the city.
 - **Shop** (per city), **Pokémon Center** (free healing), **PC box** in any city (decided: swap freely, the party
   keeps 1–6), **potions** used from the party screen (they can't revive), **world map** (locked cities say how many

@@ -298,6 +298,35 @@ test.describe('the Pokémon Center, the box and potions', () => {
     expect(after.bag.potion).toBeUndefined();
     await expect(page.getByTestId('use-potion-0')).toHaveCount(0);
   });
+
+  test('a Rare Candy, bought at the League city, raises a Pokémon one level from the party screen', async ({ page }) => {
+    const badges = ['boulder', 'cascade', 'thunder', 'rainbow', 'soul', 'marsh', 'volcano', 'earth'];
+    await openGame(page, { scene: 'city' }, { save: { ...start(), location: 'indigo', badges, money: 5000 } });
+    await page.getByTestId('city-shop').click();
+    await page.getByTestId('buy-rare-candy').click();
+    expect((await save(page)).money).toBe(3000);
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('p');
+    const level = (await save(page)).party[0].level;
+    await page.getByTestId('use-rare-candy-0').click();
+    await expect(page.getByTestId('member-0')).toContainText(`Lv. ${level + 1}`);
+    const after = await save(page);
+    expect(after.party[0].level).toBe(level + 1);
+    expect(after.bag['rare-candy']).toBeUndefined();
+  });
+
+  test('a Rare Candy that reaches the level to evolve evolves it (Charmander Lv. 15 → 16: Charmeleon)', async ({ page }) => {
+    const data = start() as SaveData & { party: { level: number; xp: number }[] };
+    data.party[0].level = 15;
+    data.party[0].xp = 2035; // medium-slow, the start of Lv. 15
+    await openGame(page, { scene: 'city' }, { save: { ...data, bag: { 'rare-candy': 1 } } });
+    await page.keyboard.press('p');
+    await page.getByTestId('use-rare-candy-0').click();
+    await expect(page.getByTestId('evolution-text')).toHaveText('Congratulations! Charmander evolved into Charmeleon!');
+    await page.getByTestId('evolution-done').click();
+    await expect(page.getByTestId('member-0')).toContainText('Charmeleon');
+    expect((await save(page)).party[0]).toMatchObject({ speciesId: 5, level: 16 });
+  });
 });
 
 test.describe('the battle field', () => {

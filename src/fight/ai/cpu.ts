@@ -38,7 +38,10 @@ export type PlanKind =
   | 'backdash'
   | 'tackle'
   | 'special'
-  | 'big';
+  | 'big'
+  /** Its signature move (back, down, forward + attack) or its legendary move (down, down + attack): plan.md §4.9. */
+  | 'signature'
+  | 'legend';
 
 type Response = 'guard' | 'jump' | 'antiAir' | 'punish' | 'none';
 
@@ -59,10 +62,12 @@ export interface CpuState {
   opening: boolean;
   /** Its opponent is far ahead: it plays a step up the skill scale (profiles.ts boosted) until the gap closes. */
   boosted: boolean;
+  /** A motion being typed (a frame each): what is left of it. A hit or any other interruption drops it. */
+  queue: Wish[];
 }
 
 export function createCpu(me: FighterId, profile: AiProfile, seed: number): CpuState {
-  return { me, profile, rng: seed >>> 0, seen: [], plan: { kind: 'wait', until: 0 }, responses: {}, last: 0, lastAction: 'idle', opening: true, boosted: false };
+  return { me, profile, rng: seed >>> 0, seen: [], plan: { kind: 'wait', until: 0 }, responses: {}, last: 0, lastAction: 'idle', opening: true, boosted: false, queue: [] };
 }
 
 /** Forget the last round (a new Pokémon came in), keep the random sequence going. */
@@ -74,6 +79,7 @@ export const resetCpuMemory = (cpu: CpuState): CpuState => ({
   last: 0,
   lastAction: 'idle',
   opening: true,
+  queue: [],
 });
 
 export function observe(state: FightState, me: FighterId): Observation {
@@ -102,7 +108,7 @@ const JUMP_SPECIALS = 0.35;
 
 interface Wish {
   /** Directions relative to the CPU's facing, and guard. */
-  hold?: { forward?: boolean; back?: boolean; up?: boolean; guard?: boolean };
+  hold?: { forward?: boolean; back?: boolean; up?: boolean; down?: boolean; guard?: boolean };
   press?: 'physical' | 'special' | 'big' | 'dash';
 }
 
@@ -164,8 +170,18 @@ function decide(
   if (self.action === 'prejump') return cpu.plan.kind === 'jumpIn' ? { hold: { up: true, forward: true } } : {};
   // In the air: an air attack on the way down, when close.
   if (self.action === 'jump') return distance < 50 && self.vy < 0 ? { press: 'physical' } : {};
-  // Busy (attacking, in hitstun…): nothing to do but keep guarding if it was.
-  if (!self.actionable) return self.action === 'blockstun' ? { hold: { guard: true } } : {};
+  // Busy (attacking, in hitstun…): nothing to do but keep guarding if it was. A motion being typed is lost.
+  if (!self.actionable) {
+    cpu.queue = [];
+    return self.action === 'blockstun' ? { hold: { guard: true } } : {};
+  }
+
+  // A motion being typed goes on, a frame each (people commit to a motion once it is started).
+  if (cpu.queue.length > 0) {
+    const [next, ...rest] = cpu.queue;
+    cpu.queue = rest;
+    return next;
+  }
 
   // A hit that would count more (after a dash through it, after a parry): land it now, while it lasts.
   if (self.bonus && distance < TACKLE_RANGE) return { press: 'physical' };
@@ -296,7 +312,10 @@ const BIG_REACH: Record<BigShape, number> = {
 const CLOSE_FORMS: readonly BigShape[] = ['burst', 'blizzard', 'rush'];
 
 /** Plans that are a single press: once pressed, the CPU thinks again as soon as it can act. */
-const ONE_SHOT: readonly PlanKind[] = ['tackle', 'special', 'big', 'dash', 'backdash'];
+const ONE_SHOT: readonly PlanKind[] = ['tackle', 'special', 'big', 'dash', 'backdash', 'signature', 'legend'];
+
+/** The PP its legendary move waits for (it spends all of it, and hits as hard as the bar is full). */
+const LEGEND_READY = 70;
 
 /**
  * The first move of a round: anything a person might do when the round starts (wait and watch, walk in, throw a
@@ -319,16 +338,24 @@ function chooseOpening(profile: AiProfile, self: Fighter, roll: (c: number) => b
 
 function choosePlan(profile: AiProfile, self: Fighter, distance: number, roll: (c: number) => boolean): PlanKind {
   const canSpecial = self.pp >= ELEMENTAL_COST;
+  // Its legendary move: all its PP, so it waits for a good bar (a boss keeps to its own attacks: fight/boss.ts).
+  const legend = self.loadout.legend;
+  if (legend && !self.boss && self.pp >= LEGEND_READY && distance < BIG_REACH[legend.shape] && roll(profile.big)) return 'legend';
   const shape = self.loadout.big.shape;
   // Its long charge point-blank gets it hit (decided after milestone 13): up close, only the forms made for it.
   const fits = distance < BIG_REACH[shape] && (CLOSE_FORMS.includes(shape) || distance >= CLOSE + 20);
   if (self.pp >= PP_MAX && fits && roll(profile.big)) return 'big';
+  // Its signature move is free: a zoner's favourite, and anyone's now and then, where its form reaches.
+  const signature = self.loadout.signature;
+  const signatureFits = signature && distance < BIG_REACH[signature.shape] && (CLOSE_FORMS.includes(signature.shape) || distance >= CLOSE);
+  const signatureWeight = signatureFits ? 0.15 + profile.zoning * 0.5 : 0;
   const weights: [PlanKind, number][] =
     distance < CLOSE
       ? [
           ['tackle', profile.aggression],
           ['guard', profile.caution],
           ['backdash', profile.zoning * 0.5],
+          ['signature', signatureWeight],
           // Dashing through to hit from behind pays now (a back attack).
           ['dash', profile.aggression * 0.4],
           ['retreat', profile.zoning * 0.5],
@@ -338,12 +365,14 @@ function choosePlan(profile: AiProfile, self: Fighter, distance: number, roll: (
         ? [
             ['approach', profile.aggression],
             ['special', canSpecial ? profile.zoning : 0],
+            ['signature', signatureWeight],
             ['jumpIn', profile.jump],
             ['retreat', profile.zoning * 0.4],
             ['wait', 0.3],
           ]
         : [
             ['special', canSpecial ? profile.zoning : 0],
+            ['signature', signatureWeight],
             ['approach', profile.aggression],
             ['dash', profile.aggression * 0.3],
             ['wait', 0.2],
@@ -384,6 +413,16 @@ function follow(cpu: CpuState, distance: number): Wish {
       return { press: 'dash', hold: { back: true } };
     case 'jumpIn':
       return { hold: { up: true, forward: true } };
+    case 'signature':
+    case 'legend': {
+      // Typed a frame each, like a player: back, down, forward + attack; or down, let go, down + attack.
+      const steps: Wish[] =
+        kind === 'signature'
+          ? [{ hold: { back: true } }, { hold: { down: true } }, { hold: { forward: true }, press: 'physical' }]
+          : [{ hold: { down: true } }, {}, { hold: { down: true }, press: 'physical' }];
+      cpu.queue = steps.slice(1);
+      return steps[0];
+    }
     case 'wait':
       return {};
   }
@@ -398,6 +437,7 @@ function toMask(wish: Wish, self: Fighter, last: InputMask): InputMask {
   if (wish.hold?.forward) mask |= forward;
   if (wish.hold?.back) mask |= back;
   if (wish.hold?.up) mask |= Button.Up;
+  if (wish.hold?.down) mask |= Button.Down;
   if (wish.hold?.guard) mask |= Button.Guard;
   if (wish.press) {
     const button = PRESS_BUTTON[wish.press];

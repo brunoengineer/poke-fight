@@ -1,7 +1,7 @@
 name: CI
 
-# Checks every push and pull request. When it passes for a push to main, pages.yml deploys that commit (a temporary
-# study deploy).
+# Checks every push and pull request. When it passes for a push to main, pages.yml deploys that commit (the study
+# deploy).
 
 on:
   push:

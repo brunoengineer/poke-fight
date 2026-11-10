@@ -3291,6 +3291,18 @@ kbd,
   min-height: 0;
 }
 
+/* A gym's hall: three seats (two trainers, the leader), centered, with room to stand a little bigger. */
+[data-testid='gym-hall'] .seats {
+  grid-template-columns: repeat(3, minmax(0, 32cqh));
+  justify-content: center;
+  gap: 6cqh;
+}
+
+[data-testid='gym-hall'] .seat-sprite {
+  width: 34cqh;
+  height: 34cqh;
+}
+
 .seat {
   position: relative;
   display: grid;

@@ -3,7 +3,7 @@
 A study project: a real-time 2D fighting game (in the style of KOF / Street Fighter) with a Pokémon journey around it:
 pick a starter, hunt and catch, earn XP, evolve, beat the gyms and the League. It runs in the browser on your own
 machine only. **It is not distributed**: no store, no public link. Pokémon sprites and data are used only
-because they are convenient. (Exception, to study deploying: a temporary GitHub Pages deploy, see §7.1.)
+because they are convenient. (Exception, to study deploying: a private GitHub Pages deploy, see §7.1.)
 
 The second goal matters as much as the game: **practice building a project from zero with Claude**, one small,
 tested step at a time (see [How we work](#10-how-we-work-with-claude)).
@@ -516,8 +516,10 @@ own, and a legendary on your team gets its boss attack. Four steps, each reviewe
    a big special, ≈ half the HP bar; at least a fifth of that). A hit during its charge gives the PP back. The banner
    shows the attack's name ("Nova!").
 
-The CPU doesn't use either (they need a motion; the fight lab's numbers are unchanged). The endgame save has Mewtwo in
-Kanto's box to try one.
+**The CPU uses them too** (milestone 15): it types the motion a frame at a time, like a player (a hit drops it). Its
+signature move is a plan of its own (more for zoners, where its form reaches); its legendary move waits for 70 PP and
+its form's reach. A legendary boss keeps to its own attacks (fight/boss.ts). Fight lab: tackles' share of the damage
+66% → 58%, fairness and the ladder unchanged. The endgame save has Mewtwo in Kanto's box to try one.
 
 ## 5. Progression systems
 
@@ -706,6 +708,13 @@ World map (cities unlocked by badges)
 - A gym: the leader's intro → their whole team, one at a time → on a win the **badge**, **99 × their highest level**
   (Brock: ₽1386, as in Red/Blue) and 1.5× XP → the leader's last word. Losing: as any loss (half the money). No
   gym trainers before the leader and no rematches (for now). Viridian's gym needs 7 badges.
+- **Gym trainers** (decided 2026-11-10, milestone 15): a gym is a hall (the League's screen) with **two gym trainers
+  and then the leader**, fought in a row. No Pokémon Center in between: HP carries over, so potions from the party
+  matter (the hall has the party button); a loss, or leaving, ends the run, and the next try starts over. The
+  trainers are a rule, not data (`gymTrainers` in `game/gym.ts`): two Pokémon each of the gym's type, met in the
+  region's wild, never below the level they evolve at, the first trainer at the leader's weakest level − 4, the second
+  − 2; their class by type (a Hiker and a Camper at Pewter); their CPU a step below the leader's. They pay like the
+  battle field (levels × 12) and give trainer XP. Rematches with leaders stay open.
 - **Badges open Kanto** (the world map), and the 8th removes the "stronger than yours" catch penalty.
 - **Evolution items**: Fire, Water, Thunder, Leaf and Moon Stones, and the **Link Cable for trade evolutions**
   (Kadabra, Machoke, Graveler, Haunter; decided default, the question had no answer), sold at the **Saffron mall**
@@ -765,7 +774,8 @@ World map (cities unlocked by badges)
   the fight in **Canvas 2D**.
 - **Vitest** for all game rules and the fight simulation.
 - **Playwright** for end-to-end flows, running in **GitHub Actions** (`ci.yml`).
-- **A temporary study deploy** (decided 2026-11-09): `pages.yml` runs when CI (`ci.yml`: type check, unit tests,
+- **A study deploy** (decided 2026-11-09; kept on 2026-11-10: the user checks there that the project builds and runs as
+  a deployed site): `pages.yml` runs when CI (`ci.yml`: type check, unit tests,
   browser tests) has **passed** for a push to `main` (not in parallel with it: a push whose tests fail is never
   published); it builds that commit (`vite build` with the base `/poke-fight/`) and publishes `dist/` to GitHub Pages. The link is never shared
   and the page asks search engines not to list it (`noindex`). To take it down: Settings → Pages → Unpublish site,
@@ -995,6 +1005,7 @@ Each milestone ends with something playable, tests, and green CI.
 | 12 | ✅ **Regions** | Johto, Hoenn and Sinnoh (their cities, gyms, Leagues, starters, towns and maps; generations 2–4 data), a journey per region, the plane, regions opened by Leagues, the Legends' Sanctuary with boss legendaries (Master Ball only, XP for the whole party) |
 | 13 | ✅ **Moves by type** | Elemental specials drawn by type, big specials by type with real hits, signature moves for 11 famous Pokémon (←↓→ + attack), legendary moves (↓↓ + attack) (§4.9) |
 | 14 | ✅ **Combat depth + fight lab** | PP from damage taken, back attacks after a dash through, parry and counter, big specials that hit for about half the bar (a fifth through a guard), a smarter CPU (guards specials, parries, comes back when far behind, uses dashes), the economy repriced, and the fight lab (`npm run sim`, `docs/fight-lab.md`) |
+| 15 | ✅ **Gym trainers, CPU signature moves, balance check** | Two gym trainers before every leader in a row (no healing; potions matter); the CPU types signature and legendary moves; a measured balance pass (below) |
 
 Milestones 1–3 come **before** any Pokémon content on purpose: if the fight doesn't feel good with rectangles, the
 sprites won't save it.
@@ -1035,6 +1046,8 @@ sprites won't save it.
 | PC box | Swap Pokémon freely in any city |
 | Trade evolutions | A Link Cable item (default chosen in milestone 8: easy to change) |
 | Gym leaders | The Red/Blue leaders, badges and teams; their lines are original |
+| Post-game legendaries | Decided (2026-11-10): the Legends' Sanctuary is the post-game (each region's legendaries as bosses, Master Ball only), instead of Red/Blue's scattered encounters |
+| Gym trainers | Decided (2026-11-10): two gym trainers before each leader, fought in a row with no healing in between (potions matter); see §5 |
 | League | The Red/Blue Elite Four; the Champion is the rival with the matching Red/Blue team |
 | Regions | Each region is its own journey (party, box, money, badges, Pokédex, kept apart); the next opens with the previous League; the plane flies between them |
 | Back dash | Invincible on its first 6 frames, punishable after |
@@ -1059,10 +1072,9 @@ sprites won't save it.
 | Music | Original loops only (no copied themes); cries are the games' recordings by URL |
 | Settings | Sound, volumes and keys live apart from the save (`poke-fight.settings`), one custom key per action, arrows always move |
 | Balance pass | Deferred until there is playtest data (numbers stay pinned in tests) |
-| Deploy | A temporary GitHub Pages deploy to study how it's done (link never shared, `noindex`, removed after a day or two); it runs only after CI passes |
+| Deploy | A GitHub Pages deploy to study how it's done and check deployed builds (link never shared, `noindex`; kept, decided 2026-11-10); it runs only after CI passes |
 | Endgame build | `npm run endgame`: a local build (`dist-endgame/`, never deployed) that starts from an endgame save (every League won, a Lv. 70 team in each region, a full bag; `state/endgame.ts`) under its own storage key; the page opens with `?fresh`, which starts it over |
 
 ### Still open
 
-1. **Gym trainers and rematches**: trainers to beat before each leader, and rematching leaders later?
-2. **Post-game**: legendary encounters (Articuno, Zapdos, Moltres, Mewtwo in Cerulean Cave), as in Red/Blue?
+1. **Gym rematches**: rematching leaders later, at higher levels? (Gym trainers: decided, below.)

@@ -2,9 +2,10 @@
 
 A real-time 2D fighting game (KOF / Street Fighter style) with a Pokémon journey around it. It's a **study project**:
 the user is practicing building a project from zero with Claude, one small, tested step at a time. It is **not
-distributed**; Pokémon sprites and data are used only for convenience. The one exception is a **temporary study
-deploy** to GitHub Pages (`.github/workflows/pages.yml`, decided 2026-11-09, link never shared, to be removed after a
-day or two): don't add other hosting, and don't advertise the link anywhere (the page is `noindex`).
+distributed**; Pokémon sprites and data are used only for convenience. The one exception is a **study deploy** to
+GitHub Pages (`.github/workflows/pages.yml`, decided 2026-11-09 and kept on 2026-11-10: the user checks there that the
+project builds and runs properly as a deployed site; the link is never shared): don't add other hosting, and don't
+advertise the link anywhere (the page is `noindex`).
 
 - **The design lives in [plan.md](plan.md)**: vision, mechanics, architecture, roadmap, decided and open questions.
   Read the relevant section before starting a task. When a decision is made, update plan.md in the same change.

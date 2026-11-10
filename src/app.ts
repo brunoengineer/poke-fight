@@ -37,7 +37,7 @@ import {
 } from './game/pokedex';
 import { dexText } from './data/dex-text';
 import { bestRod, chances, encounterTable, huntTable, rollEncounter, tableForAreas, wildPokemon } from './game/encounters';
-import { canChallenge, gymTeam, leaderPrize } from './game/gym';
+import { canChallenge, GYM_BATTLES, gymTeam, gymTrainers, leaderPrize } from './game/gym';
 import { canEnterLeague, LEAGUE_SIZE, leagueOpponent, leaguePrize, type LeagueOpponent } from './game/league';
 import { bigShape, elementalShape } from './game/moves';
 import { displayHp, loadoutOf, maxHpOf, statsOf, toFighter, type Pokemon } from './game/pokemon';
@@ -236,6 +236,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
   let wild: Pokemon | null = null;
   /** The gym being challenged. */
   let gym: Gym | null = null;
+  /** A gym in progress: its two trainers, then its leader (stage 0, 1, 2), with no healing in between. */
+  let gymRun: { gym: Gym; stage: number } | null = null;
   /** The Safari Game in progress (its balls are not in the bag). */
   let safari: { balls: number } | null = null;
   /** A League run in progress: which of the five battles comes next. */
@@ -1401,11 +1403,72 @@ export function startApp(elements: AppElements, options: TestOptions) {
   }
 
   /** A gym: the leader's words, then their whole team, one Pokémon at a time, with a CPU style that suits the type. */
+  /** A gym: its hall, where two trainers and then the leader are fought in a row (decided 2026-11-10). */
   function startGym(g: Gym) {
     if (!save || !canChallenge(g, save.badges)) return;
+    readyParty();
+    gymRun = { gym: g, stage: 0 };
+    showGymHall();
+  }
+
+  /** The gym's hall between battles: who is beaten, who is next, the party (potions), or leave. */
+  function showGymHall() {
+    if (!save || !gymRun) return goCity();
+    leaveFight();
+    scene = 'menu';
+    show();
+    const { gym: g, stage } = gymRun;
     backdrop.set({ image: typeBackdrop(g.type), theme: typeColor(g.type), mode: 'scene' });
+    const trainers = gymTrainers(g, regionNow());
+    const type = { type: g.type, label: t(`type.${g.type}` as MessageKey) };
+    const state = (i: number) => (i < stage ? ('beaten' as const) : i === stage ? ('next' as const) : ('waiting' as const));
+    const nextName = stage < trainers.length ? t(`trainerClass.${trainers[stage].cls}` as MessageKey) : g.leader;
+    renderLeague(overlayRoot, {
+      id: 'gym-hall',
+      title: t('gym.hall', { city: t(cityKey(g.city)) }),
+      info: [t('league.progress', { n: stage + 1, total: GYM_BATTLES }), t('league.next', { who: nextName }), t('gym.hint')],
+      seats: [
+        ...trainers.map((trainer, i) => ({ name: t(`trainerClass.${trainer.cls}` as MessageKey), title: t('gym.trainerTitle'), sprite: trainerUrl(trainer.cls), type, state: state(i) })),
+        { name: g.leader, title: t('gym.leaderTitle'), sprite: trainerUrl(g.sprite), type, state: state(trainers.length) },
+      ],
+      buttons: [
+        { label: t('gym.challengeNext'), testid: 'gym-next', icon: 'battle', primary: true, onClick: fightGym },
+        { label: t('place.party'), testid: 'gym-party', icon: 'party', pad: 'y', onClick: toggleParty },
+        { label: t('league.giveUp'), testid: 'gym-leave', icon: 'exit', back: true, onClick: leaveGym },
+      ],
+      hints: [hints.select, hints.party, { pad: 'b', key: 'Esc', label: t('league.giveUp') }],
+    });
+  }
+
+  function leaveGym() {
+    gymRun = null;
+    goCity();
+  }
+
+  /** The gym's next battle: a trainer (stages 0 and 1), or the leader, after their words. */
+  function fightGym() {
+    if (!save || !gymRun) return;
+    const { gym: g, stage } = gymRun;
+    const trainers = gymTrainers(g, regionNow());
+    if (stage < trainers.length) {
+      const trainer = trainers[stage];
+      gym = null;
+      wild = null;
+      update(s => ({ ...s, dex: register(s, trainer.team.map(p => p.speciesId)) }));
+      // A step below the leader's CPU.
+      const difficulty = g.ai.difficulty === 'hard' ? 'normal' : 'easy';
+      enterFight('gym', save.party.map(toFighter), trainer.team.map(toFighter), {
+        opponent: `cpu-${difficulty}`,
+        cpu: { kind: 'trainer', difficulty, style: 'balanced' },
+        stage: { id: 'gym', tint: typeColor(g.type), backdrop: typeBackdrop(g.type) },
+        rivalLook: { ...LOOKS.trainer, sprite: trainer.cls },
+        intro: { step: null, key: 'trainer.challenge', params: {} },
+      });
+      return;
+    }
     tell([{ speaker: g.leader, portrait: g.sprite, key: `leader.${g.badge}.intro` as MessageKey, params: {} }], () => {
-      const party = readyParty();
+      if (!save) return;
+      const party = save.party;
       const team = gymTeam(g);
       gym = g;
       wild = null;
@@ -1754,7 +1817,10 @@ export function startApp(elements: AppElements, options: TestOptions) {
     if (scene !== 'fight' || modal !== 'none' || mode === 'tutorial' || mode === 'league') return;
     if (mode === 'demo') goTitle();
     else if (mode === 'safari') showSafari();
-    else goCity();
+    else {
+      gymRun = null;
+      goCity();
+    }
   }
 
   // ── Results ───────────────────────────────────────────────────────────────────────────────────────────────────
@@ -2078,7 +2144,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
       const lines = report.lines.map(line => lineFor(line, party));
       let next = { ...save, party };
       const leader = finished === 'gym' ? gym : null;
-      if (outcome === 'win' && (finished === 'trainer' || leader)) {
+      const gymTrainer = finished === 'gym' && !leader && gymRun !== null;
+      if (outcome === 'win' && (finished === 'trainer' || leader || gymTrainer)) {
         const prize = leader ? leaderPrize(leader) : prizeMoney(battle.teams[1].map(m => m.level));
         next = { ...next, money: Math.min(MAX_MONEY, next.money + prize) };
         lines.push({ key: 'results.prize', params: { money: prize } });
@@ -2087,6 +2154,10 @@ export function startApp(elements: AppElements, options: TestOptions) {
         next = { ...next, badges: [...next.badges, leader.badge] };
         lines.push({ key: 'gym.badgeEarned', params: { badge: t(`badge.${leader.badge}` as MessageKey) } });
       }
+      // A gym run goes on after a trainer is beaten (HP carries over), and ends with the leader or any loss.
+      const run = gymRun;
+      if (gymTrainer && outcome === 'win' && run) gymRun = { ...run, stage: run.stage + 1 };
+      else if (finished === 'gym') gymRun = null;
       if (outcome === 'loss') {
         const kept = moneyAfterLoss(next.money);
         lines.push({ key: 'results.whiteout', params: { money: next.money - kept } });
@@ -2105,6 +2176,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
         again: finished === 'wild' && lastHunt ? () => huntAgain() : undefined,
         onContinue: () => {
           closeModal();
+          if (gymRun) return showGymHall();
           if (!leader) return goCity();
           // The leader has the last word.
           const key = (outcome === 'win' ? `leader.${leader.badge}.beaten` : 'gym.lost') as MessageKey;
@@ -2318,7 +2390,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
         keys.clear();
         if (partyChanged && sandbox) sandbox.setPlayerTeam(save.party.map(toFighter));
       } else if (partyFrom === 'league') {
-        showLeague();
+        if (gymRun) showGymHall();
+        else showLeague();
       } else {
         goCity();
       }
@@ -2327,7 +2400,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
     }
     if (modal === 'results') return;
     const inFight = scene === 'fight' && (mode === 'trainer' || mode === 'wild' || mode === 'gym');
-    const inLeagueMenu = scene === 'menu' && league !== null && !sandbox;
+    const inLeagueMenu = scene === 'menu' && (league !== null || gymRun !== null) && !sandbox;
     if (!inFight && !inLeagueMenu && scene !== 'city') return;
     partyFrom = inFight ? 'fight' : inLeagueMenu ? 'league' : 'city';
     modal = 'party';

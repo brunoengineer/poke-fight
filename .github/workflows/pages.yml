@@ -1,7 +1,7 @@
 name: Pages
 
-# A temporary study deploy (decided 2026-11-09): every push to main that passes CI is built and published on GitHub Pages.
-# The link is not shared. To take it down: Settings → Pages → Unpublish site, then delete this file (or the next push
+# A study deploy (decided 2026-11-09, kept 2026-11-10): every push to main that passes CI is built and published on GitHub
+# Pages. The link is not shared. To take it down: Settings → Pages → Unpublish site, then delete this file (or the next push
 # to main publishes it again).
 
 # It deploys only after CI (ci.yml: typecheck, unit tests and the browser tests) has passed for a push to main: a push

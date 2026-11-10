@@ -1,0 +1,48 @@
+// Gym trainers (decided 2026-11-10): the gym hall before the leader, and the trainers' classes.
+// English in `en`, Portuguese in `pt` (the same keys and {placeholders}; a test checks it).
+
+export const en = {
+  'gym.hall': '{city} Gym',
+  'gym.trainerTitle': 'Gym Trainer',
+  'gym.leaderTitle': 'Gym Leader',
+  'gym.hint': 'Two trainers, then the leader. No Pokémon Center in between: HP carries over, so use potions from your party. A loss ends the run.',
+  'gym.challengeNext': 'Battle',
+  'trainerClass.youngster': 'Youngster',
+  'trainerClass.lass': 'Lass',
+  'trainerClass.camper': 'Camper',
+  'trainerClass.picnicker': 'Picnicker',
+  'trainerClass.bugcatcher': 'Bug Catcher',
+  'trainerClass.hiker': 'Hiker',
+  'trainerClass.birdkeeper': 'Bird Keeper',
+  'trainerClass.beauty': 'Beauty',
+  'trainerClass.fisherman': 'Fisherman',
+  'trainerClass.swimmerf': 'Swimmer',
+  'trainerClass.gentleman': 'Gentleman',
+  'trainerClass.juggler': 'Juggler',
+  'trainerClass.blackbelt': 'Black Belt',
+  'trainerClass.acetrainer': 'Ace Trainer',
+  'trainerClass.acetrainerf': 'Ace Trainer',
+} as const;
+
+export const pt: Record<keyof typeof en, string> = {
+  'gym.hall': 'Ginásio de {city}',
+  'gym.trainerTitle': 'Treinador do Ginásio',
+  'gym.leaderTitle': 'Líder de Ginásio',
+  'gym.hint': 'Dois treinadores, depois o líder. Não há Centro Pokémon no meio: os PS continuam, então use poções da sua equipe. Uma derrota encerra a tentativa.',
+  'gym.challengeNext': 'Batalhar',
+  'trainerClass.youngster': 'Jovem',
+  'trainerClass.lass': 'Moça',
+  'trainerClass.camper': 'Campista',
+  'trainerClass.picnicker': 'Piquenique',
+  'trainerClass.bugcatcher': 'Caçador de Insetos',
+  'trainerClass.hiker': 'Montanhista',
+  'trainerClass.birdkeeper': 'Criador de Pássaros',
+  'trainerClass.beauty': 'Beldade',
+  'trainerClass.fisherman': 'Pescador',
+  'trainerClass.swimmerf': 'Nadadora',
+  'trainerClass.gentleman': 'Cavalheiro',
+  'trainerClass.juggler': 'Malabarista',
+  'trainerClass.blackbelt': 'Faixa-Preta',
+  'trainerClass.acetrainer': 'Treinador Ás',
+  'trainerClass.acetrainerf': 'Treinadora Ás',
+};

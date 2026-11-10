@@ -97,6 +97,28 @@ The question was "the CPU should guard and jump elemental specials more". Measur
 - **The cost.** Tackles now deal 70% of the damage (62% before). Watch it: if specials feel weak, they need a buff
   (speed, chip), measured the same way.
 
+## Balance check, milestone 15 (2026-11-10)
+
+The brief: improve balance without making the game worse ("the feeling playing it for now is good"). So: change only
+what is outside the healthy ranges above, one thing at a time, and keep it only if the number moves.
+
+| Metric | Value | Healthy | |
+|---|---|---|---|
+| Player 1 wins (identical CPUs) | 50% | 45–55% | ok |
+| Hard beats normal / normal beats easy | 63% / 78% | 60–75% / 70–85% | ok |
+| Fight length, median | 15.7 s | 12–25 s | ok |
+| Tackles' share of the damage | 58% (66% before the CPU's signature moves) | under 75% | ok |
+| Specials that land (hard): elemental / big | 25% / 15% | 15–35% | ok |
+| Big special forms, average win rate | 40% (projectile) – 60% (strike) | 35–65% | ok |
+| Comebacks from 50% behind | 4% | 3–15% | ok |
+| CPU styles, average win rate | aggressive 41%, balanced 45%, zoner 56%, defensive 58% | no style far ahead | **off** |
+
+- **Everything but the styles is healthy, so nothing else was changed.**
+- **The styles:** defensive and zoner CPUs beat aggressive ones about 60% of the time (intervals apart). So aggressive
+  leaders (Lt. Surge, Blaine, Bruno…) are a little easier than the others. One try, the aggressive CPU guarding up close
+  more often (caution 0.1 → 0.2), changed nothing (41% again) and was reverted. The cause is the style itself (walking
+  in and tackling into guards); fixing it would change how those leaders feel, so it waits for the user's playtest.
+
 ## Files
 
 - `src/sim/duel.ts`: one fight, CPU against CPU, everything counted.

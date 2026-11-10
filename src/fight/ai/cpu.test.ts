@@ -277,3 +277,47 @@ describe('after milestone 13', () => {
     expect(d.events.some(e => e.type === 'block')).toBe(true);
   });
 });
+
+describe('moves of their own (plan.md §4.9)', () => {
+  const SIG: Loadout = { ...RUSH, signature: { name: 'Thunder', type: 'electric', power: 90, category: 'special', shape: 'strike' } };
+  const LEG: Loadout = { ...RUSH, legend: { attack: 'nova', type: 'psychic', category: 'special', shape: 'burst' } };
+  const used = (d: Duel, kind: 'signature' | 'legend') => d.events.some(e => e.type === 'special' && e.fighter === 1 && e.kind === kind);
+
+  it('a CPU with a signature move types its motion and uses it (free)', () => {
+    const state = withLoadout(fightAt(200), SIG, 1);
+    const d = vsCpu(600, () => 0, { ...makeProfile('normal', 'zoner'), big: 0 }, state);
+    expect(used(d, 'signature')).toBe(true);
+  });
+
+  it('a CPU with a legendary move uses it once its bar is full enough, close enough for its form', () => {
+    const state = withLoadout(fightAt(70, { pp: [50, PP_MAX] }), LEG, 1);
+    const d = vsCpu(400, () => 0, { ...makeProfile('hard'), big: 1 }, state);
+    expect(used(d, 'legend')).toBe(true);
+  });
+
+  it('a legendary boss keeps to its own attacks (it never types down, down)', () => {
+    // The CPU alone, frame after frame (a boss's attacks are fight/boss.ts's business): it only checks it is one.
+    const state = withLoadout(fightAt(70, { pp: [50, PP_MAX] }), LEG, 1);
+    state.fighters[1].boss = {} as NonNullable<FightState['fighters'][1]['boss']>;
+    let cpu = createCpu(1, { ...makeProfile('hard'), big: 1 }, 1);
+    const inputs: InputMask[] = [];
+    for (let frame = 1; frame <= 300; frame++) {
+      state.frame = frame;
+      const r = cpuStep(cpu, state);
+      cpu = r.cpu;
+      inputs.push(r.input);
+    }
+    expect(inputs.some(input => has(input, Button.Down))).toBe(false);
+    // Without the boss mark, the same CPU does.
+    delete state.fighters[1].boss;
+    cpu = createCpu(1, { ...makeProfile('hard'), big: 1 }, 1);
+    const plain: InputMask[] = [];
+    for (let frame = 1; frame <= 300; frame++) {
+      state.frame = frame;
+      const r = cpuStep(cpu, state);
+      cpu = r.cpu;
+      plain.push(r.input);
+    }
+    expect(plain.some(input => has(input, Button.Down))).toBe(true);
+  });
+});

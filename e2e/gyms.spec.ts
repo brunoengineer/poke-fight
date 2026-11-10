@@ -6,10 +6,33 @@ type SaveData = { location: string; money: number; badges: string[]; bag: Record
 const team = (change: Partial<SaveData> = {}) => ({ ...(fixture('save-v4-team.json') as SaveData), ...change });
 
 test.describe('gyms', () => {
-  test('Brock: his words, his team, the Boulder Badge, prize money, and Cerulean opens', async ({ page }) => {
+  test('Pewter Gym: two trainers in a row (HP carries over), then Brock, the Boulder Badge, and Cerulean opens', async ({ page }) => {
     await openGame(page, { scene: 'city' }, { save: team() });
     await expect(page.getByTestId('city-gym')).toContainText('Brock · Rock');
     await page.getByTestId('city-gym').click();
+    // The hall: two gym trainers, then the leader.
+    await expect(page.getByTestId('gym-hall')).toContainText('Pewter City Gym');
+    await expect(page.getByTestId('gym-hall')).toContainText('Battle 1 of 3');
+    await expect(page.locator('.seat')).toHaveCount(3);
+    await expect(page.locator('.seat.next')).toContainText('Hiker');
+    await page.getByTestId('gym-next').click();
+    expect(await scene(page)).toMatchObject({ scene: 'fight', mode: 'gym' });
+    expect((await snapshot(page)).fighters[1].level).toBe(8);
+    await winBattle(page);
+    // Two Lv. 8 Pokémon: (8 + 8) × 12.
+    await expect(page.getByTestId('results-lines')).toContainText('You got ₽192 for winning!');
+    const hurt = (await save(page)).party.map(p => (p as unknown as { hp: number }).hp);
+    await page.getByTestId('continue').click();
+    await expect(page.getByTestId('gym-hall')).toContainText('Battle 2 of 3');
+    await expect(page.locator('.seat.beaten')).toHaveCount(1);
+    // No healing in between: the party is as the battle left it.
+    expect((await save(page)).party.map(p => (p as unknown as { hp: number }).hp)).toEqual(hurt);
+    await page.getByTestId('gym-next').click();
+    expect((await snapshot(page)).fighters[1].level).toBe(10);
+    await winBattle(page);
+    await page.getByTestId('continue').click();
+    await expect(page.getByTestId('gym-hall')).toContainText('Battle 3 of 3');
+    await page.getByTestId('gym-next').click();
     await expect(page.getByTestId('dialog')).toContainText('Brock');
     await page.getByTestId('dialog-next').click();
 
@@ -27,7 +50,7 @@ test.describe('gyms', () => {
     await expect(page.getByTestId('city-badges')).toHaveText('1/8');
     const after = await save(page);
     expect(after.badges).toEqual(['boulder']);
-    expect(after.money).toBe(3000 + 1386);
+    expect(after.money).toBe(3000 + 192 + 240 + 1386);
     await page.getByTestId('city-map').click();
     await expect(page.getByTestId('go-cerulean')).toBeEnabled();
   });
@@ -102,11 +125,27 @@ test.describe('evolution items', () => {
   });
 });
 
+test.describe('gym runs', () => {
+  test('from the hall: the party (potions between battles), and leaving ends the run', async ({ page }) => {
+    await openGame(page, { scene: 'city' }, { save: team({ bag: { potion: 1 } }) });
+    await page.getByTestId('city-gym').click();
+    await page.getByTestId('gym-party').click();
+    await expect(page.getByTestId('party')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('gym-hall')).toBeVisible();
+    await page.getByTestId('gym-leave').click();
+    await expect(page.getByTestId('city')).toBeVisible();
+    // Back in: the run starts over, from the first trainer.
+    await page.getByTestId('city-gym').click();
+    await expect(page.getByTestId('gym-hall')).toContainText('Battle 1 of 3');
+  });
+});
+
 test.describe('journey fights are fair', () => {
   test('the training tools (F2 opponent, F3 infinite PP) do nothing in a gym', async ({ page }) => {
     await openGame(page, { scene: 'city', opponent: 'cpu-hard' }, { save: team() });
     await page.getByTestId('city-gym').click();
-    await page.getByTestId('dialog-next').click();
+    await page.getByTestId('gym-next').click();
     await page.keyboard.press('F2');
     await page.keyboard.press('F3');
     await page.keyboard.press('k');

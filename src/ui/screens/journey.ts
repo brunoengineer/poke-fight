@@ -39,6 +39,8 @@ export interface LeagueSeat {
 }
 
 export interface LeagueView {
+  /** The screen's id (default 'league'; a gym's hall reuses the screen: 'gym-hall'). */
+  id?: string;
   title: string;
   info: string[];
   seats: LeagueSeat[];
@@ -49,7 +51,7 @@ export interface LeagueView {
 export function renderLeague(root: HTMLElement, view: LeagueView) {
   mount(
     root,
-    screen('league', 'league-screen', view.title, [
+    screen(view.id ?? 'league', 'league-screen', view.title, [
       h('header', { class: 'screen-head center' }, [
         heading(view.title, undefined, 'h1'),
         ...view.info.map((line, i) => h('p', { class: i === 0 ? 'league-progress' : 'screen-info', testid: `league-info-${i}`, text: line })),

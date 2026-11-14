@@ -32,8 +32,8 @@ export type Item =
 
 export const ITEMS: Record<ItemId, Item> = {
   'poke-ball': { id: 'poke-ball', kind: 'ball', price: 200, bonus: 1 },
-  'great-ball': { id: 'great-ball', kind: 'ball', price: 600, bonus: 1.5 },
-  'ultra-ball': { id: 'ultra-ball', kind: 'ball', price: 1200, bonus: 2 },
+  'great-ball': { id: 'great-ball', kind: 'ball', price: 600, bonus: 2 },
+  'ultra-ball': { id: 'ultra-ball', kind: 'ball', price: 1200, bonus: 3.5 },
   // Sold only at the Legends' Sanctuaries (the only ball that can catch a legendary): expensive on purpose.
   'master-ball': { id: 'master-ball', kind: 'ball', price: 30000, bonus: Infinity },
   // Only inside the Safari Zone (never in the bag: the Safari Game hands out 30).

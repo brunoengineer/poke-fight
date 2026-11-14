@@ -574,28 +574,33 @@ Two players on one machine (decided 2026-11-10). From the title: **Versus**.
   bag. **No performance bonus**: only the ball, the species and the levels count, using the shape of the **official
   modern formula** (Sword/Shield, Gen 8). Tuned twice: after milestone 11 it was made harder (with the games' values
   every early Pokémon was caught on the first throw), then after milestone 12 easier again (decided: a typical Pokémon
-  took ~9 Great Balls, each after its own fight; it should take **3–5**):
+  took ~9 Great Balls, each after its own fight; it should take **3–5**), then on 2026-11-14 the balls and the level
+  (measured over all 128 hunt areas, below):
 
   ```
-  X = HPterm × catchRate × ball × difficulty × status
+  X = HPterm × catchRate × ball × level × status
   ```
 
   | Term | Value |
   |------|-------|
   | `HPterm` | Fixed at **0.6** (`WILD_SPIRIT`): a beaten wild Pokémon still has fight in it. It does not depend on how you won. (It was 1, the games' 1-HP value, then 0.2 after milestone 11: far too hard.) |
   | `catchRate` | Species catch rate from the data (Pidgey 255, Pikachu 190, Snorlax 25, Mewtwo 3) |
-  | `ball` | Poké ×1, Great ×1.5, Ultra ×2, Safari ×2 (the games' ×1.5 was too weak for the Safari's rare Pokémon), Master = always. Later regions add Nest Ball (`(41 − level)/10` below Lv. 30), Net, Dusk, Level Ball… as data. |
+  | `ball` | Poké ×1, **Great ×2, Ultra ×3.5** (decided 2026-11-14: with the games' ×1.5 and ×2, an Ultra Ball saved under one throw over a Great Ball at twice the price, and a typical Pokémon cost more to catch with it), Safari ×2 (the games' ×1.5 was too weak for the Safari's rare Pokémon), Master = always. Later regions add Nest Ball (`(41 − level)/10` below Lv. 30), Net, Dusk, Level Ball… as data. |
   | `lowLevel` | **Dropped** (it was `(30 − level) / 10` below Lv. 21, ×2.5 at Lv. 5: it made every early Pokémon a sure catch) |
-  | `difficulty` | Before the 8th badge, if the wild Pokémon's level is **higher than your Pokémon's** → ×0.1 |
+  | `level` | The wild Pokémon's level against **your strongest party Pokémon's** (`levelFactor`, decided 2026-11-14): **−10% per level above, down to ×0.3; +5% per level below, up to ×1.5**. It replaced Gen 8's `difficulty` (×0.1 when above the Pokémon that fought, before the 8th badge): one level over cut the chance ~5.6×, so fishing in early towns fell to 4–12% and Mauville's cave to 9–15% |
   | `status` | ×1 (no status effects yet; sleep ×2.5, paralysis/poison/burn ×1.5 when they exist) |
 
   - If `X ≥ 255` it is caught. Otherwise there are **4 shake checks**, each passing with
     `Y/65536` where `Y = 65536 / (255/X)^(3/16)`. Overall chance ≈ `(X/255)^0.75`. Each passed check = one wobble.
   - Examples (Poké / Great / Ultra Ball): a common Pokémon (catch rate 255: Pidgey, Rattata, Geodude) ≈ 68% / 92% /
-    100%; Pikachu (190) ≈ 55%; a typical one (45: Kangaskhan, Scyther, most evolved Pokémon) ≈ 19% / 25% / 31%, so
-    3–5 Great Balls; Snorlax (25) ≈ 12% / 16% / 20%. In the Safari: Kangaskhan ≈ 31%, Chansey ≈ 23%. Legendaries
-    can only be caught with a Master Ball, which always catches.
-  - Level now only matters through `difficulty`: a Pokémon stronger than yours is much harder.
+    100%; Pikachu (190) ≈ 55%; a typical one (45: Kangaskhan, Scyther, most evolved Pokémon) ≈ 19% / 31% / 48%
+    (~5.4 / 3.2 / 2.1 throws); Snorlax (25) ≈ 12% / 20% / 30%. In the Safari: Kangaskhan ≈ 31%, Chansey ≈ 23%.
+    Legendaries can only be caught with a Master Ball, which always catches. (At the same level as your strongest.)
+  - The level is gradual: one level above, a typical Great Ball catch is 29% (it was 4.5%); far above, an Ultra Ball
+    still has ~19%; well below, ×1.5.
+  - Measured over all 128 hunt areas (your strongest at the last gym leader's top level, the Super Rod for water),
+    average chance Poké / Great / Ultra: **36% / 49% / 58% → 47% / 68% / 80%**. Fishing at Pallet: 11% / 15% / 18% →
+    25% / 41% / 63%; Mauville's grass: 22% / 30% / 35% → 55% / 89% / 100%.
   - Gen 8 "critical capture" is left out (simpler).
   - **One throw per win**: if the Pokémon breaks free, it **flees**. You still keep the battle's XP. The ball is used up either way.
   - So the choice of ball matters: a rare Pokémon is worth an Ultra Ball, because there is no second try.
@@ -1074,7 +1079,7 @@ sprites won't save it.
 | Air control | Jumps can be steered left/right in the air |
 | Team battles | Up to 6 vs 6, one at a time, like the real games |
 | Type chart | Modern 18-type chart and modern typings for every region (scales best) |
-| Capture | No performance bonus; the Gen 8 formula's shape (catch rate, ball, difficulty) with a fixed HP term of 0.6 (0.2 was far too hard) and no low-level bonus: a typical Pokémon takes 3–5 Great Balls; Safari Balls ×2 |
+| Capture | No performance bonus; the Gen 8 formula's shape (catch rate, ball, level) with a fixed HP term of 0.6 (0.2 was far too hard) and no low-level bonus; Great ×2, Ultra ×3.5 and a gradual level factor against your strongest Pokémon (2026-11-14): a typical Pokémon takes ~3 Great Balls or ~2 Ultra Balls; Safari Balls ×2 |
 | Specials | Two slots: elemental (K, always a range attack, ¼ PP) and big (I, full PP bar + long charge) |
 | Motion input | Back, down, forward + J: the elemental special with no PP spent and none earned (20-frame motion, attack within 8 frames), also in the air |
 | PP bar | Replaces the Power gauge. One per Pokémon, starts half full, fills only when your hits land. PP pays only for a special that comes out: a hit during the charge gives it back, and an air special still charging on landing fires from the ground |

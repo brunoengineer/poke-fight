@@ -10,7 +10,7 @@ const KANTO = KANTO_REGION.cities;
 import { createRng } from '../engine/rng';
 import { HP_UNITS } from '../fight/constants';
 import { addCaught, canPlace, canSendToBox, canTakeFromBox, place, sendToBox, swapInParty, takeFromBox } from './box';
-import { catchChance, catchValue, DIFFICULTY_PENALTY, throwBall, WILD_SPIRIT } from './capture';
+import { catchChance, catchValue, levelFactor, throwBall, WILD_SPIRIT } from './capture';
 import { addItem, buy, countOf, moneyAfterLoss, prizeMoney, removeItem, START_BAG, START_MONEY, usePotion } from './economy';
 import { bestRod, chances, encounterTable, hasEncounters, huntTable, oldFaces, RARE_BITE, rollEncounter, rollIvs, wildPokemon } from './encounters';
 import { createPokemon, maxHpOf } from './pokemon';
@@ -100,17 +100,26 @@ describe('encounters', () => {
 });
 
 describe('catching (the Gen 8 formula with a wild spirit, no performance bonus)', () => {
-  const x = (catchRate: number, ball: number, wildLevel: number, playerLevel = 50, badges = 0) =>
-    catchValue({ catchRate, ball, wildLevel, playerLevel, badges });
+  /** The party's strongest at the wild one's level, unless said. */
+  const x = (catchRate: number, ball: number, wildLevel: number, partyLevel = wildLevel) => catchValue({ catchRate, ball, wildLevel, partyLevel });
+  const GREAT = ITEMS['great-ball'].kind === 'ball' ? ITEMS['great-ball'].bonus : 0;
+  const ULTRA = ITEMS['ultra-ball'].kind === 'ball' ? ITEMS['ultra-ball'].bonus : 0;
 
-  it('matches the plan: a common Pokémon ≈ 68%, Pikachu ≈ 55%, a typical one (45) ≈ 25% with a Great Ball, Snorlax ≈ 12% / 16% / 20%', () => {
+  it('matches the plan: a common Pokémon ≈ 68%, Pikachu ≈ 55%; a typical one (45) 19% / 31% / 48%; Snorlax 12% / 20% / 30%', () => {
     expect(catchChance(x(255, 1, 3))).toBeCloseTo(0.682, 2);
     expect(catchChance(x(190, 1, 5))).toBeCloseTo(0.547, 2);
-    // 3–5 Great Balls for most Pokémon worth catching (decided after milestone 12; it was ~9).
-    expect(catchChance(x(45, 1.5, 30))).toBeCloseTo(0.252, 2);
-    expect(catchChance(x(25, 1, 30))).toBeCloseTo(0.119, 2);
-    expect(catchChance(x(25, 1.5, 30))).toBeCloseTo(0.162, 2);
-    expect(catchChance(x(25, 2, 30))).toBeCloseTo(0.201, 2);
+    // Each better ball saves real fights (decided 2026-11-14): ~5.4, ~3.2, ~2.1 throws for a typical Pokémon.
+    expect([1, GREAT, ULTRA]).toEqual([1, 2, 3.5]);
+    expect([1, GREAT, ULTRA].map(ball => catchChance(x(45, ball, 30)))).toEqual([
+      expect.closeTo(0.186, 2),
+      expect.closeTo(0.312, 2),
+      expect.closeTo(0.475, 2),
+    ]);
+    expect([1, GREAT, ULTRA].map(ball => catchChance(x(25, ball, 30)))).toEqual([
+      expect.closeTo(0.119, 2),
+      expect.closeTo(0.201, 2),
+      expect.closeTo(0.304, 2),
+    ]);
   });
 
   it('a Safari Ball counts double: the Safari’s rare ones take 3–4 throws (Kangaskhan ≈ 31%, Chansey ≈ 23%)', () => {
@@ -119,7 +128,7 @@ describe('catching (the Gen 8 formula with a wild spirit, no performance bonus)'
     expect(catchChance(x(30, 2, 25))).toBeCloseTo(0.23, 2);
   });
 
-  it('the level no longer matters (no low-level bonus), only the ball and the species', () => {
+  it('at the same level, only the ball and the species count', () => {
     expect(x(255, 1, 2)).toBe(x(255, 1, 40));
     expect(x(255, 2, 5)).toBe(2 * x(255, 1, 5));
   });
@@ -132,14 +141,18 @@ describe('catching (the Gen 8 formula with a wild spirit, no performance bonus)'
     expect(throwBall(x(3, Infinity, 70), createRng(1)).caught).toBe(true);
   });
 
-  it('a wild Pokémon stronger than yours is much harder to catch (before the 8th badge)', () => {
-    expect(x(45, 1, 30, 20)).toBeCloseTo(45 * WILD_SPIRIT * DIFFICULTY_PENALTY);
-    expect(x(45, 1, 30, 20, 8)).toBeCloseTo(45 * WILD_SPIRIT);
-    expect(x(45, 1, 30, 30)).toBeCloseTo(45 * WILD_SPIRIT);
+  it('the level gap against your strongest Pokémon: −10% a level above (down to ×0.3), +5% a level below (up to ×1.5)', () => {
+    expect([0, 1, 3, 7, 20].map(above => levelFactor(30 + above, 30))).toEqual([1, 0.9, 0.7, 0.3, 0.3]);
+    expect([1, 4, 10, 40].map(below => levelFactor(30 - below, 30))).toEqual([1.05, 1.2, 1.5, 1.5]);
+    expect(x(45, 1, 33, 30)).toBeCloseTo(45 * WILD_SPIRIT * 0.7);
+    // Gradual, not a cliff: one level above a typical Great Ball catch is 29%, not 4.5% as before.
+    expect(catchChance(x(45, GREAT, 31, 30))).toBeCloseTo(0.288, 2);
+    // Far above: hard, but never hopeless (an Ultra Ball still ~19%).
+    expect(catchChance(x(45, ULTRA, 60, 30))).toBeCloseTo(0.192, 2);
   });
 
   it('the shake checks give the formula chance (statistically, with a fixed seed)', () => {
-    const value = x(45, 1.5, 30); // ≈ 25%
+    const value = x(45, GREAT, 30); // ≈ 31%
     const rng = createRng(11);
     const caught = Array.from({ length: 20_000 }, () => throwBall(value, rng).caught).filter(Boolean).length / 20_000;
     expect(caught).toBeCloseTo(catchChance(value), 1);

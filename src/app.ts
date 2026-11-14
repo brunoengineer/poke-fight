@@ -108,7 +108,7 @@ interface ResultsState {
   outcome: 'win' | 'loss' | 'draw';
   lines: Line[];
   /** A defeated wild Pokémon, waiting for a ball (asked first). A legendary only takes a Master Ball. */
-  capture: { pokemon: Pokemon; playerLevel: number; legendary?: boolean } | null;
+  capture: { pokemon: Pokemon; legendary?: boolean } | null;
   /** Party indexes ready to evolve, asked one at a time. */
   evolutions: { index: number; to: number }[];
   /** The Pokémon that gained XP, for the cards (made when the battle ends, before any evolution). */
@@ -2151,13 +2151,12 @@ export function startApp(elements: AppElements, options: TestOptions) {
 
   function throwAt(ball: BallId) {
     if (!results?.capture || !save) return;
-    const { pokemon, playerLevel } = results.capture;
+    const { pokemon } = results.capture;
     const x = catchValue({
       catchRate: species(pokemon.speciesId).captureRate,
       ball: ITEMS[ball].kind === 'ball' ? ITEMS[ball].bonus : 1,
       wildLevel: pokemon.level,
-      playerLevel,
-      badges: save.badges.length,
+      partyLevel: Math.max(...save.party.map(p => p.level)),
     });
     const thrown = throwBall(x, rng);
     if (ball === 'safari-ball' && safari) safari.balls--;
@@ -2316,11 +2315,10 @@ export function startApp(elements: AppElements, options: TestOptions) {
       }
       save = next;
       persist();
-      const winner = battle.teams[0][battle.active[0]];
       results = {
         outcome,
         lines,
-        capture: outcome === 'win' ? { pokemon: opponent, playerLevel: winner.level, legendary: true } : null,
+        capture: outcome === 'win' ? { pokemon: opponent, legendary: true } : null,
         evolutions: outcome === 'loss' ? [] : report.evolutions,
         xp: xpCards(report.gains, party),
         onContinue: () => {
@@ -2336,11 +2334,10 @@ export function startApp(elements: AppElements, options: TestOptions) {
       const fled = outcome !== 'win' || battle.round.timeOver;
       update(s => ({ ...s, party: party.map(heal) }));
       if (fled && opponent) lines.push({ key: 'safari.fled', params: { name: nameOf(opponent) } });
-      const winner = battle.teams[0][battle.active[0]];
       results = {
         outcome: fled ? 'draw' : 'win',
         lines,
-        capture: !fled && opponent && safari && safari.balls > 0 ? { pokemon: opponent, playerLevel: winner.level } : null,
+        capture: !fled && opponent && safari && safari.balls > 0 ? { pokemon: opponent } : null,
         evolutions: report.evolutions,
         xp: xpCards(report.gains, party),
         onContinue: () => {
@@ -2382,11 +2379,10 @@ export function startApp(elements: AppElements, options: TestOptions) {
       save = next;
       persist();
       const hasBall = BALLS.some(ball => countOf(save!.bag, ball) > 0);
-      const winner = battle.teams[0][battle.active[0]];
       results = {
         outcome,
         lines,
-        capture: outcome === 'win' && finished === 'wild' && opponent && hasBall ? { pokemon: opponent, playerLevel: winner.level } : null,
+        capture: outcome === 'win' && finished === 'wild' && opponent && hasBall ? { pokemon: opponent } : null,
         evolutions: outcome === 'loss' ? [] : report.evolutions,
         xp: xpCards(report.gains, party),
         again: finished === 'wild' && lastHunt ? () => huntAgain() : undefined,

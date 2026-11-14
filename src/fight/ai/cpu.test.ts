@@ -214,7 +214,9 @@ describe('profiles', () => {
 
 // Balance: measured with fixed seeds (so these never flake). The thresholds sit below the measured results;
 // if a change drops below them, the CPU or the frame data got worse on purpose or by accident.
-describe('balance', () => {
+// Each test plays 20 to 60 whole fights: ~1.5 s here, but CI's runners are 3–4× slower (the spammer test took 5.2 s
+// there and hit Vitest's 5 s default), so this block gets more time.
+describe('balance', { timeout: 30_000 }, () => {
   const wins = (a: Difficulty, b: Difficulty) =>
     Array.from({ length: 20 }, (_, s) => cpuDuel(makeProfile(a), makeProfile(b), s + 1)).filter(d => d.final.winner === 0).length;
 

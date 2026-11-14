@@ -49,6 +49,7 @@ import { evolve, heal, itemEvolution, levelEvolution, setSpecial, specialOptions
 import { SAFARI_BALLS, SAFARI_ENTRANCE, SAFARI_SECONDS } from './game/safari';
 import { cleanName, createStarter, DEFAULT_NAMES, MAX_NAME_LENGTH, trainingOpponents } from './game/story';
 import { MAX_LEVEL, xpForLevel } from './game/xp';
+import { DOJO_FEE, leaveAtDojo, takeBack, trained, trainOnce } from './game/dojo';
 import { detectLanguage, language, LANGUAGE_NAMES, LANGUAGES, setKeyNames, setLanguage, t, type Language, type MessageKey } from './i18n';
 import { createRenderer } from './render/renderer';
 import type { StageSpec } from './render/stage';
@@ -69,6 +70,7 @@ import { createBackdrop } from './ui/backdrop';
 import type { IconName } from './ui/icons';
 import type { Hint, Pad } from './ui/kit';
 import { renderCenter } from './ui/screens/center';
+import { renderDojo } from './ui/screens/dojo';
 import { renderBox, type BoxMon } from './ui/screens/box';
 import { renderCity, type PlaceCard } from './ui/screens/city';
 import { renderMap } from './ui/screens/map';
@@ -828,6 +830,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
           ]
         : []),
       { testid: 'city-box', title: t('place.box'), subtitle: t('place.boxText', { count: s.box.length }), color: '#2fa9a0', icon: 'pc', onClick: openBox },
+      // The Training Dojo, in the League city only: who is training there, and how far it has come.
+      ...(here.id === regionNow().league.city ? [dojoCard(s)] : []),
       // Select (View) on a controller, Tab on the keyboard: the map from anywhere in the city, to change cities quickly.
       { testid: 'city-map', title: t('place.map'), subtitle: t('place.mapText'), color: '#c99b4a', icon: 'map', pad: 'view', key: 'Tab', onClick: showMap },
     ];
@@ -1300,6 +1304,124 @@ export function startApp(elements: AppElements, options: TestOptions) {
       back: { label: t('menu.back'), testid: 'back', onClick: goCity },
       hints: [hints.select, hints.back],
     });
+  }
+
+  // ── The Training Dojo ─────────────────────────────────────────────────────────────────────────────────────────
+  function dojoCard(s: Save): PlaceCard {
+    const now = s.dojo ? trained(s.dojo).pokemon : null;
+    return {
+      testid: 'city-dojo',
+      title: t('place.dojo'),
+      subtitle: now && s.dojo ? t('place.dojoBusy', { name: nameOf(now), from: s.dojo.pokemon.level, to: now.level }) : t('place.dojoText'),
+      color: '#c8743a',
+      icon: 'belt',
+      art: now ? { pokemon: [{ url: spriteUrl(now.speciesId), seen: true }] } : { people: [trainerUrl(PEOPLE.dojoMaster)] },
+      onClick: () => showDojo(),
+    };
+  }
+
+  /**
+   * The dojo: with nobody training, the party to choose from (a confirmation first: taking it back costs DOJO_FEE);
+   * with someone, how far it has come and the button to take it back. `said`: the master's words instead of the usual.
+   */
+  function showDojo(moment: 'none' | 'left' | 'back' = 'none', said: string | null = null, confirm: number | null = null) {
+    if (!save) return;
+    const s = save;
+    scene = 'menu';
+    show();
+    indoors('#c8743a');
+    const regionName = t(`region.${regionNow().id}` as MessageKey);
+    const dojo = s.dojo;
+    const now = dojo ? trained(dojo) : null;
+    const evolution = now ? levelEvolution(now.pokemon) : null;
+    const trainee =
+      dojo && now
+        ? {
+            name: nameOf(now.pokemon),
+            sprite: spriteUrl(now.pokemon.speciesId),
+            from: t('party.level', { level: dojo.pokemon.level }),
+            to: t('party.level', { level: now.pokemon.level }),
+            gained: t('dojo.gained', { battles: dojo.battles }),
+            movesLabel: t('dojo.moves'),
+            moves: now.levelUps.flatMap(l => l.moves).map(m => move(m).name),
+            note:
+              now.pokemon.level >= MAX_LEVEL
+                ? t('dojo.max')
+                : evolution && evolution.to <= regionNow().lastSpecies
+                  ? t('dojo.ready')
+                  : null,
+          }
+        : null;
+    const picking = confirm === null ? null : s.party[confirm];
+    const message =
+      said ??
+      (picking
+        ? t('dojo.confirm', { name: nameOf(picking), fee: DOJO_FEE })
+        : dojo && now
+          ? t(dojo.battles === 0 ? 'dojo.waiting' : 'dojo.training', { name: nameOf(now.pokemon), from: dojo.pokemon.level, to: now.pokemon.level, fee: DOJO_FEE, region: regionName })
+          : t('dojo.welcome', { region: regionName, fee: DOJO_FEE }));
+    const back = { label: t('menu.back'), testid: 'back', back: true, onClick: goCity };
+    renderDojo(overlayRoot, {
+      title: t('place.dojo'),
+      masterName: t('dojo.master'),
+      master: trainerUrl(PEOPLE.dojoMaster),
+      message,
+      trainee,
+      party: s.party.map((p, i) => ({
+        name: nameOf(p),
+        sprite: spriteUrl(p.speciesId),
+        level: t('party.level', { level: p.level }),
+        testid: `dojo-pick-${i}`,
+        // The party keeps at least one Pokémon: the master says so instead.
+        onClick: () => (s.party.length < 2 ? showDojo('none', t('dojo.lastOne', { name: nameOf(p) })) : showDojo('none', null, i)),
+      })),
+      partyLabel: t('dojo.pick'),
+      moment,
+      rules: {
+        label: t('dojo.rules'),
+        items: [
+          { icon: 'battle', text: t('dojo.rulePerBattle', { region: regionName }) },
+          { icon: 'exit', text: t('dojo.ruleRun') },
+          { icon: 'coin', text: t('dojo.ruleFee', { fee: DOJO_FEE }) },
+          { icon: 'belt', text: t('dojo.ruleOne') },
+        ],
+      },
+      buttons: picking
+        ? [
+            { label: t('dojo.leave', { name: nameOf(picking) }), testid: 'dojo-leave', icon: 'belt', primary: true, onClick: () => leaveForTraining(confirm!) },
+            { label: t('dojo.cancel'), testid: 'dojo-cancel', back: true, onClick: () => showDojo() },
+          ]
+        : dojo
+          ? // Just left: Back is the main button, so a second press of A / Enter can't spend the fee by accident.
+            [
+              { label: t('dojo.takeBack', { fee: DOJO_FEE }), testid: 'dojo-take', icon: 'coin', primary: moment !== 'left', onClick: takeFromDojo },
+              { ...back, primary: moment === 'left' },
+            ]
+          : [back],
+      hints: [hints.select, hints.back],
+    });
+  }
+
+  function leaveForTraining(index: number) {
+    if (!save || save.dojo || save.party.length < 2) return;
+    const left = save.party[index];
+    update(current => ({ ...current, ...leaveAtDojo(current.party, index, current.dojo) }));
+    audio.play('ballOpen');
+    showDojo('left', t('dojo.left', { name: nameOf(left), region: t(`region.${regionNow().id}` as MessageKey) }));
+  }
+
+  function takeFromDojo() {
+    if (!save?.dojo) return;
+    const name = nameOf(save.dojo.pokemon);
+    const back = takeBack(save.money, save.party, save.box, save.dojo);
+    if (!back.ok) {
+      if (back.reason === 'money') showDojo('none', t('dojo.noMoney', { name, fee: DOJO_FEE, money: save.money }));
+      return;
+    }
+    update(current => ({ ...current, money: back.money, party: back.party, box: back.box, dojo: null }));
+    audio.play('levelUp');
+    showDojo('back', t(back.where === 'party' ? 'dojo.back' : 'dojo.backBox', { name, level: back.pokemon.level }));
+    for (const m of back.levelUps.flatMap(l => l.moves)) toast(t('results.move', { name, move: move(m).name }));
   }
 
   function showShop(message: string | null, bought: ItemId | null = null) {
@@ -2398,6 +2520,9 @@ export function startApp(elements: AppElements, options: TestOptions) {
     }
     // Nothing evolves past the region's Pokédex (a Gen 4 evolution doesn't exist in Hoenn).
     if (results) results.evolutions = results.evolutions.filter(e => e.to <= regionNow().lastSpecies);
+    // The dojo's Pokémon trains: a level for each battle fought in its region, won or lost (running away never gets
+    // here; the demo and the tutorial aren't the journey's battles).
+    if (save?.dojo && finished !== 'demo' && finished !== 'tutorial') update(current => (current.dojo ? { ...current, dojo: trainOnce(current.dojo) } : current));
     modal = 'results';
     show();
     if (results?.lines.some(line => line.key === 'results.level')) window.setTimeout(() => audio.play('levelUp'), 300);

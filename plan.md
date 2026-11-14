@@ -741,6 +741,19 @@ World map (cities unlocked by badges)
   too long): ₽2,000, +1 level (its moves too; reaching a level evolution, it evolves at once, as in the games), sold
   only at each region's League city mart: about one battle there per level. Gym, Elite Four and Champion prizes (99 × their best level) are
   one-time and unchanged. **Losing** (wild or trainer): half the money is lost, the party is healed, back to the city.
+- **Training Dojo** (decided 2026-11-14; `game/dojo.ts`, `ui/screens/dojo.ts`): in each region's **League city**, a
+  dojo master trains one party Pokémon at a time **per region** (the dojo is part of the region's journey, like its
+  party and box; save version 8 adds `dojo` to each journey).
+  - It gains **one level for every battle the player fights in that region**, won or lost: wild, trainers, gyms, the
+    League, the sanctuary, the Safari. Running away never ends a battle, so it doesn't count; neither do the demo, the
+    tutorial or Versus. Battles stop counting at Lv. 100.
+  - It learns each level's moves (a Struggle-only one gets its first real move as its specials); evolving is asked,
+    as usual, after the next battle once it's back in the party (the dojo says when it's ready).
+  - **Taking it back costs ₽2,000** (`DOJO_FEE`), at any time: into the party, or the box when the party is full. It
+    comes back at full HP. Leaving one asks first (the fee), the party keeps at least one Pokémon, and right after
+    leaving one the focus is on Back, not on "Take back".
+  - Against the Rare Candy (₽2,000 **a level**, sold in the same city): the dojo's ₽2,000 pays for all its levels, but
+    they take battles. A Pokémon that doesn't fight still grows while the team plays.
 - **Shop** (per city), **Pokémon Center** (free healing), **PC box** in any city (decided: swap freely, the party
   keeps 1–6), **potions** used from the party screen (they can't revive), **world map** (locked cities say how many
   badges they need), **Pokédex** (seen / caught counts).

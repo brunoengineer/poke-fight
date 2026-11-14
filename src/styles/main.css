@@ -1771,6 +1771,7 @@ kbd,
 /* ── Rooms: the Pokémon Center and the Poké Mart ────────────────────────────────────────────────────────────── */
 
 .center-screen,
+.dojo-screen,
 .mart-screen {
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto auto;
@@ -1962,8 +1963,448 @@ kbd,
 }
 
 .center-screen > .hints,
+.dojo-screen > .hints,
 .mart-screen > .hints {
   grid-area: hints;
+}
+
+/* ── The Training Dojo: a wooden hall, a banner, a tatami mat; the master and the Pokémon sparring ──────────────── */
+
+.dojo-room {
+  overflow: hidden;
+  border-radius: 2.4cqh;
+  box-shadow: 0 2cqh 4cqh rgba(0, 0, 0, 0.45);
+}
+
+.dojo-wall {
+  position: absolute;
+  inset: 0 0 30% 0;
+  background:
+    linear-gradient(180deg, transparent 0 82%, rgba(0, 0, 0, 0.25) 82% 84%, transparent 84%),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.16) 0 0.35cqh, transparent 0.35cqh 7.5cqh),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 2.5cqh, transparent 2.5cqh 7.5cqh),
+    linear-gradient(180deg, #6d3f22, #a5663a 55%, #8b5430);
+  box-shadow: inset 0 1.4cqh 3cqh rgba(0, 0, 0, 0.4);
+}
+
+/* Light through a high window, tinted by the region. */
+.dojo-wall::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(45% 60% at 50% 0%, color-mix(in srgb, var(--theme) 40%, #fff3d6 40%), transparent 70%);
+  opacity: 0.45;
+}
+
+.dojo-banner {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 9%;
+  display: grid;
+  place-items: center;
+  width: 12cqh;
+  height: 24cqh;
+  border-radius: 0.5cqh;
+  background: linear-gradient(180deg, #fbf3e0, #e8d7b1);
+  box-shadow:
+    0 1.2cqh 2cqh rgba(0, 0, 0, 0.45),
+    inset 0 0 0 0.7cqh color-mix(in srgb, var(--theme) 55%, #8d2323);
+  translate: -50% 0;
+  animation: banner-sway 6s ease-in-out infinite alternate;
+  transform-origin: 50% -1cqh;
+}
+
+/* The rod it hangs from, and its cord. */
+.dojo-banner::before {
+  content: '';
+  position: absolute;
+  top: -1.4cqh;
+  left: -1.8cqh;
+  right: -1.8cqh;
+  height: 1.5cqh;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #6b4524, #3b2412);
+}
+
+.dojo-banner::after {
+  content: '';
+  position: absolute;
+  bottom: 1.6cqh;
+  width: 60%;
+  height: 0.5cqh;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--theme) 55%, #8d2323);
+}
+
+.dojo-emblem {
+  width: 8cqh;
+  height: 8cqh;
+  filter: drop-shadow(0 0.4cqh 0.4cqh rgba(0, 0, 0, 0.3));
+}
+
+@keyframes banner-sway {
+  from {
+    rotate: -1.2deg;
+  }
+  to {
+    rotate: 1.2deg;
+  }
+}
+
+/* Tatami: a dark green edge, woven straw, the seam between two mats. */
+.dojo-floor {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 30%;
+  border-top: 0.9cqh solid #3e4b22;
+  background:
+    linear-gradient(90deg, transparent calc(50% - 0.3cqh), #3e4b22 calc(50% - 0.3cqh) calc(50% + 0.3cqh), transparent calc(50% + 0.3cqh)),
+    repeating-linear-gradient(180deg, rgba(90, 80, 20, 0.16) 0 0.25cqh, transparent 0.25cqh 1.1cqh),
+    linear-gradient(180deg, #d6cd86, #b3aa62);
+  box-shadow: inset 0 1.6cqh 2.4cqh rgba(0, 0, 0, 0.28);
+}
+
+.dojo-master {
+  position: absolute;
+  z-index: 2;
+  bottom: 9%;
+  left: 3%;
+  width: 42cqh;
+  height: 42cqh;
+  filter: drop-shadow(0 1cqh 1cqh rgba(0, 0, 0, 0.4));
+  animation: rise 500ms var(--ease-out) both;
+}
+
+.dojo-screen.back .dojo-master {
+  animation: hop 520ms var(--ease-out) 2;
+}
+
+.dojo-trainee,
+.dojo-dummy {
+  position: absolute;
+  z-index: 2;
+  bottom: 12%;
+  right: 8%;
+  width: 30cqh;
+  height: 30cqh;
+}
+
+/* Its shadow on the mat. */
+.dojo-trainee::after,
+.dojo-dummy::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 20%;
+  right: 20%;
+  /* Under the feet: sprite pictures keep about a fifth of their height empty below them. */
+  bottom: 20%;
+  height: 9%;
+  border-radius: 50%;
+  background: rgba(40, 30, 10, 0.35);
+  filter: blur(0.4cqh);
+}
+
+.dojo-trainee-sprite {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0.8cqh 0.8cqh rgba(0, 0, 0, 0.35));
+  animation: spar 1.4s ease-in-out infinite;
+}
+
+.dojo-screen.left .dojo-trainee {
+  animation: rise 520ms var(--ease-out) both;
+}
+
+/* A step toward the master, a strike, back to guard. */
+@keyframes spar {
+  0%,
+  100% {
+    translate: 0 0;
+    scale: 1;
+  }
+  35% {
+    translate: 1.2cqh 0;
+    scale: 1.03 0.96;
+  }
+  50% {
+    translate: -2.6cqh -1.6cqh;
+    scale: 0.97 1.04;
+  }
+  62% {
+    translate: -1cqh 0;
+    scale: 1;
+  }
+}
+
+/* Sparks at the moment of the strike, on the master's side. */
+.dojo-spark {
+  position: absolute;
+  z-index: 3;
+  width: 2.2cqh;
+  height: 2.2cqh;
+  background: #fff6c8;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  filter: drop-shadow(0 0 0.8cqh #ffd54a);
+  opacity: 0;
+  animation: spark 1.4s ease-out infinite;
+}
+
+.dojo-spark.s1 {
+  left: 4%;
+  top: 34%;
+}
+
+.dojo-spark.s2 {
+  left: -2%;
+  top: 48%;
+  scale: 0.7;
+  animation-delay: 40ms;
+}
+
+.dojo-spark.s3 {
+  left: 10%;
+  top: 22%;
+  scale: 0.55;
+  animation-delay: 80ms;
+}
+
+@keyframes spark {
+  0%,
+  45% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  52% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(0.6) translate(-1cqh, -1cqh);
+  }
+}
+
+/* The straw dummy: a post, a cross-arm and a round head, waiting for someone. Its shadow is at the post's foot. */
+.dojo-dummy::after {
+  bottom: 3%;
+}
+/* The straw dummy: a post, a cross-arm and a round head, waiting for someone. */
+.dummy-post {
+  position: absolute;
+  left: 46%;
+  bottom: 6%;
+  width: 8%;
+  height: 74%;
+  border-radius: 0.6cqh;
+  background: linear-gradient(90deg, #5e3b1c, #8a5a2c 45%, #5e3b1c);
+}
+
+.dummy-arm {
+  position: absolute;
+  left: 22%;
+  top: 38%;
+  width: 56%;
+  height: 7%;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #8a5a2c, #5e3b1c);
+}
+
+.dummy-head {
+  position: absolute;
+  left: 34%;
+  top: 6%;
+  width: 32%;
+  height: 32%;
+  border-radius: 50%;
+  background:
+    repeating-linear-gradient(35deg, rgba(120, 90, 30, 0.35) 0 0.3cqh, transparent 0.3cqh 0.9cqh),
+    radial-gradient(circle at 35% 35%, #f1dc97, #c9a64e);
+  box-shadow: inset 0 -0.8cqh 1.2cqh rgba(0, 0, 0, 0.25);
+}
+
+.dojo-dummy {
+  animation: dummy-wobble 3.2s ease-in-out infinite;
+  transform-origin: 50% 95%;
+}
+
+@keyframes dummy-wobble {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  50% {
+    rotate: 1.5deg;
+  }
+}
+
+/* The side panel: the trainee's progress, or the party to choose from; how it works at the bottom. */
+.dojo-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4cqh;
+}
+
+.dojo-rules {
+  display: grid;
+  gap: 0.9cqh;
+  margin-top: auto;
+  padding: 1.6cqh 1.8cqh;
+  border-radius: 1.6cqh;
+  background: rgba(0, 0, 0, 0.18);
+  box-shadow: inset 0 0 0 0.15cqh rgba(255, 255, 255, 0.06);
+}
+
+.dojo-rules ul {
+  display: grid;
+  gap: 0.8cqh;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dojo-rules li {
+  display: flex;
+  align-items: center;
+  gap: 1.1cqh;
+  font-size: 1.8cqh;
+  color: var(--dim);
+}
+
+.dojo-rules .icon {
+  flex: none;
+  width: 2.4cqh;
+  height: 2.4cqh;
+  color: color-mix(in srgb, var(--theme) 70%, white);
+}
+
+.dojo-card {
+  display: flex;
+  align-items: center;
+  gap: 1.6cqh;
+  padding: 1.4cqh 2cqh 1.4cqh 0.8cqh;
+  border-radius: 2cqh;
+  background:
+    radial-gradient(80% 120% at 0% 50%, color-mix(in srgb, var(--theme) 30%, transparent), transparent 70%),
+    rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 0.2cqh rgba(255, 255, 255, 0.08);
+  animation: rise 360ms var(--ease-out) both;
+}
+
+.dojo-card-sprite {
+  width: 14cqh;
+  height: 14cqh;
+  margin: -2cqh -1cqh;
+}
+
+.dojo-card-text {
+  display: grid;
+  gap: 0.6cqh;
+}
+
+.dojo-card-text strong {
+  font-size: 3cqh;
+}
+
+.dojo-levels {
+  display: flex;
+  align-items: center;
+  gap: 0.8cqh;
+  font-size: 2.4cqh;
+}
+
+.dojo-levels small {
+  font-size: 2cqh;
+  color: var(--dim);
+}
+
+.dojo-levels .icon {
+  width: 2.2cqh;
+  height: 2.2cqh;
+  color: var(--gold);
+}
+
+.dojo-levels b {
+  color: var(--gold);
+  font-size: 2.8cqh;
+}
+
+.dojo-gained {
+  font-size: 1.7cqh;
+  color: var(--dim);
+}
+
+.dojo-moves {
+  display: grid;
+  gap: 0.8cqh;
+}
+
+.dojo-move {
+  padding: 0.5cqh 1.2cqh;
+  border-radius: 99px;
+  font-size: 1.7cqh;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 0.15cqh rgba(255, 255, 255, 0.12);
+}
+
+.dojo-note {
+  margin: 0;
+  padding: 1cqh 1.4cqh;
+  border-radius: 1.2cqh;
+  font-size: 1.8cqh;
+  color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+}
+
+.dojo-party {
+  display: grid;
+  gap: 0.9cqh;
+}
+
+.dojo-pick {
+  display: flex;
+  align-items: center;
+  gap: 1cqh;
+  padding: 0.6cqh 1.4cqh 0.6cqh 0.4cqh;
+  border: 0;
+  border-radius: 1.4cqh;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  animation: rise 360ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 50ms);
+  transition:
+    background 120ms,
+    transform 120ms;
+}
+
+.dojo-pick .mini-party-name {
+  flex: 1;
+}
+
+.dojo-pick-icon {
+  width: 2.4cqh;
+  height: 2.4cqh;
+  opacity: 0;
+  color: var(--gold);
+  transition: opacity 120ms;
+}
+
+.dojo-pick:hover,
+.dojo-pick:focus-visible {
+  background: color-mix(in srgb, var(--theme) 28%, rgba(255, 255, 255, 0.08));
+  outline: 0.3cqh solid color-mix(in srgb, var(--theme) 70%, white);
+  transform: translateX(0.6cqh);
+}
+
+.dojo-pick:hover .dojo-pick-icon,
+.dojo-pick:focus-visible .dojo-pick-icon {
+  opacity: 1;
 }
 
 /* The Mart's shelves. */

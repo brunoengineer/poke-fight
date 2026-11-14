@@ -2,6 +2,7 @@
 // to the base dictionaries. A new part: a file like these, added here.
 
 import * as boss from './boss';
+import * as dojo from './dojo';
 import * as gyms from './gyms';
 import * as hoenn from './hoenn';
 import * as items from './items';
@@ -11,6 +12,6 @@ import * as regions from './regions';
 import * as sinnoh from './sinnoh';
 import * as versus from './versus';
 
-export const partsEn = { ...items.en, ...boss.en, ...regions.en, ...johto.en, ...hoenn.en, ...sinnoh.en, ...motion.en, ...gyms.en, ...versus.en };
+export const partsEn = { ...items.en, ...boss.en, ...regions.en, ...johto.en, ...hoenn.en, ...sinnoh.en, ...motion.en, ...gyms.en, ...versus.en, ...dojo.en };
 
-export const partsPt: Record<keyof typeof partsEn, string> = { ...items.pt, ...boss.pt, ...regions.pt, ...johto.pt, ...hoenn.pt, ...sinnoh.pt, ...motion.pt, ...gyms.pt, ...versus.pt };
+export const partsPt: Record<keyof typeof partsEn, string> = { ...items.pt, ...boss.pt, ...regions.pt, ...johto.pt, ...hoenn.pt, ...sinnoh.pt, ...motion.pt, ...gyms.pt, ...versus.pt, ...dojo.pt };

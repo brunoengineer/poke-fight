@@ -68,6 +68,7 @@ function journey(id: RegionId): RegionJourney {
     dex: { seen: owned, caught: owned },
     badges: r.gyms.map(g => g.badge),
     champion: true,
+    dojo: null,
   };
 }
 

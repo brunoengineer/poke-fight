@@ -265,6 +265,32 @@ describe('the official learnsets (version 7)', () => {
   });
 });
 
+describe('the Training Dojo (version 8)', () => {
+  const v7 = () => JSON.parse(readFileSync(new URL('./fixtures/save-v7-indigo.json', import.meta.url), 'utf8'));
+
+  it('a version 7 save has nobody training, in any region', () => {
+    const old = v7();
+    old.away = { johto: { ...journeyOf({ ...old, dojo: null } as Save), location: 'new-bark', badges: [], champion: false } };
+    delete old.away.johto.dojo;
+    const result = parseSave(JSON.stringify(old));
+    if (result.status !== 'ok') throw new Error(JSON.stringify(result));
+    expect(result.save.dojo).toBeNull();
+    expect(result.save.away.johto!.dojo).toBeNull();
+  });
+
+  it('keeps who is training through a save and a region switch; refuses a broken dojo', () => {
+    const trainee = createPokemon(speciesBySlug('pikachu').id, 12);
+    const s: Save = { ...save(), dojo: { pokemon: trainee, battles: 4 } };
+    expect(parseSave(serializeSave(s))).toMatchObject({ status: 'ok', save: { dojo: { battles: 4, pokemon: { level: 12 } } } });
+    expect(journeyOf(s).dojo).toEqual(s.dojo);
+    expect(broken(s, x => (x.dojo!.battles = -1))).toMatchObject({ reason: 'invalid' });
+    expect(broken(s, x => (x.dojo!.pokemon.speciesId = 99999))).toMatchObject({ reason: 'invalid' });
+    expect(broken(s, x => delete (x as Partial<Save>).dojo)).toMatchObject({ reason: 'invalid' });
+    // Its specials are repaired like any other Pokémon's.
+    expect(broken(s, x => (x.dojo!.pokemon.specials.big = 'growl'))).toMatchObject({ status: 'ok' });
+  });
+});
+
 describe('fixtures (real saves kept for compatibility)', () => {
   const dir = new URL('./fixtures/', import.meta.url);
   const files = readdirSync(dir).filter(f => f.endsWith('.json'));

@@ -6,6 +6,7 @@
 import { isItemId } from '../data/items';
 import { hasSpecies, move, species } from '../data/pokedex';
 import { hasCity, hasRegion, isRegion, isSanctuary, region as regionData, regionOf, type RegionId } from '../data/regions';
+import type { Dojo } from '../game/dojo';
 import { START_BAG, START_MONEY, type Bag } from '../game/economy';
 import { movesKnownAt } from '../game/moves';
 import { maxHpOf, type Pokemon } from '../game/pokemon';
@@ -14,7 +15,7 @@ import { DEFAULT_NAMES, MAX_NAME_LENGTH } from '../game/story';
 import { MAX_LEVEL } from '../game/xp';
 import { isLanguage, type Language } from '../i18n';
 
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 export interface Settings {
   language: Language;
@@ -48,6 +49,8 @@ export interface Save {
   region: RegionId;
   /** This region's League has been beaten. */
   champion: boolean;
+  /** The Pokémon left training at this region's dojo (in its League city), or null. */
+  dojo: Dojo | null;
   /** Every region whose League has been won (each one opens the next). */
   champions: RegionId[];
   /** The other regions' journeys, kept while the player is elsewhere (decided after milestone 11: one per region). */
@@ -57,7 +60,7 @@ export interface Save {
 }
 
 /** What belongs to one region's journey (the rest of the save is the player's, everywhere). */
-export const JOURNEY_KEYS = ['rival', 'starterId', 'prologue', 'location', 'party', 'box', 'money', 'bag', 'dex', 'badges', 'champion'] as const;
+export const JOURNEY_KEYS = ['rival', 'starterId', 'prologue', 'location', 'party', 'box', 'money', 'bag', 'dex', 'badges', 'champion', 'dojo'] as const;
 export type RegionJourney = Pick<Save, (typeof JOURNEY_KEYS)[number]>;
 
 export interface HallOfFameEntry {
@@ -96,6 +99,7 @@ export function newSave(journey: NewJourney, createdAt: number, language: Langua
     badges: [],
     region: 'kanto',
     champion: false,
+    dojo: null,
     champions: [],
     away: {},
     hallOfFame: [],
@@ -135,6 +139,7 @@ export function startRegion(save: Save, to: RegionId, start: { starterId: number
     dex: { seen: [...new Set([start.starterId, start.rivalStarterId])], caught: [start.starterId] },
     badges: [],
     champion: false,
+    dojo: null,
   };
   return { ...save, ...journey, region: to, away };
 }
@@ -150,11 +155,13 @@ function teachOfficialMoves(p: Pokemon): Pokemon {
   return { ...p, moves: [...p.moves, ...missing] };
 }
 
-/** Every Pokémon of a journey (its party and box) through `change`; anything malformed is left for findProblem. */
+/** Every Pokémon of a journey (its party, box and dojo) through `change`; anything malformed is left for findProblem. */
 function eachPokemon<T extends Record<string, unknown>>(journey: T, change: (p: Pokemon) => Pokemon): T {
   if (typeof journey !== 'object' || journey === null) return journey;
   const all = (list: unknown) => (Array.isArray(list) ? list.map(change) : list);
-  return { ...journey, party: all(journey.party), box: all(journey.box) };
+  const dojo = journey.dojo as Dojo | null | undefined;
+  const trainee = typeof dojo === 'object' && dojo !== null ? { dojo: { ...dojo, pokemon: change(dojo.pokemon) } } : {};
+  return { ...journey, party: all(journey.party), box: all(journey.box), ...trainee };
 }
 
 /** The same, in the current journey and every journey kept in `away`. */
@@ -216,6 +223,11 @@ const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string
   }),
   // Version 6 saves (Red/Blue's thin learnsets for Kanto): every Pokémon, in every journey, learns what it missed.
   6: old => ({ ...everyPokemon(old, teachOfficialMoves), version: 7 }),
+  // Version 7 saves (before the Training Dojo): nobody training, in any journey.
+  7: old => {
+    const away = (old.away ?? {}) as Record<string, Record<string, unknown>>;
+    return { ...old, version: 8, dojo: null, away: Object.fromEntries(Object.entries(away).map(([id, j]) => [id, { ...j, dojo: null }])) };
+  },
 };
 
 export type LoadResult =
@@ -299,6 +311,12 @@ function journeyProblem(data: Record<string, unknown>, regionId: RegionId): stri
   const known = regionData(regionId).gyms.map(g => g.badge);
   if (!Array.isArray(badges) || badges.some(b => !known.includes(b)) || new Set(badges).size !== badges.length) return 'bad badges';
   if (typeof data.champion !== 'boolean') return 'bad champion flag';
+  const dojo = data.dojo as Dojo | null | undefined;
+  if (dojo !== null) {
+    if (typeof dojo !== 'object' || !Number.isInteger(dojo.battles) || dojo.battles < 0) return 'bad dojo';
+    const problem = pokemonProblem(dojo.pokemon);
+    if (problem) return `dojo: ${problem}`;
+  }
   for (const [i, p] of [...party, ...(data.box as Pokemon[])].entries()) {
     const problem = pokemonProblem(p as Pokemon);
     if (problem) return `Pokémon ${i}: ${problem}`;

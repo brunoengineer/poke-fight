@@ -33,6 +33,7 @@ const PATHS = {
   safari: 'M4 20c2-6 6-9 8-9s6 3 8 9M12 11V4M9 6l3-2 3 2M7 20h10',
   trophy: 'M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8M10 17h4',
   arrow: 'M5 12h14M13 6l6 6-6 6',
+  belt: 'M3 9h18v3.5H3zM10 9.5l2 2.6 2-2.6M11 12.2 8.6 20M13 12.2l2.4 7.8',
 } as const;
 
 export type IconName = keyof typeof PATHS;

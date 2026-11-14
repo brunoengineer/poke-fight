@@ -76,6 +76,8 @@ export const PEOPLE = {
   player: 'red',
   nurse: 'nurse',
   clerk: 'clerkf',
+  /** The Training Dojo's master (plan.md §5). */
+  dojoMaster: 'blackbelt',
 } as const;
 
 /** Trainers on the battle field: a class picked from the opponents' team, so it stays the same for the same team. */

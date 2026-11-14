@@ -5,7 +5,7 @@
 //   - Big slot: its form comes from the move's type (plan.md §4.9): a Ground move is a quake wave, a Water move a
 //     surf wave, a Fire move a tornado… Normal moves keep the old rule: physical → a Rush, special → a beam.
 
-import { move, type Species } from '../data/pokedex';
+import { move, species, type Species } from '../data/pokedex';
 import type { BigShape, ElementalShape } from '../fight/frame-data';
 
 export const STRUGGLE = 'struggle';
@@ -56,9 +56,22 @@ export function bigShape(slug: string): BigShape {
   return BIG_SHAPES[m.type] ?? (m.category === 'physical' ? 'rush' : 'beam');
 }
 
+/**
+ * What a species learns by level up: its own learnset and its earlier forms' (decided 2026-11-14), each move at the
+ * lowest level any of them learns it. So evolving early (a stone, a Rare Candy) never costs the moves the earlier form
+ * would have learned later: Pikachu evolved at Lv. 10 still learns Thunderbolt when it gets there, as a Raichu.
+ */
+export function learnable(s: Species): { level: number; move: string }[] {
+  const lowest = new Map<string, number>();
+  for (let form: Species | null = s; form; form = form.evolvesFrom === null ? null : species(form.evolvesFrom)) {
+    for (const entry of form.learnset) lowest.set(entry.move, Math.min(lowest.get(entry.move) ?? Infinity, entry.level));
+  }
+  return [...lowest].map(([move, level]) => ({ level, move })).sort((a, b) => a.level - b.level || a.move.localeCompare(b.move));
+}
+
 /** Every move learned by level up to this level, plus gifts (the starters' first type move), in learning order. */
-export function movesKnownAt(species: Species, level: number, gifts: readonly string[] = []): string[] {
-  const learned = species.learnset.filter(entry => entry.level <= level).map(entry => entry.move);
+export function movesKnownAt(s: Species, level: number, gifts: readonly string[] = []): string[] {
+  const learned = learnable(s).filter(entry => entry.level <= level).map(entry => entry.move);
   return [...new Set([...learned, ...gifts])];
 }
 

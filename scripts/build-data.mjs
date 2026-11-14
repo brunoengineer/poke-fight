@@ -6,11 +6,16 @@
 //                                   those learnsets use, and (Gen 2 on) the region's wild encounter tables
 //   src/data/generated/types.json   the type chart (modern, 18 types: decided in plan.md §4.5)
 //
-// Learnsets and encounters come from the region's own games (Gen 1: Red/Blue; Gen 2: HeartGold/SoulSilver; Gen 3:
-// Emerald, with Ruby/Sapphire encounters; Gen 4: Platinum, with Diamond/Pearl encounters); types, stats and move data
-// are the modern ones (what PokeAPI returns by default).
+// Encounters and Pokédex entries come from the region's own games (Gen 1: Red/Blue; Gen 2: HeartGold/SoulSilver;
+// Gen 3: Emerald, with Ruby/Sapphire encounters; Gen 4: Platinum, with Diamond/Pearl encounters). Learnsets come from
+// HeartGold/SoulSilver for every species (decided 2026-11-14: the last official games with all 493 and full level-up
+// lists; Red/Blue's were so thin that a Lv. 30 Psyduck knew only Scratch), then Platinum, then the region's own games.
+// Types, stats and move data are the modern ones (what PokeAPI returns by default).
+//
+// `node scripts/build-data.mjs --learnsets` refreshes only the learnsets (and the moves they add) in the files already
+// there, leaving everything else as it is.
 
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -187,6 +192,51 @@ async function regionEncounters(lastId, source, region, dropped) {
   return [...merged.values()].sort(order);
 }
 
+/** The games learnsets come from, in order of preference (see the top of this file). */
+const LEARNSET_GROUPS = ['heartgold-soulsilver', 'platinum'];
+
+/** A Pokémon's level-up moves, in learning order, from the first games in LEARNSET_GROUPS that have it. */
+function learnsetOf(pokemon, source, generation) {
+  const levelUp = versionGroup =>
+    pokemon.moves
+      .flatMap(m =>
+        m.version_group_details
+          .filter(d => d.version_group.name === versionGroup && d.move_learn_method.name === 'level-up')
+          .map(d => ({ level: d.level_learned_at, move: m.move.name })),
+      )
+      .sort((a, b) => a.level - b.level || a.move.localeCompare(b.move));
+  // (Deoxys has no Emerald learnset, Emerald's Deoxys being another form: the generation's other games fill in.)
+  const groups = [...LEARNSET_GROUPS, source.versionGroup, ...generation.version_groups.map(v => v.name)];
+  return groups.map(levelUp).find(l => l.length > 0) ?? [];
+}
+
+async function moveData(name) {
+  const move = await get(`move/${name}`);
+  return { name: english(move.names)?.name ?? name, type: move.type.name, power: move.power, category: move.damage_class.name };
+}
+
+/** --learnsets: the generation's file as it is, with every species' learnset fetched again (and its new moves). */
+async function refreshLearnsets(gen) {
+  const file = join(root, 'src', 'data', 'generated', `gen${gen}.json`);
+  const data = JSON.parse(await readFile(file, 'utf8'));
+  const generation = await get(`generation/${gen}`);
+  const source = SOURCES[gen];
+  await mapLimit(data.species, 12, async s => {
+    s.learnset = learnsetOf(await get(`pokemon/${s.id}`), source, generation);
+    process.stdout.write('.');
+  });
+  const needed = new Set([...data.species.flatMap(s => s.learnset.map(e => e.move)), 'ember', 'bubble', 'vine-whip', 'struggle']);
+  const moves = {};
+  await mapLimit([...needed].sort(), 12, async name => {
+    moves[name] = data.moves[name] ?? (await moveData(name));
+  });
+  data.moves = sortedKeys(moves);
+  let json = JSON.stringify(data, null, 1);
+  if (data.encounters) json = json.replace(/\{\n\s*"area":[^{}]*\}/g, entry => JSON.stringify(JSON.parse(entry)));
+  await writeFile(file, json + '\n');
+  console.log(`\nGeneration ${gen}: learnsets refreshed, ${Object.keys(moves).length} moves (${file})`);
+}
+
 // --- One generation ---
 
 async function build(gen) {
@@ -228,8 +278,7 @@ async function build(gen) {
             .map(d => ({ level: d.level_learned_at, move: m.move.name })),
         )
         .sort((a, b) => a.level - b.level || a.move.localeCompare(b.move));
-    // Deoxys has no Emerald learnset (Emerald's Deoxys is another form): the generation's other games fill in.
-    const learnset = [source.versionGroup, ...generation.version_groups.map(v => v.name)].map(levelUp).find(l => l.length > 0) ?? [];
+    const learnset = learnsetOf(pokemon, source, generation);
     for (const entry of learnset) moveNames.add(entry.move);
 
     // Wild encounters in the source games. Gen 1: where, how (walking, surfing, fishing…), levels, chance. Gen 2 on:
@@ -309,6 +358,10 @@ async function build(gen) {
 }
 
 async function main() {
+  if (process.argv.includes('--learnsets')) {
+    for (const gen of gens) await refreshLearnsets(gen);
+    return;
+  }
   for (const gen of gens) await build(gen);
   const types = await buildTypes();
   await writeFile(join(root, 'src', 'data', 'generated', 'types.json'), JSON.stringify(types, null, 1) + '\n');

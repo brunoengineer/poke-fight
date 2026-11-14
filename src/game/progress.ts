@@ -3,7 +3,7 @@
 
 import type { EvolutionItemId } from '../data/items';
 import { species, type Evolution } from '../data/pokedex';
-import { isDamaging, STRUGGLE } from './moves';
+import { isDamaging, learnable, STRUGGLE } from './moves';
 import { maxHpOf, type Pokemon } from './pokemon';
 import { levelForXp, MAX_LEVEL, xpForLevel } from './xp';
 
@@ -39,7 +39,7 @@ export function gainXp(pokemon: Pokemon, amount: number): XpResult {
   const target = levelForXp(s.growthRate, p.xp);
   const levelUps: LevelUp[] = [];
   for (let level = pokemon.level + 1; level <= target; level++) {
-    const moves = s.learnset.filter(entry => entry.level === level).map(entry => entry.move);
+    const moves = learnable(s).filter(entry => entry.level === level).map(entry => entry.move);
     const before = p;
     p = learn({ ...p, level }, moves);
     p = keepHpDifference(before, p);
@@ -85,10 +85,14 @@ export interface EvolveResult {
   moves: string[];
 }
 
-/** Evolves: new species, new stats (HP up by the difference), same moves and specials, plus its moves at this level. */
+/**
+ * Evolving: new species, new stats (HP up by the difference), same moves and specials, plus every move the new form
+ * would know at this level that this Pokémon doesn't (its Lv. 1 moves, and any it learns earlier than the old form did).
+ * Nothing is ever forgotten (no 4-move limit here).
+ */
 export function evolve(pokemon: Pokemon, to: number): EvolveResult {
   const next = species(to);
-  const moves = next.learnset.filter(entry => entry.level === pokemon.level).map(entry => entry.move);
+  const moves = learnable(next).filter(entry => entry.level <= pokemon.level).map(entry => entry.move);
   const evolved = learn({ ...pokemon, speciesId: to }, moves);
   return { pokemon: keepHpDifference(pokemon, evolved), moves: moves.filter(m => !pokemon.moves.includes(m)) };
 }

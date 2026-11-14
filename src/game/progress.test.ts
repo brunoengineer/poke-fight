@@ -45,7 +45,8 @@ describe('level ups', () => {
     const { pokemon, levelUps } = gainXp(charmander, xpForLevel('medium-slow', 9) - charmander.xp);
     expect(pokemon.level).toBe(9);
     expect(levelUps.map(l => l.level)).toEqual([6, 7, 8, 9]);
-    expect(levelUps.at(-1)!.moves).toEqual(['ember']);
+    // Ember at 7 (HeartGold/SoulSilver).
+    expect(levelUps.find(l => l.level === 7)!.moves).toEqual(['ember']);
     expect(pokemon.moves).toContain('ember');
   });
 
@@ -85,12 +86,44 @@ describe('evolution', () => {
     expect(pokemon.moves).toEqual(expect.arrayContaining(charmander.moves));
     expect(maxHpOf(pokemon) - pokemon.hp).toBe(maxHpOf(charmander) - 200);
   });
+
+  it("evolving teaches the new form's moves up to its level (Raichu's Lv. 1 Quick Attack and Thunderbolt)", () => {
+    const pikachu = createPokemon(id('pikachu'), 10);
+    expect(pikachu.moves).not.toContain('thunderbolt');
+    const { pokemon, moves } = evolve(pikachu, id('raichu'));
+    // A Lv. 10 Pikachu doesn't know Quick Attack yet (its own list: Lv. 13); Raichu learns both at Lv. 1.
+    expect(moves).toEqual(['quick-attack', 'thunderbolt']);
+    expect(pokemon.moves).toEqual([...pikachu.moves, 'quick-attack', 'thunderbolt']);
+  });
+
+  it("evolving early never costs a move: a Raichu from a Lv. 10 Pikachu still learns Pikachu's later moves", () => {
+    const raichu = evolve(createPokemon(id('pikachu'), 10), id('raichu')).pokemon;
+    const { pokemon, levelUps } = gainXp(raichu, xpForLevel(speciesBySlug('raichu').growthRate, 45) - raichu.xp);
+    // Pikachu's list (HeartGold/SoulSilver): Slam at 21, Discharge at 37, Thunder at 45; Raichu's own has none of them.
+    expect(levelUps.find(l => l.level === 21)!.moves).toEqual(['slam']);
+    expect(levelUps.find(l => l.level === 37)!.moves).toEqual(['discharge']);
+    expect(levelUps.find(l => l.level === 45)!.moves).toEqual(['thunder']);
+    expect(pokemon.moves).toEqual(expect.arrayContaining(['thunder-shock', 'thunderbolt', 'slam', 'discharge', 'thunder']));
+  });
+
+  it("a caught evolved Pokémon knows its earlier forms' moves too, each once", () => {
+    const charizard = createPokemon(id('charizard'), 40);
+    expect(charizard.moves).toEqual(expect.arrayContaining(['ember', 'dragon-rage', 'flamethrower']));
+    expect(new Set(charizard.moves).size).toBe(charizard.moves.length);
+  });
+
+  it('evolving twice at the same level teaches nothing new the second time', () => {
+    const charmeleon = evolve(createPokemon(id('charmander'), 36), id('charmeleon')).pokemon;
+    const once = evolve(charmeleon, id('charizard'));
+    expect(evolve(once.pokemon, id('charizard')).moves).toEqual([]);
+  });
 });
 
 describe('specials', () => {
   it('only known damaging moves can be specials', () => {
     const charmeleon = createPokemon(id('charmeleon'), 30);
-    expect(specialOptions(charmeleon)).toEqual(['ember', 'scratch', 'rage']);
+    // Its own moves and Charmander's, each at the lowest level either learns it (Slash: Charmander's 28, not 32).
+    expect(specialOptions(charmeleon)).toEqual(['ember', 'scratch', 'fire-fang', 'slash']);
     expect(setSpecial(charmeleon, 'big', 'scratch').specials.big).toBe('scratch');
     expect(() => setSpecial(charmeleon, 'big', 'growl')).toThrow();
     expect(() => setSpecial(charmeleon, 'big', 'flamethrower')).toThrow();

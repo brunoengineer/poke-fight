@@ -24,10 +24,12 @@ describe('Gen 1 data', () => {
     for (const s of allSpecies()) expect(s.baseExperience).toBeGreaterThan(0);
   });
 
-  it('has the Red/Blue level-up learnsets', () => {
+  it('has the HeartGold/SoulSilver level-up learnsets (decided 2026-11-14: Red/Blue’s were too thin)', () => {
     const charmander = speciesBySlug('charmander').learnset;
-    expect(charmander).toContainEqual({ level: 9, move: 'ember' });
-    expect(charmander).toContainEqual({ level: 38, move: 'flamethrower' });
+    expect(charmander).toContainEqual({ level: 7, move: 'ember' });
+    expect(charmander).toContainEqual({ level: 34, move: 'flamethrower' });
+    // Psyduck knew only Scratch at Lv. 30 in Red/Blue.
+    expect(speciesBySlug('psyduck').learnset.filter(e => e.level <= 30).map(e => e.move)).toEqual(expect.arrayContaining(['water-gun', 'confusion']));
     for (const s of allSpecies()) for (const entry of s.learnset) expect(() => move(entry.move)).not.toThrow();
   });
 

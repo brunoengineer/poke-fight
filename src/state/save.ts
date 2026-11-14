@@ -4,16 +4,17 @@
 // old format in src/state/fixtures/ (the fixture test then proves old saves still load).
 
 import { isItemId } from '../data/items';
-import { hasSpecies, move } from '../data/pokedex';
+import { hasSpecies, move, species } from '../data/pokedex';
 import { hasCity, hasRegion, isRegion, isSanctuary, region as regionData, regionOf, type RegionId } from '../data/regions';
 import { START_BAG, START_MONEY, type Bag } from '../game/economy';
+import { movesKnownAt } from '../game/moves';
 import { maxHpOf, type Pokemon } from '../game/pokemon';
 import { specialOptions } from '../game/progress';
 import { DEFAULT_NAMES, MAX_NAME_LENGTH } from '../game/story';
 import { MAX_LEVEL } from '../game/xp';
 import { isLanguage, type Language } from '../i18n';
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 export interface Settings {
   language: Language;
@@ -138,6 +139,23 @@ export function startRegion(save: Save, to: RegionId, start: { starterId: number
   return { ...save, ...journey, region: to, away };
 }
 
+/**
+ * Version 7 (decided 2026-11-14, the official learnsets): every Pokémon also knows the moves the new lists teach by its
+ * level (HeartGold/SoulSilver's, its earlier forms' included). Nothing it knew is taken away, so its specials stay.
+ * Anything malformed is left as it is, for findProblem to refuse.
+ */
+function teachOfficialMoves(p: Pokemon): Pokemon {
+  if (typeof p !== 'object' || p === null || !hasSpecies(p.speciesId) || !Array.isArray(p.moves) || !Number.isInteger(p.level)) return p;
+  const missing = movesKnownAt(species(p.speciesId), p.level).filter(m => !p.moves.includes(m));
+  return { ...p, moves: [...p.moves, ...missing] };
+}
+
+function teachJourney<T extends Record<string, unknown>>(journey: T): T {
+  if (typeof journey !== 'object' || journey === null) return journey;
+  const all = (list: unknown) => (Array.isArray(list) ? list.map(teachOfficialMoves) : list);
+  return { ...journey, party: all(journey.party), box: all(journey.box) };
+}
+
 /** Migrations from version N to N + 1. */
 const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string, unknown>> = {
   // Version 1 saves come from before the prologue (the sandbox party): they become a journey already at Viridian,
@@ -174,6 +192,12 @@ const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string
     champions: old.champion === true ? ['kanto'] : [],
     away: {},
     hallOfFame: (old.hallOfFame as HallOfFameEntry[]).map(entry => ({ ...entry, region: 'kanto' })),
+  }),
+  // Version 6 saves (Red/Blue's thin learnsets for Kanto): every Pokémon, in every journey, learns what it missed.
+  6: old => ({
+    ...teachJourney(old),
+    version: 7,
+    away: Object.fromEntries(Object.entries((old.away as Record<string, Record<string, unknown>>) ?? {}).map(([id, j]) => [id, teachJourney(j)])),
   }),
 };
 

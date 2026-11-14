@@ -75,6 +75,10 @@
     {
      "level": 46,
      "move": "giga-drain"
+    },
+    {
+     "level": 51,
+     "move": "energy-ball"
     }
    ],
    "encounters": [],
@@ -169,6 +173,10 @@
     {
      "level": 53,
      "move": "false-swipe"
+    },
+    {
+     "level": 59,
+     "move": "leaf-storm"
     }
    ],
    "encounters": [],
@@ -212,6 +220,10 @@
     },
     {
      "level": 1,
+     "move": "night-slash"
+    },
+    {
+     "level": 1,
      "move": "pound"
     },
     {
@@ -228,7 +240,7 @@
     },
     {
      "level": 16,
-     "move": "fury-cutter"
+     "move": "x-scissor"
     },
     {
      "level": 17,
@@ -257,6 +269,10 @@
     {
      "level": 59,
      "move": "false-swipe"
+    },
+    {
+     "level": 67,
+     "move": "leaf-storm"
     }
    ],
    "encounters": [],
@@ -434,6 +450,10 @@
     {
      "level": 50,
      "move": "sky-uppercut"
+    },
+    {
+     "level": 54,
+     "move": "flare-blitz"
     }
    ],
    "encounters": [],
@@ -526,11 +546,15 @@
     },
     {
      "level": 49,
-     "move": "mirror-move"
+     "move": "brave-bird"
     },
     {
      "level": 59,
      "move": "sky-uppercut"
+    },
+    {
+     "level": 66,
+     "move": "flare-blitz"
     }
    ],
    "encounters": [],
@@ -695,7 +719,7 @@
     },
     {
      "level": 25,
-     "move": "mud-sport"
+     "move": "mud-bomb"
     },
     {
      "level": 31,
@@ -788,7 +812,7 @@
     },
     {
      "level": 25,
-     "move": "mud-sport"
+     "move": "mud-bomb"
     },
     {
      "level": 31,
@@ -809,6 +833,10 @@
     {
      "level": 61,
      "move": "endeavor"
+    },
+    {
+     "level": 69,
+     "move": "hammer-arm"
     }
    ],
    "encounters": [],
@@ -878,11 +906,11 @@
     },
     {
      "level": 29,
-     "move": "scary-face"
+     "move": "assurance"
     },
     {
      "level": 33,
-     "move": "take-down"
+     "move": "scary-face"
     },
     {
      "level": 37,
@@ -890,11 +918,19 @@
     },
     {
      "level": 41,
-     "move": "crunch"
+     "move": "embargo"
     },
     {
      "level": 45,
-     "move": "thief"
+     "move": "take-down"
+    },
+    {
+     "level": 49,
+     "move": "sucker-punch"
+    },
+    {
+     "level": 53,
+     "move": "crunch"
     }
    ],
    "encounters": [
@@ -1005,11 +1041,11 @@
     },
     {
      "level": 32,
-     "move": "scary-face"
+     "move": "assurance"
     },
     {
      "level": 37,
-     "move": "take-down"
+     "move": "scary-face"
     },
     {
      "level": 42,
@@ -1017,11 +1053,19 @@
     },
     {
      "level": 47,
-     "move": "crunch"
+     "move": "embargo"
     },
     {
      "level": 52,
+     "move": "take-down"
+    },
+    {
+     "level": 57,
      "move": "thief"
+    },
+    {
+     "level": 62,
+     "move": "sucker-punch"
     }
    ],
    "encounters": [
@@ -1115,6 +1159,10 @@
     {
      "level": 41,
      "move": "belly-drum"
+    },
+    {
+     "level": 45,
+     "move": "fling"
     }
    ],
    "encounters": [
@@ -1223,6 +1271,10 @@
     },
     {
      "level": 1,
+     "move": "switcheroo"
+    },
+    {
+     "level": 1,
      "move": "tackle"
     },
     {
@@ -1268,6 +1320,10 @@
     {
      "level": 53,
      "move": "belly-drum"
+    },
+    {
+     "level": 59,
+     "move": "fling"
     }
    ],
    "encounters": [
@@ -1345,6 +1401,10 @@
     {
      "level": 5,
      "move": "poison-sting"
+    },
+    {
+     "level": 15,
+     "move": "bug-bite"
     }
    ],
    "encounters": [
@@ -1492,6 +1552,10 @@
     {
      "level": 38,
      "move": "giga-drain"
+    },
+    {
+     "level": 41,
+     "move": "bug-buzz"
     }
    ],
    "encounters": [],
@@ -1615,6 +1679,10 @@
     {
      "level": 38,
      "move": "toxic"
+    },
+    {
+     "level": 41,
+     "move": "bug-buzz"
     }
    ],
    "encounters": [],
@@ -1664,24 +1732,40 @@
      "move": "growl"
     },
     {
-     "level": 7,
+     "level": 5,
      "move": "absorb"
     },
     {
-     "level": 13,
+     "level": 7,
      "move": "nature-power"
     },
     {
-     "level": 21,
+     "level": 11,
      "move": "mist"
     },
     {
+     "level": 15,
+     "move": "natural-gift"
+    },
+    {
+     "level": 19,
+     "move": "mega-drain"
+    },
+    {
+     "level": 25,
+     "move": "bubble-beam"
+    },
+    {
      "level": 31,
+     "move": "zen-headbutt"
+    },
+    {
+     "level": 37,
      "move": "rain-dance"
     },
     {
-     "level": 43,
-     "move": "mega-drain"
+     "level": 45,
+     "move": "energy-ball"
     }
    ],
    "encounters": [
@@ -1740,35 +1824,39 @@
      "move": "growl"
     },
     {
-     "level": 7,
+     "level": 5,
      "move": "absorb"
     },
     {
-     "level": 13,
+     "level": 7,
      "move": "nature-power"
     },
     {
-     "level": 19,
+     "level": 11,
      "move": "fake-out"
     },
     {
-     "level": 25,
+     "level": 15,
      "move": "fury-swipes"
     },
     {
-     "level": 31,
+     "level": 19,
      "move": "water-sport"
     },
     {
-     "level": 37,
-     "move": "thief"
+     "level": 25,
+     "move": "bubble-beam"
     },
     {
-     "level": 43,
+     "level": 31,
+     "move": "zen-headbutt"
+    },
+    {
+     "level": 37,
      "move": "uproar"
     },
     {
-     "level": 49,
+     "level": 45,
      "move": "hydro-pump"
     }
    ],
@@ -1811,15 +1899,15 @@
    "learnset": [
     {
      "level": 1,
-     "move": "absorb"
-    },
-    {
-     "level": 1,
      "move": "astonish"
     },
     {
      "level": 1,
      "move": "growl"
+    },
+    {
+     "level": 1,
+     "move": "mega-drain"
     },
     {
      "level": 1,
@@ -1943,6 +2031,10 @@
      "move": "pound"
     },
     {
+     "level": 1,
+     "move": "razor-leaf"
+    },
+    {
      "level": 3,
      "move": "harden"
     },
@@ -2017,19 +2109,23 @@
    "learnset": [
     {
      "level": 1,
-     "move": "growth"
+     "move": "feint-attack"
     },
     {
      "level": 1,
-     "move": "harden"
+     "move": "nasty-plot"
     },
     {
      "level": 1,
-     "move": "nature-power"
+     "move": "razor-leaf"
     },
     {
      "level": 1,
-     "move": "pound"
+     "move": "whirlwind"
+    },
+    {
+     "level": 49,
+     "move": "leaf-storm"
     }
    ],
    "encounters": [],
@@ -2105,6 +2201,10 @@
     {
      "level": 43,
      "move": "agility"
+    },
+    {
+     "level": 53,
+     "move": "air-slash"
     }
    ],
    "encounters": [
@@ -2184,6 +2284,10 @@
     },
     {
      "level": 1,
+     "move": "pluck"
+    },
+    {
+     "level": 1,
      "move": "quick-attack"
     },
     {
@@ -2213,6 +2317,10 @@
     {
      "level": 49,
      "move": "agility"
+    },
+    {
+     "level": 61,
+     "move": "air-slash"
     }
    ],
    "encounters": [
@@ -2266,28 +2374,44 @@
      "move": "water-gun"
     },
     {
-     "level": 7,
+     "level": 6,
      "move": "supersonic"
     },
     {
-     "level": 13,
+     "level": 11,
      "move": "wing-attack"
     },
     {
-     "level": 21,
+     "level": 16,
      "move": "mist"
     },
     {
-     "level": 31,
+     "level": 19,
+     "move": "water-pulse"
+    },
+    {
+     "level": 24,
      "move": "quick-attack"
     },
     {
-     "level": 43,
+     "level": 29,
+     "move": "roost"
+    },
+    {
+     "level": 34,
      "move": "pursuit"
     },
     {
-     "level": 55,
+     "level": 37,
      "move": "agility"
+    },
+    {
+     "level": 42,
+     "move": "aerial-ace"
+    },
+    {
+     "level": 47,
+     "move": "air-slash"
     }
    ],
    "encounters": [
@@ -2406,39 +2530,55 @@
      "move": "wing-attack"
     },
     {
-     "level": 3,
-     "move": "water-gun"
-    },
-    {
-     "level": 7,
+     "level": 6,
      "move": "supersonic"
     },
     {
-     "level": 13,
+     "level": 11,
      "move": "wing-attack"
     },
     {
-     "level": 21,
+     "level": 16,
      "move": "mist"
+    },
+    {
+     "level": 19,
+     "move": "water-pulse"
+    },
+    {
+     "level": 24,
+     "move": "payback"
     },
     {
      "level": 25,
      "move": "protect"
     },
     {
-     "level": 33,
-     "move": "stockpile"
+     "level": 31,
+     "move": "roost"
     },
     {
-     "level": 33,
-     "move": "swallow"
-    },
-    {
-     "level": 47,
+     "level": 38,
      "move": "spit-up"
     },
     {
-     "level": 61,
+     "level": 38,
+     "move": "stockpile"
+    },
+    {
+     "level": 38,
+     "move": "swallow"
+    },
+    {
+     "level": 43,
+     "move": "fling"
+    },
+    {
+     "level": 50,
+     "move": "tailwind"
+    },
+    {
+     "level": 57,
      "move": "hydro-pump"
     }
    ],
@@ -2489,35 +2629,47 @@
      "move": "confusion"
     },
     {
-     "level": 11,
+     "level": 10,
      "move": "double-team"
     },
     {
-     "level": 16,
+     "level": 12,
      "move": "teleport"
     },
     {
+     "level": 17,
+     "move": "lucky-chant"
+    },
+    {
      "level": 21,
+     "move": "magical-leaf"
+    },
+    {
+     "level": 23,
      "move": "calm-mind"
     },
     {
-     "level": 26,
+     "level": 28,
      "move": "psychic"
     },
     {
-     "level": 31,
+     "level": 32,
      "move": "imprison"
     },
     {
-     "level": 36,
+     "level": 34,
      "move": "future-sight"
     },
     {
-     "level": 41,
+     "level": 39,
+     "move": "charm"
+    },
+    {
+     "level": 43,
      "move": "hypnosis"
     },
     {
-     "level": 46,
+     "level": 45,
      "move": "dream-eater"
     }
    ],
@@ -2589,35 +2741,47 @@
      "move": "confusion"
     },
     {
-     "level": 11,
+     "level": 10,
      "move": "double-team"
     },
     {
-     "level": 16,
+     "level": 12,
      "move": "teleport"
     },
     {
-     "level": 21,
+     "level": 17,
+     "move": "lucky-chant"
+    },
+    {
+     "level": 22,
+     "move": "magical-leaf"
+    },
+    {
+     "level": 25,
      "move": "calm-mind"
     },
     {
-     "level": 26,
+     "level": 31,
      "move": "psychic"
     },
     {
-     "level": 33,
+     "level": 36,
      "move": "imprison"
     },
     {
-     "level": 40,
+     "level": 39,
      "move": "future-sight"
     },
     {
-     "level": 47,
+     "level": 45,
+     "move": "charm"
+    },
+    {
+     "level": 50,
      "move": "hypnosis"
     },
     {
-     "level": 54,
+     "level": 53,
      "move": "dream-eater"
     }
    ],
@@ -2667,6 +2831,10 @@
     },
     {
      "level": 1,
+     "move": "healing-wish"
+    },
+    {
+     "level": 1,
      "move": "teleport"
     },
     {
@@ -2674,35 +2842,47 @@
      "move": "confusion"
     },
     {
-     "level": 11,
+     "level": 10,
      "move": "double-team"
     },
     {
-     "level": 16,
+     "level": 12,
      "move": "teleport"
     },
     {
-     "level": 21,
+     "level": 17,
+     "move": "wish"
+    },
+    {
+     "level": 22,
+     "move": "magical-leaf"
+    },
+    {
+     "level": 25,
      "move": "calm-mind"
     },
     {
-     "level": 26,
+     "level": 33,
      "move": "psychic"
     },
     {
-     "level": 33,
+     "level": 40,
      "move": "imprison"
     },
     {
-     "level": 42,
+     "level": 45,
      "move": "future-sight"
     },
     {
-     "level": 51,
-     "move": "hypnosis"
+     "level": 53,
+     "move": "captivate"
     },
     {
      "level": 60,
+     "move": "hypnosis"
+    },
+    {
+     "level": 65,
      "move": "dream-eater"
     }
    ],
@@ -2775,6 +2955,10 @@
     {
      "level": 37,
      "move": "mist"
+    },
+    {
+     "level": 43,
+     "move": "baton-pass"
     }
    ],
    "encounters": [
@@ -2824,6 +3008,10 @@
     },
     {
      "level": 1,
+     "move": "ominous-wind"
+    },
+    {
+     "level": 1,
      "move": "quick-attack"
     },
     {
@@ -2847,24 +3035,32 @@
      "move": "water-sport"
     },
     {
-     "level": 26,
+     "level": 22,
      "move": "gust"
     },
     {
-     "level": 33,
+     "level": 26,
      "move": "scary-face"
     },
     {
-     "level": 40,
+     "level": 33,
      "move": "stun-spore"
     },
     {
-     "level": 47,
+     "level": 40,
      "move": "silver-wind"
     },
     {
-     "level": 53,
+     "level": 47,
+     "move": "air-slash"
+    },
+    {
+     "level": 54,
      "move": "whirlwind"
+    },
+    {
+     "level": 61,
+     "move": "bug-buzz"
     }
    ],
    "encounters": [],
@@ -2909,39 +3105,47 @@
      "move": "absorb"
     },
     {
-     "level": 4,
+     "level": 5,
      "move": "tackle"
     },
     {
-     "level": 7,
+     "level": 9,
      "move": "stun-spore"
     },
     {
-     "level": 10,
+     "level": 13,
      "move": "leech-seed"
     },
     {
-     "level": 16,
+     "level": 17,
      "move": "mega-drain"
     },
     {
-     "level": 22,
+     "level": 21,
      "move": "headbutt"
     },
     {
-     "level": 28,
+     "level": 25,
      "move": "poison-powder"
     },
     {
-     "level": 36,
+     "level": 29,
+     "move": "worry-seed"
+    },
+    {
+     "level": 33,
      "move": "growth"
     },
     {
-     "level": 45,
+     "level": 37,
      "move": "giga-drain"
     },
     {
-     "level": 54,
+     "level": 41,
+     "move": "seed-bomb"
+    },
+    {
+     "level": 45,
      "move": "spore"
     }
    ],
@@ -3001,23 +3205,23 @@
      "move": "tackle"
     },
     {
-     "level": 4,
+     "level": 5,
      "move": "tackle"
     },
     {
-     "level": 7,
+     "level": 9,
      "move": "stun-spore"
     },
     {
-     "level": 10,
+     "level": 13,
      "move": "leech-seed"
     },
     {
-     "level": 16,
+     "level": 17,
      "move": "mega-drain"
     },
     {
-     "level": 22,
+     "level": 21,
      "move": "headbutt"
     },
     {
@@ -3025,19 +3229,27 @@
      "move": "mach-punch"
     },
     {
-     "level": 28,
+     "level": 25,
      "move": "counter"
     },
     {
-     "level": 36,
+     "level": 29,
+     "move": "force-palm"
+    },
+    {
+     "level": 33,
      "move": "sky-uppercut"
     },
     {
-     "level": 45,
+     "level": 37,
      "move": "mind-reader"
     },
     {
-     "level": 54,
+     "level": 41,
+     "move": "seed-bomb"
+    },
+    {
+     "level": 45,
      "move": "dynamic-punch"
     }
    ],
@@ -3286,6 +3498,18 @@
     {
      "level": 43,
      "move": "flail"
+    },
+    {
+     "level": 49,
+     "move": "fling"
+    },
+    {
+     "level": 55,
+     "move": "punishment"
+    },
+    {
+     "level": 61,
+     "move": "hammer-arm"
     }
    ],
    "encounters": [],
@@ -3412,6 +3636,10 @@
    "learnset": [
     {
      "level": 1,
+     "move": "bug-bite"
+    },
+    {
+     "level": 1,
      "move": "harden"
     },
     {
@@ -3469,6 +3697,10 @@
     {
      "level": 45,
      "move": "baton-pass"
+    },
+    {
+     "level": 52,
+     "move": "x-scissor"
     }
    ],
    "encounters": [],
@@ -3537,11 +3769,19 @@
     },
     {
      "level": 38,
-     "move": "shadow-ball"
+     "move": "shadow-sneak"
     },
     {
      "level": 45,
      "move": "grudge"
+    },
+    {
+     "level": 52,
+     "move": "heal-block"
+    },
+    {
+     "level": 59,
+     "move": "shadow-ball"
     }
    ],
    "encounters": [],
@@ -3716,6 +3956,10 @@
      "move": "howl"
     },
     {
+     "level": 20,
+     "move": "bite"
+    },
+    {
      "level": 23,
      "move": "supersonic"
     },
@@ -3788,11 +4032,23 @@
     },
     {
      "level": 1,
+     "move": "fire-fang"
+    },
+    {
+     "level": 1,
      "move": "howl"
     },
     {
      "level": 1,
+     "move": "ice-fang"
+    },
+    {
+     "level": 1,
      "move": "pound"
+    },
+    {
+     "level": 1,
+     "move": "thunder-fang"
     },
     {
      "level": 1,
@@ -3811,6 +4067,10 @@
      "move": "howl"
     },
     {
+     "level": 20,
+     "move": "bite"
+    },
+    {
      "level": 23,
      "move": "supersonic"
     },
@@ -3824,7 +4084,7 @@
     },
     {
      "level": 40,
-     "move": "hyper-beam"
+     "move": "crunch"
     },
     {
      "level": 45,
@@ -3841,6 +4101,10 @@
     {
      "level": 63,
      "move": "hyper-voice"
+    },
+    {
+     "level": 71,
+     "move": "hyper-beam"
     }
    ],
    "encounters": [],
@@ -3893,43 +4157,55 @@
      "move": "sand-attack"
     },
     {
-     "level": 10,
+     "level": 7,
      "move": "arm-thrust"
     },
     {
-     "level": 13,
+     "level": 10,
      "move": "vital-throw"
     },
     {
-     "level": 19,
+     "level": 13,
      "move": "fake-out"
     },
     {
-     "level": 22,
+     "level": 16,
      "move": "whirlwind"
     },
     {
-     "level": 28,
+     "level": 19,
      "move": "knock-off"
     },
     {
-     "level": 31,
+     "level": 22,
      "move": "smelling-salts"
     },
     {
-     "level": 37,
+     "level": 25,
      "move": "belly-drum"
     },
     {
-     "level": 40,
-     "move": "endure"
+     "level": 28,
+     "move": "force-palm"
     },
     {
-     "level": 46,
+     "level": 31,
      "move": "seismic-toss"
     },
     {
-     "level": 49,
+     "level": 34,
+     "move": "wake-up-slap"
+    },
+    {
+     "level": 37,
+     "move": "endure"
+    },
+    {
+     "level": 40,
+     "move": "close-combat"
+    },
+    {
+     "level": 43,
      "move": "reversal"
     }
    ],
@@ -4010,6 +4286,10 @@
     },
     {
      "level": 1,
+     "move": "brine"
+    },
+    {
+     "level": 1,
      "move": "focus-energy"
     },
     {
@@ -4025,43 +4305,55 @@
      "move": "sand-attack"
     },
     {
-     "level": 10,
+     "level": 7,
      "move": "arm-thrust"
     },
     {
-     "level": 13,
+     "level": 10,
      "move": "vital-throw"
     },
     {
-     "level": 19,
+     "level": 13,
      "move": "fake-out"
     },
     {
-     "level": 22,
+     "level": 16,
      "move": "whirlwind"
     },
     {
-     "level": 29,
+     "level": 19,
      "move": "knock-off"
     },
     {
-     "level": 33,
+     "level": 22,
      "move": "smelling-salts"
     },
     {
-     "level": 40,
+     "level": 27,
      "move": "belly-drum"
     },
     {
-     "level": 44,
-     "move": "endure"
+     "level": 32,
+     "move": "force-palm"
     },
     {
-     "level": 51,
+     "level": 37,
      "move": "seismic-toss"
     },
     {
-     "level": 55,
+     "level": 42,
+     "move": "wake-up-slap"
+    },
+    {
+     "level": 47,
+     "move": "endure"
+    },
+    {
+     "level": 52,
+     "move": "close-combat"
+    },
+    {
+     "level": 57,
      "move": "reversal"
     }
    ],
@@ -4123,11 +4415,11 @@
      "move": "splash"
     },
     {
-     "level": 3,
+     "level": 2,
      "move": "charm"
     },
     {
-     "level": 6,
+     "level": 7,
      "move": "tail-whip"
     },
     {
@@ -4139,7 +4431,7 @@
      "move": "slam"
     },
     {
-     "level": 21,
+     "level": 18,
      "move": "water-gun"
     }
    ],
@@ -4192,32 +4484,48 @@
      "move": "rock-throw"
     },
     {
-     "level": 16,
+     "level": 19,
      "move": "block"
     },
     {
-     "level": 22,
+     "level": 25,
      "move": "thunder-wave"
     },
     {
-     "level": 28,
+     "level": 31,
      "move": "rock-slide"
     },
     {
-     "level": 31,
+     "level": 37,
      "move": "sandstorm"
     },
     {
-     "level": 37,
+     "level": 43,
      "move": "rest"
     },
     {
-     "level": 43,
+     "level": 49,
+     "move": "power-gem"
+    },
+    {
+     "level": 55,
+     "move": "discharge"
+    },
+    {
+     "level": 61,
+     "move": "stone-edge"
+    },
+    {
+     "level": 67,
      "move": "zap-cannon"
     },
     {
-     "level": 46,
+     "level": 73,
      "move": "lock-on"
+    },
+    {
+     "level": 79,
+     "move": "earth-power"
     }
    ],
    "encounters": [],
@@ -4259,6 +4567,10 @@
    "learnset": [
     {
      "level": 1,
+     "move": "fake-out"
+    },
+    {
+     "level": 1,
      "move": "growl"
     },
     {
@@ -4266,15 +4578,19 @@
      "move": "tackle"
     },
     {
-     "level": 3,
+     "level": 1,
      "move": "tail-whip"
     },
     {
-     "level": 7,
+     "level": 4,
+     "move": "foresight"
+    },
+    {
+     "level": 8,
      "move": "attract"
     },
     {
-     "level": 13,
+     "level": 11,
      "move": "sing"
     },
     {
@@ -4282,7 +4598,11 @@
      "move": "double-slap"
     },
     {
-     "level": 19,
+     "level": 18,
+     "move": "copycat"
+    },
+    {
+     "level": 22,
      "move": "assist"
     },
     {
@@ -4290,20 +4610,28 @@
      "move": "charm"
     },
     {
-     "level": 27,
+     "level": 29,
      "move": "feint-attack"
     },
     {
-     "level": 31,
+     "level": 32,
+     "move": "wake-up-slap"
+    },
+    {
+     "level": 36,
      "move": "covet"
     },
     {
-     "level": 37,
+     "level": 39,
      "move": "heal-bell"
     },
     {
-     "level": 39,
+     "level": 42,
      "move": "double-edge"
+    },
+    {
+     "level": 46,
+     "move": "captivate"
     }
    ],
    "encounters": [
@@ -4354,7 +4682,7 @@
     },
     {
      "level": 1,
-     "move": "growl"
+     "move": "fake-out"
     },
     {
      "level": 1,
@@ -4402,47 +4730,67 @@
      "move": "scratch"
     },
     {
-     "level": 5,
+     "level": 4,
      "move": "foresight"
     },
     {
-     "level": 9,
+     "level": 8,
      "move": "night-shade"
     },
     {
-     "level": 13,
+     "level": 11,
      "move": "astonish"
     },
     {
-     "level": 17,
+     "level": 15,
      "move": "fury-swipes"
     },
     {
-     "level": 21,
+     "level": 18,
      "move": "fake-out"
     },
     {
-     "level": 25,
+     "level": 22,
      "move": "detect"
     },
     {
-     "level": 29,
-     "move": "feint-attack"
+     "level": 25,
+     "move": "shadow-sneak"
     },
     {
-     "level": 33,
+     "level": 29,
      "move": "knock-off"
     },
     {
-     "level": 37,
+     "level": 32,
+     "move": "feint-attack"
+    },
+    {
+     "level": 36,
+     "move": "punishment"
+    },
+    {
+     "level": 39,
+     "move": "shadow-claw"
+    },
+    {
+     "level": 43,
+     "move": "power-gem"
+    },
+    {
+     "level": 46,
      "move": "confuse-ray"
     },
     {
-     "level": 41,
+     "level": 50,
+     "move": "zen-headbutt"
+    },
+    {
+     "level": 53,
      "move": "shadow-ball"
     },
     {
-     "level": 45,
+     "level": 57,
      "move": "mean-look"
     }
    ],
@@ -4571,15 +4919,23 @@
     },
     {
      "level": 46,
+     "move": "sucker-punch"
+    },
+    {
+     "level": 51,
      "move": "spit-up"
     },
     {
-     "level": 46,
+     "level": 51,
      "move": "stockpile"
     },
     {
-     "level": 46,
+     "level": 51,
      "move": "swallow"
+    },
+    {
+     "level": 56,
+     "move": "iron-head"
     }
    ],
    "encounters": [
@@ -4660,23 +5016,23 @@
      "move": "harden"
     },
     {
-     "level": 7,
+     "level": 8,
      "move": "mud-slap"
     },
     {
-     "level": 10,
+     "level": 11,
      "move": "headbutt"
     },
     {
-     "level": 13,
+     "level": 15,
      "move": "metal-claw"
     },
     {
-     "level": 17,
+     "level": 18,
      "move": "iron-defense"
     },
     {
-     "level": 21,
+     "level": 22,
      "move": "roar"
     },
     {
@@ -4685,19 +5041,27 @@
     },
     {
      "level": 29,
-     "move": "iron-tail"
+     "move": "iron-head"
     },
     {
-     "level": 34,
+     "level": 32,
      "move": "protect"
     },
     {
-     "level": 39,
+     "level": 36,
      "move": "metal-sound"
     },
     {
-     "level": 44,
+     "level": 39,
+     "move": "iron-tail"
+    },
+    {
+     "level": 43,
      "move": "double-edge"
+    },
+    {
+     "level": 46,
+     "move": "metal-burst"
     }
    ],
    "encounters": [
@@ -4787,23 +5151,23 @@
      "move": "harden"
     },
     {
-     "level": 7,
+     "level": 8,
      "move": "mud-slap"
     },
     {
-     "level": 10,
+     "level": 11,
      "move": "headbutt"
     },
     {
-     "level": 13,
+     "level": 15,
      "move": "metal-claw"
     },
     {
-     "level": 17,
+     "level": 18,
      "move": "iron-defense"
     },
     {
-     "level": 21,
+     "level": 22,
      "move": "roar"
     },
     {
@@ -4812,19 +5176,27 @@
     },
     {
      "level": 29,
-     "move": "iron-tail"
+     "move": "iron-head"
     },
     {
-     "level": 37,
+     "level": 34,
      "move": "protect"
     },
     {
-     "level": 45,
+     "level": 40,
      "move": "metal-sound"
     },
     {
-     "level": 53,
+     "level": 45,
+     "move": "iron-tail"
+    },
+    {
+     "level": 51,
      "move": "double-edge"
+    },
+    {
+     "level": 56,
+     "move": "metal-burst"
     }
    ],
    "encounters": [
@@ -4899,23 +5271,23 @@
      "move": "harden"
     },
     {
-     "level": 7,
+     "level": 8,
      "move": "mud-slap"
     },
     {
-     "level": 10,
+     "level": 11,
      "move": "headbutt"
     },
     {
-     "level": 13,
+     "level": 15,
      "move": "metal-claw"
     },
     {
-     "level": 17,
+     "level": 18,
      "move": "iron-defense"
     },
     {
-     "level": 21,
+     "level": 22,
      "move": "roar"
     },
     {
@@ -4924,19 +5296,27 @@
     },
     {
      "level": 29,
-     "move": "iron-tail"
+     "move": "iron-head"
     },
     {
-     "level": 37,
+     "level": 34,
      "move": "protect"
     },
     {
-     "level": 50,
+     "level": 40,
      "move": "metal-sound"
     },
     {
-     "level": 63,
+     "level": 48,
+     "move": "iron-tail"
+    },
+    {
+     "level": 57,
      "move": "double-edge"
+    },
+    {
+     "level": 65,
+     "move": "metal-burst"
     }
    ],
    "encounters": [],
@@ -4986,39 +5366,51 @@
      "move": "meditate"
     },
     {
-     "level": 9,
+     "level": 8,
      "move": "confusion"
     },
     {
-     "level": 12,
+     "level": 11,
      "move": "detect"
     },
     {
-     "level": 18,
+     "level": 15,
      "move": "hidden-power"
     },
     {
-     "level": 22,
+     "level": 18,
      "move": "mind-reader"
     },
     {
-     "level": 28,
+     "level": 22,
+     "move": "feint"
+    },
+    {
+     "level": 25,
      "move": "calm-mind"
+    },
+    {
+     "level": 29,
+     "move": "force-palm"
     },
     {
      "level": 32,
      "move": "high-jump-kick"
     },
     {
-     "level": 38,
+     "level": 36,
      "move": "psych-up"
     },
     {
-     "level": 42,
+     "level": 39,
+     "move": "power-trick"
+    },
+    {
+     "level": 43,
      "move": "reversal"
     },
     {
-     "level": 48,
+     "level": 46,
      "move": "recover"
     }
    ],
@@ -5094,39 +5486,51 @@
      "move": "meditate"
     },
     {
-     "level": 9,
+     "level": 8,
      "move": "confusion"
     },
     {
-     "level": 12,
+     "level": 11,
      "move": "detect"
     },
     {
-     "level": 18,
+     "level": 15,
      "move": "hidden-power"
     },
     {
-     "level": 22,
+     "level": 18,
      "move": "mind-reader"
     },
     {
-     "level": 28,
+     "level": 22,
+     "move": "feint"
+    },
+    {
+     "level": 25,
      "move": "calm-mind"
+    },
+    {
+     "level": 29,
+     "move": "force-palm"
     },
     {
      "level": 32,
      "move": "high-jump-kick"
     },
     {
-     "level": 40,
+     "level": 36,
      "move": "psych-up"
     },
     {
-     "level": 46,
+     "level": 42,
+     "move": "power-trick"
+    },
+    {
+     "level": 49,
      "move": "reversal"
     },
     {
-     "level": 54,
+     "level": 55,
      "move": "recover"
     }
    ],
@@ -5206,19 +5610,27 @@
     },
     {
      "level": 28,
-     "move": "roar"
-    },
-    {
-     "level": 33,
      "move": "bite"
     },
     {
+     "level": 33,
+     "move": "thunder-fang"
+    },
+    {
      "level": 36,
-     "move": "thunder"
+     "move": "roar"
     },
     {
      "level": 41,
+     "move": "discharge"
+    },
+    {
+     "level": 44,
      "move": "charge"
+    },
+    {
+     "level": 49,
+     "move": "thunder"
     }
    ],
    "encounters": [
@@ -5267,6 +5679,10 @@
    "learnset": [
     {
      "level": 1,
+     "move": "fire-fang"
+    },
+    {
+     "level": 1,
      "move": "howl"
     },
     {
@@ -5306,20 +5722,28 @@
      "move": "odor-sleuth"
     },
     {
-     "level": 31,
-     "move": "roar"
-    },
-    {
-     "level": 39,
+     "level": 30,
      "move": "bite"
     },
     {
-     "level": 45,
-     "move": "thunder"
+     "level": 37,
+     "move": "thunder-fang"
     },
     {
-     "level": 53,
+     "level": 42,
+     "move": "roar"
+    },
+    {
+     "level": 49,
+     "move": "discharge"
+    },
+    {
+     "level": 54,
      "move": "charge"
+    },
+    {
+     "level": 61,
+     "move": "thunder"
     }
    ],
    "encounters": [
@@ -5362,44 +5786,64 @@
      "move": "growl"
     },
     {
-     "level": 4,
+     "level": 3,
      "move": "thunder-wave"
     },
     {
-     "level": 10,
+     "level": 7,
      "move": "quick-attack"
     },
     {
-     "level": 13,
+     "level": 10,
      "move": "helping-hand"
     },
     {
-     "level": 19,
+     "level": 15,
      "move": "spark"
     },
     {
-     "level": 22,
+     "level": 17,
      "move": "encore"
     },
     {
-     "level": 28,
+     "level": 21,
      "move": "fake-tears"
     },
     {
+     "level": 24,
+     "move": "copycat"
+    },
+    {
+     "level": 29,
+     "move": "swift"
+    },
+    {
      "level": 31,
+     "move": "fake-tears"
+    },
+    {
+     "level": 35,
      "move": "charge"
     },
     {
-     "level": 37,
+     "level": 38,
      "move": "thunder"
     },
     {
-     "level": 40,
+     "level": 42,
      "move": "baton-pass"
     },
     {
-     "level": 47,
+     "level": 44,
      "move": "agility"
+    },
+    {
+     "level": 48,
+     "move": "last-resort"
+    },
+    {
+     "level": 51,
+     "move": "nasty-plot"
     }
    ],
    "encounters": [
@@ -5444,44 +5888,64 @@
      "move": "growl"
     },
     {
-     "level": 4,
+     "level": 3,
      "move": "thunder-wave"
     },
     {
-     "level": 10,
+     "level": 7,
      "move": "quick-attack"
     },
     {
-     "level": 13,
+     "level": 10,
      "move": "helping-hand"
     },
     {
-     "level": 19,
+     "level": 15,
      "move": "spark"
     },
     {
-     "level": 22,
+     "level": 17,
      "move": "encore"
     },
     {
-     "level": 28,
+     "level": 21,
      "move": "charm"
     },
     {
+     "level": 24,
+     "move": "copycat"
+    },
+    {
+     "level": 29,
+     "move": "swift"
+    },
+    {
      "level": 31,
+     "move": "fake-tears"
+    },
+    {
+     "level": 35,
      "move": "charge"
     },
     {
-     "level": 37,
+     "level": 38,
      "move": "thunder"
     },
     {
-     "level": 40,
+     "level": 42,
      "move": "baton-pass"
     },
     {
-     "level": 47,
+     "level": 44,
      "move": "agility"
+    },
+    {
+     "level": 48,
+     "move": "trump-card"
+    },
+    {
+     "level": 51,
+     "move": "nasty-plot"
     }
    ],
    "encounters": [
@@ -5522,15 +5986,19 @@
    "learnset": [
     {
      "level": 1,
+     "move": "flash"
+    },
+    {
+     "level": 1,
      "move": "tackle"
     },
     {
      "level": 5,
-     "move": "confuse-ray"
+     "move": "double-team"
     },
     {
      "level": 9,
-     "move": "double-team"
+     "move": "confuse-ray"
     },
     {
      "level": 13,
@@ -5558,6 +6026,14 @@
     },
     {
      "level": 37,
+     "move": "zen-headbutt"
+    },
+    {
+     "level": 41,
+     "move": "bug-buzz"
+    },
+    {
+     "level": 45,
      "move": "double-edge"
     }
    ],
@@ -5635,6 +6111,14 @@
     },
     {
      "level": 37,
+     "move": "zen-headbutt"
+    },
+    {
+     "level": 41,
+     "move": "bug-buzz"
+    },
+    {
+     "level": 45,
      "move": "covet"
     }
    ],
@@ -5687,59 +6171,63 @@
      "move": "absorb"
     },
     {
-     "level": 5,
+     "level": 4,
      "move": "growth"
     },
     {
-     "level": 9,
+     "level": 7,
      "move": "poison-sting"
     },
     {
-     "level": 13,
+     "level": 10,
      "move": "stun-spore"
     },
     {
-     "level": 17,
+     "level": 13,
      "move": "mega-drain"
     },
     {
-     "level": 21,
+     "level": 16,
      "move": "leech-seed"
     },
     {
-     "level": 25,
+     "level": 19,
      "move": "magical-leaf"
     },
     {
-     "level": 29,
+     "level": 22,
      "move": "grass-whistle"
     },
     {
-     "level": 33,
+     "level": 25,
      "move": "giga-drain"
     },
     {
-     "level": 37,
+     "level": 28,
+     "move": "toxic-spikes"
+    },
+    {
+     "level": 31,
      "move": "sweet-scent"
     },
     {
-     "level": 41,
+     "level": 34,
      "move": "ingrain"
     },
     {
-     "level": 45,
+     "level": 37,
      "move": "toxic"
     },
     {
-     "level": 49,
+     "level": 40,
      "move": "petal-dance"
     },
     {
-     "level": 53,
+     "level": 43,
      "move": "aromatherapy"
     },
     {
-     "level": 57,
+     "level": 46,
      "move": "synthesis"
     }
    ],
@@ -5828,6 +6316,18 @@
     {
      "level": 39,
      "move": "sludge-bomb"
+    },
+    {
+     "level": 44,
+     "move": "gastro-acid"
+    },
+    {
+     "level": 49,
+     "move": "wring-out"
+    },
+    {
+     "level": 54,
+     "move": "gunk-shot"
     }
    ],
    "encounters": [
@@ -5909,24 +6409,36 @@
      "move": "body-slam"
     },
     {
-     "level": 31,
+     "level": 30,
      "move": "toxic"
     },
     {
-     "level": 40,
+     "level": 38,
      "move": "spit-up"
     },
     {
-     "level": 40,
+     "level": 38,
      "move": "stockpile"
     },
     {
-     "level": 40,
+     "level": 38,
      "move": "swallow"
     },
     {
-     "level": 48,
+     "level": 45,
      "move": "sludge-bomb"
+    },
+    {
+     "level": 52,
+     "move": "gastro-acid"
+    },
+    {
+     "level": 59,
+     "move": "wring-out"
+    },
+    {
+     "level": 66,
+     "move": "gunk-shot"
     }
    ],
    "encounters": [],
@@ -5976,36 +6488,48 @@
      "move": "leer"
     },
     {
-     "level": 7,
+     "level": 6,
      "move": "rage"
     },
     {
-     "level": 13,
+     "level": 8,
      "move": "focus-energy"
     },
     {
-     "level": 16,
+     "level": 11,
      "move": "scary-face"
     },
     {
-     "level": 22,
-     "move": "crunch"
+     "level": 16,
+     "move": "ice-fang"
     },
     {
-     "level": 28,
+     "level": 18,
      "move": "screech"
     },
     {
-     "level": 31,
-     "move": "take-down"
-    },
-    {
-     "level": 37,
+     "level": 21,
      "move": "swagger"
     },
     {
-     "level": 43,
+     "level": 26,
+     "move": "assurance"
+    },
+    {
+     "level": 28,
+     "move": "crunch"
+    },
+    {
+     "level": 31,
+     "move": "aqua-jet"
+    },
+    {
+     "level": 36,
      "move": "agility"
+    },
+    {
+     "level": 38,
+     "move": "take-down"
     }
    ],
    "encounters": [
@@ -6080,6 +6604,10 @@
     },
     {
      "level": 1,
+     "move": "feint"
+    },
+    {
+     "level": 1,
      "move": "focus-energy"
     },
     {
@@ -6091,44 +6619,60 @@
      "move": "rage"
     },
     {
-     "level": 7,
+     "level": 6,
      "move": "rage"
     },
     {
-     "level": 13,
+     "level": 8,
      "move": "focus-energy"
     },
     {
-     "level": 16,
+     "level": 11,
      "move": "scary-face"
     },
     {
-     "level": 22,
-     "move": "crunch"
+     "level": 16,
+     "move": "ice-fang"
     },
     {
-     "level": 28,
+     "level": 18,
      "move": "screech"
     },
     {
-     "level": 33,
-     "move": "slash"
-    },
-    {
-     "level": 38,
-     "move": "taunt"
-    },
-    {
-     "level": 43,
+     "level": 21,
      "move": "swagger"
     },
     {
-     "level": 48,
+     "level": 26,
+     "move": "assurance"
+    },
+    {
+     "level": 28,
+     "move": "crunch"
+    },
+    {
+     "level": 30,
+     "move": "slash"
+    },
+    {
+     "level": 34,
+     "move": "aqua-jet"
+    },
+    {
+     "level": 40,
+     "move": "taunt"
+    },
+    {
+     "level": 45,
+     "move": "agility"
+    },
+    {
+     "level": 50,
      "move": "skull-bash"
     },
     {
-     "level": 53,
-     "move": "agility"
+     "level": 56,
+     "move": "night-slash"
     }
    ],
    "encounters": [
@@ -6219,47 +6763,59 @@
      "move": "splash"
     },
     {
-     "level": 5,
+     "level": 4,
      "move": "growl"
     },
     {
-     "level": 10,
+     "level": 7,
      "move": "water-gun"
     },
     {
-     "level": 14,
+     "level": 11,
      "move": "rollout"
     },
     {
-     "level": 19,
+     "level": 14,
      "move": "whirlpool"
     },
     {
-     "level": 23,
+     "level": 17,
      "move": "astonish"
     },
     {
-     "level": 28,
+     "level": 21,
      "move": "water-pulse"
     },
     {
-     "level": 32,
+     "level": 24,
      "move": "mist"
     },
     {
-     "level": 37,
+     "level": 27,
      "move": "rest"
     },
     {
-     "level": 41,
+     "level": 31,
+     "move": "brine"
+    },
+    {
+     "level": 34,
      "move": "water-spout"
     },
     {
-     "level": 46,
+     "level": 37,
      "move": "amnesia"
     },
     {
-     "level": 50,
+     "level": 41,
+     "move": "dive"
+    },
+    {
+     "level": 44,
+     "move": "bounce"
+    },
+    {
+     "level": 47,
      "move": "hydro-pump"
     }
    ],
@@ -6786,47 +7342,59 @@
      "move": "water-gun"
     },
     {
-     "level": 5,
+     "level": 4,
      "move": "growl"
     },
     {
-     "level": 10,
+     "level": 7,
      "move": "water-gun"
     },
     {
-     "level": 14,
+     "level": 11,
      "move": "rollout"
     },
     {
-     "level": 19,
+     "level": 14,
      "move": "whirlpool"
     },
     {
-     "level": 23,
+     "level": 17,
      "move": "astonish"
     },
     {
-     "level": 28,
+     "level": 21,
      "move": "water-pulse"
     },
     {
-     "level": 32,
+     "level": 24,
      "move": "mist"
     },
     {
-     "level": 37,
+     "level": 27,
      "move": "rest"
     },
     {
-     "level": 44,
+     "level": 31,
+     "move": "brine"
+    },
+    {
+     "level": 34,
      "move": "water-spout"
     },
     {
-     "level": 52,
+     "level": 37,
      "move": "amnesia"
     },
     {
-     "level": 59,
+     "level": 46,
+     "move": "dive"
+    },
+    {
+     "level": 54,
+     "move": "bounce"
+    },
+    {
+     "level": 62,
      "move": "hydro-pump"
     }
    ],
@@ -6877,35 +7445,43 @@
      "move": "tackle"
     },
     {
-     "level": 11,
+     "level": 5,
      "move": "ember"
     },
     {
-     "level": 19,
+     "level": 11,
      "move": "magnitude"
     },
     {
-     "level": 25,
+     "level": 15,
      "move": "focus-energy"
     },
     {
-     "level": 29,
+     "level": 21,
      "move": "take-down"
     },
     {
-     "level": 31,
+     "level": 25,
      "move": "amnesia"
     },
     {
+     "level": 31,
+     "move": "lava-plume"
+    },
+    {
      "level": 35,
-     "move": "earthquake"
+     "move": "earth-power"
     },
     {
      "level": 41,
+     "move": "earthquake"
+    },
+    {
+     "level": 45,
      "move": "flamethrower"
     },
     {
-     "level": 49,
+     "level": 51,
      "move": "double-edge"
     }
    ],
@@ -6983,39 +7559,47 @@
      "move": "tackle"
     },
     {
-     "level": 11,
+     "level": 5,
      "move": "ember"
     },
     {
-     "level": 19,
+     "level": 11,
      "move": "magnitude"
     },
     {
-     "level": 25,
+     "level": 15,
      "move": "focus-energy"
     },
     {
-     "level": 29,
+     "level": 21,
      "move": "take-down"
     },
     {
-     "level": 31,
+     "level": 25,
      "move": "amnesia"
+    },
+    {
+     "level": 31,
+     "move": "lava-plume"
     },
     {
      "level": 33,
      "move": "rock-slide"
     },
     {
-     "level": 37,
+     "level": 39,
+     "move": "earth-power"
+    },
+    {
+     "level": 49,
      "move": "earthquake"
     },
     {
-     "level": 45,
+     "level": 57,
      "move": "eruption"
     },
     {
-     "level": 55,
+     "level": 67,
      "move": "fissure"
     }
    ],
@@ -7060,11 +7644,11 @@
     },
     {
      "level": 7,
-     "move": "curse"
+     "move": "withdraw"
     },
     {
-     "level": 14,
-     "move": "smokescreen"
+     "level": 12,
+     "move": "curse"
     },
     {
      "level": 17,
@@ -7072,30 +7656,42 @@
     },
     {
      "level": 20,
-     "move": "body-slam"
+     "move": "smokescreen"
     },
     {
-     "level": 27,
-     "move": "protect"
+     "level": 23,
+     "move": "rapid-spin"
     },
     {
-     "level": 30,
+     "level": 28,
      "move": "flamethrower"
     },
     {
      "level": 33,
+     "move": "body-slam"
+    },
+    {
+     "level": 36,
+     "move": "protect"
+    },
+    {
+     "level": 39,
+     "move": "lava-plume"
+    },
+    {
+     "level": 44,
      "move": "iron-defense"
     },
     {
-     "level": 40,
+     "level": 49,
      "move": "amnesia"
     },
     {
-     "level": 43,
+     "level": 52,
      "move": "flail"
     },
     {
-     "level": 46,
+     "level": 55,
      "move": "heat-wave"
     }
    ],
@@ -7161,35 +7757,47 @@
      "move": "odor-sleuth"
     },
     {
-     "level": 16,
+     "level": 14,
      "move": "psybeam"
     },
     {
-     "level": 19,
+     "level": 15,
      "move": "psych-up"
     },
     {
-     "level": 25,
+     "level": 18,
      "move": "confuse-ray"
     },
     {
-     "level": 28,
+     "level": 21,
      "move": "magic-coat"
     },
     {
-     "level": 34,
-     "move": "psychic"
+     "level": 26,
+     "move": "zen-headbutt"
     },
     {
-     "level": 37,
+     "level": 29,
      "move": "rest"
     },
     {
-     "level": 37,
+     "level": 29,
      "move": "snore"
     },
     {
-     "level": 43,
+     "level": 34,
+     "move": "payback"
+    },
+    {
+     "level": 41,
+     "move": "psychic"
+    },
+    {
+     "level": 46,
+     "move": "power-gem"
+    },
+    {
+     "level": 48,
      "move": "bounce"
     }
    ],
@@ -7259,35 +7867,47 @@
      "move": "odor-sleuth"
     },
     {
-     "level": 16,
+     "level": 14,
      "move": "psybeam"
     },
     {
-     "level": 19,
+     "level": 15,
      "move": "psych-up"
     },
     {
-     "level": 25,
+     "level": 18,
      "move": "confuse-ray"
     },
     {
-     "level": 28,
+     "level": 21,
      "move": "magic-coat"
     },
     {
-     "level": 37,
-     "move": "psychic"
+     "level": 26,
+     "move": "zen-headbutt"
     },
     {
-     "level": 43,
+     "level": 29,
      "move": "rest"
     },
     {
-     "level": 43,
+     "level": 29,
      "move": "snore"
     },
     {
+     "level": 37,
+     "move": "payback"
+    },
+    {
+     "level": 47,
+     "move": "psychic"
+    },
+    {
      "level": 55,
+     "move": "power-gem"
+    },
+    {
+     "level": 60,
      "move": "bounce"
     }
    ],
@@ -7331,11 +7951,15 @@
      "move": "uproar"
     },
     {
-     "level": 12,
+     "level": 10,
+     "move": "copycat"
+    },
+    {
+     "level": 14,
      "move": "feint-attack"
     },
     {
-     "level": 16,
+     "level": 19,
      "move": "psybeam"
     },
     {
@@ -7343,27 +7967,31 @@
      "move": "hypnosis"
     },
     {
-     "level": 27,
+     "level": 28,
      "move": "dizzy-punch"
     },
     {
-     "level": 34,
+     "level": 32,
+     "move": "sucker-punch"
+    },
+    {
+     "level": 37,
      "move": "teeter-dance"
     },
     {
-     "level": 38,
+     "level": 41,
      "move": "psych-up"
     },
     {
-     "level": 45,
+     "level": 46,
      "move": "double-edge"
     },
     {
-     "level": 49,
+     "level": 50,
      "move": "flail"
     },
     {
-     "level": 56,
+     "level": 55,
      "move": "thrash"
     }
    ],
@@ -7445,6 +8073,22 @@
     {
      "level": 57,
      "move": "hyper-beam"
+    },
+    {
+     "level": 65,
+     "move": "earth-power"
+    },
+    {
+     "level": 73,
+     "move": "earthquake"
+    },
+    {
+     "level": 81,
+     "move": "feint"
+    },
+    {
+     "level": 89,
+     "move": "fissure"
     }
    ],
    "encounters": [
@@ -7502,10 +8146,6 @@
    "learnset": [
     {
      "level": 1,
-     "move": "bite"
-    },
-    {
-     "level": 1,
      "move": "feint-attack"
     },
     {
@@ -7515,6 +8155,10 @@
     {
      "level": 1,
      "move": "sand-tomb"
+    },
+    {
+     "level": 1,
+     "move": "sonic-boom"
     },
     {
      "level": 9,
@@ -7530,7 +8174,7 @@
     },
     {
      "level": 33,
-     "move": "crunch"
+     "move": "supersonic"
     },
     {
      "level": 35,
@@ -7583,10 +8227,6 @@
    "learnset": [
     {
      "level": 1,
-     "move": "bite"
-    },
-    {
-     "level": 1,
      "move": "feint-attack"
     },
     {
@@ -7596,6 +8236,10 @@
     {
      "level": 1,
      "move": "sand-tomb"
+    },
+    {
+     "level": 1,
+     "move": "sonic-boom"
     },
     {
      "level": 9,
@@ -7611,7 +8255,7 @@
     },
     {
      "level": 33,
-     "move": "crunch"
+     "move": "supersonic"
     },
     {
      "level": 35,
@@ -7622,11 +8266,15 @@
      "move": "screech"
     },
     {
-     "level": 53,
+     "level": 45,
+     "move": "dragon-claw"
+    },
+    {
+     "level": 49,
      "move": "sandstorm"
     },
     {
-     "level": 65,
+     "level": 57,
      "move": "hyper-beam"
     }
    ],
@@ -7709,15 +8357,27 @@
     },
     {
      "level": 37,
-     "move": "needle-arm"
+     "move": "sucker-punch"
     },
     {
      "level": 41,
-     "move": "cotton-spore"
+     "move": "payback"
     },
     {
      "level": 45,
+     "move": "needle-arm"
+    },
+    {
+     "level": 49,
+     "move": "cotton-spore"
+    },
+    {
+     "level": 53,
      "move": "sandstorm"
+    },
+    {
+     "level": 57,
+     "move": "destiny-bond"
     }
    ],
    "encounters": [
@@ -7776,6 +8436,10 @@
      "move": "poison-sting"
     },
     {
+     "level": 1,
+     "move": "revenge"
+    },
+    {
      "level": 5,
      "move": "absorb"
     },
@@ -7809,15 +8473,27 @@
     },
     {
      "level": 41,
-     "move": "needle-arm"
+     "move": "sucker-punch"
     },
     {
      "level": 47,
-     "move": "cotton-spore"
+     "move": "payback"
     },
     {
      "level": 53,
+     "move": "needle-arm"
+    },
+    {
+     "level": 59,
+     "move": "cotton-spore"
+    },
+    {
+     "level": 65,
      "move": "sandstorm"
+    },
+    {
+     "level": 71,
+     "move": "destiny-bond"
     }
    ],
    "encounters": [],
@@ -7867,39 +8543,47 @@
      "move": "peck"
     },
     {
-     "level": 8,
+     "level": 5,
      "move": "astonish"
     },
     {
-     "level": 11,
+     "level": 9,
      "move": "sing"
     },
     {
-     "level": 18,
+     "level": 13,
      "move": "fury-attack"
     },
     {
-     "level": 21,
+     "level": 18,
      "move": "safeguard"
     },
     {
-     "level": 28,
+     "level": 23,
      "move": "mist"
     },
     {
-     "level": 31,
+     "level": 28,
      "move": "take-down"
     },
     {
-     "level": 38,
+     "level": 32,
+     "move": "natural-gift"
+    },
+    {
+     "level": 36,
      "move": "mirror-move"
     },
     {
-     "level": 41,
+     "level": 40,
      "move": "refresh"
     },
     {
-     "level": 48,
+     "level": 45,
+     "move": "dragon-pulse"
+    },
+    {
+     "level": 50,
      "move": "perish-song"
     }
    ],
@@ -7965,50 +8649,62 @@
     },
     {
      "level": 1,
+     "move": "pluck"
+    },
+    {
+     "level": 1,
      "move": "sing"
     },
     {
-     "level": 8,
+     "level": 5,
      "move": "astonish"
     },
     {
-     "level": 11,
+     "level": 9,
      "move": "sing"
     },
     {
-     "level": 18,
+     "level": 13,
      "move": "fury-attack"
     },
     {
-     "level": 21,
+     "level": 18,
      "move": "safeguard"
     },
     {
-     "level": 28,
+     "level": 23,
      "move": "mist"
     },
     {
-     "level": 31,
+     "level": 28,
      "move": "take-down"
+    },
+    {
+     "level": 32,
+     "move": "natural-gift"
     },
     {
      "level": 35,
      "move": "dragon-breath"
     },
     {
-     "level": 40,
+     "level": 39,
      "move": "dragon-dance"
     },
     {
-     "level": 45,
+     "level": 46,
      "move": "refresh"
     },
     {
      "level": 54,
+     "move": "dragon-pulse"
+    },
+    {
+     "level": 62,
      "move": "perish-song"
     },
     {
-     "level": 59,
+     "level": 70,
      "move": "sky-attack"
     }
    ],
@@ -8054,47 +8750,59 @@
    "learnset": [
     {
      "level": 1,
-     "move": "scratch"
-    },
-    {
-     "level": 4,
      "move": "leer"
     },
     {
-     "level": 7,
+     "level": 1,
+     "move": "scratch"
+    },
+    {
+     "level": 5,
      "move": "quick-attack"
     },
     {
-     "level": 10,
+     "level": 9,
      "move": "swords-dance"
     },
     {
-     "level": 13,
+     "level": 14,
      "move": "fury-cutter"
     },
     {
-     "level": 19,
+     "level": 18,
      "move": "slash"
     },
     {
-     "level": 25,
+     "level": 22,
      "move": "pursuit"
+    },
+    {
+     "level": 27,
+     "move": "embargo"
     },
     {
      "level": 31,
      "move": "crush-claw"
     },
     {
-     "level": 37,
+     "level": 35,
      "move": "taunt"
     },
     {
-     "level": 46,
+     "level": 40,
      "move": "detect"
     },
     {
-     "level": 55,
+     "level": 44,
      "move": "false-swipe"
+    },
+    {
+     "level": 48,
+     "move": "x-scissor"
+    },
+    {
+     "level": 53,
+     "move": "close-combat"
     }
    ],
    "encounters": [
@@ -8171,6 +8879,18 @@
     {
      "level": 43,
      "move": "haze"
+    },
+    {
+     "level": 46,
+     "move": "night-slash"
+    },
+    {
+     "level": 52,
+     "move": "poison-jab"
+    },
+    {
+     "level": 55,
+     "move": "wring-out"
     }
    ],
    "encounters": [
@@ -8213,6 +8933,10 @@
    "learnset": [
     {
      "level": 1,
+     "move": "confusion"
+    },
+    {
+     "level": 1,
      "move": "harden"
     },
     {
@@ -8220,35 +8944,43 @@
      "move": "tackle"
     },
     {
-     "level": 7,
-     "move": "confusion"
-    },
-    {
-     "level": 13,
+     "level": 9,
      "move": "rock-throw"
     },
     {
-     "level": 19,
+     "level": 12,
      "move": "hypnosis"
     },
     {
-     "level": 25,
+     "level": 20,
+     "move": "rock-polish"
+    },
+    {
+     "level": 23,
      "move": "psywave"
     },
     {
      "level": 31,
+     "move": "embargo"
+    },
+    {
+     "level": 34,
      "move": "cosmic-power"
     },
     {
-     "level": 37,
+     "level": 42,
+     "move": "heal-block"
+    },
+    {
+     "level": 45,
      "move": "psychic"
     },
     {
-     "level": 43,
+     "level": 53,
      "move": "future-sight"
     },
     {
-     "level": 49,
+     "level": 56,
      "move": "explosion"
     }
    ],
@@ -8301,6 +9033,10 @@
    "learnset": [
     {
      "level": 1,
+     "move": "confusion"
+    },
+    {
+     "level": 1,
      "move": "harden"
     },
     {
@@ -8308,35 +9044,43 @@
      "move": "tackle"
     },
     {
-     "level": 7,
-     "move": "confusion"
-    },
-    {
-     "level": 13,
+     "level": 9,
      "move": "rock-throw"
     },
     {
-     "level": 19,
+     "level": 12,
      "move": "fire-spin"
     },
     {
-     "level": 25,
+     "level": 20,
+     "move": "rock-polish"
+    },
+    {
+     "level": 23,
      "move": "psywave"
     },
     {
      "level": 31,
+     "move": "embargo"
+    },
+    {
+     "level": 34,
      "move": "cosmic-power"
     },
     {
-     "level": 37,
+     "level": 42,
+     "move": "heal-block"
+    },
+    {
+     "level": 45,
      "move": "rock-slide"
     },
     {
-     "level": 43,
+     "level": 53,
      "move": "solar-beam"
     },
     {
-     "level": 49,
+     "level": 56,
      "move": "explosion"
     }
    ],
@@ -8420,35 +9164,47 @@
      "move": "water-sport"
     },
     {
-     "level": 11,
+     "level": 10,
      "move": "water-gun"
     },
     {
-     "level": 16,
-     "move": "magnitude"
+     "level": 14,
+     "move": "mud-bomb"
     },
     {
-     "level": 21,
+     "level": 18,
      "move": "amnesia"
     },
     {
-     "level": 26,
-     "move": "rest"
+     "level": 22,
+     "move": "water-pulse"
     },
     {
      "level": 26,
-     "move": "snore"
+     "move": "magnitude"
     },
     {
      "level": 31,
+     "move": "rest"
+    },
+    {
+     "level": 31,
+     "move": "snore"
+    },
+    {
+     "level": 35,
+     "move": "aqua-tail"
+    },
+    {
+     "level": 39,
      "move": "earthquake"
     },
     {
-     "level": 36,
+     "level": 43,
      "move": "future-sight"
     },
     {
-     "level": 41,
+     "level": 47,
      "move": "fissure"
     }
    ],
@@ -8610,6 +9366,10 @@
      "move": "water-sport"
     },
     {
+     "level": 1,
+     "move": "zen-headbutt"
+    },
+    {
      "level": 6,
      "move": "mud-sport"
     },
@@ -8618,35 +9378,47 @@
      "move": "water-sport"
     },
     {
-     "level": 11,
+     "level": 10,
      "move": "water-gun"
     },
     {
-     "level": 16,
-     "move": "magnitude"
+     "level": 14,
+     "move": "mud-bomb"
     },
     {
-     "level": 21,
+     "level": 18,
      "move": "amnesia"
     },
     {
+     "level": 22,
+     "move": "water-pulse"
+    },
+    {
      "level": 26,
+     "move": "magnitude"
+    },
+    {
+     "level": 33,
      "move": "rest"
     },
     {
-     "level": 26,
+     "level": 33,
      "move": "snore"
     },
     {
-     "level": 36,
+     "level": 39,
+     "move": "aqua-tail"
+    },
+    {
+     "level": 45,
      "move": "earthquake"
     },
     {
-     "level": 46,
+     "level": 51,
      "move": "future-sight"
     },
     {
-     "level": 56,
+     "level": 57,
      "move": "fissure"
     }
    ],
@@ -8758,14 +9530,22 @@
     },
     {
      "level": 35,
-     "move": "crabhammer"
+     "move": "night-slash"
     },
     {
      "level": 38,
-     "move": "swords-dance"
+     "move": "crabhammer"
     },
     {
      "level": 44,
+     "move": "swords-dance"
+    },
+    {
+     "level": 47,
+     "move": "crunch"
+    },
+    {
+     "level": 53,
      "move": "guillotine"
     }
    ],
@@ -8897,19 +9677,31 @@
      "move": "knock-off"
     },
     {
+     "level": 30,
+     "move": "swift"
+    },
+    {
      "level": 34,
      "move": "taunt"
     },
     {
      "level": 39,
-     "move": "crabhammer"
+     "move": "night-slash"
     },
     {
      "level": 44,
-     "move": "swords-dance"
+     "move": "crabhammer"
     },
     {
      "level": 52,
+     "move": "swords-dance"
+    },
+    {
+     "level": 57,
+     "move": "crunch"
+    },
+    {
+     "level": 65,
      "move": "guillotine"
     }
    ],
@@ -8985,14 +9777,26 @@
     },
     {
      "level": 31,
-     "move": "sandstorm"
+     "move": "power-trick"
     },
     {
      "level": 37,
-     "move": "cosmic-power"
+     "move": "sandstorm"
     },
     {
      "level": 45,
+     "move": "cosmic-power"
+    },
+    {
+     "level": 53,
+     "move": "earth-power"
+    },
+    {
+     "level": 61,
+     "move": "heal-block"
+    },
+    {
+     "level": 71,
      "move": "explosion"
     }
    ],
@@ -9082,18 +9886,30 @@
     },
     {
      "level": 31,
-     "move": "sandstorm"
+     "move": "power-trick"
     },
     {
      "level": 36,
      "move": "hyper-beam"
     },
     {
-     "level": 42,
+     "level": 40,
+     "move": "sandstorm"
+    },
+    {
+     "level": 51,
      "move": "cosmic-power"
     },
     {
-     "level": 55,
+     "level": 62,
+     "move": "earth-power"
+    },
+    {
+     "level": 73,
+     "move": "heal-block"
+    },
+    {
+     "level": 86,
      "move": "explosion"
     }
    ],
@@ -9171,24 +9987,28 @@
      "move": "astonish"
     },
     {
-     "level": 8,
+     "level": 1,
      "move": "constrict"
     },
     {
-     "level": 15,
+     "level": 8,
      "move": "acid"
     },
     {
-     "level": 22,
+     "level": 15,
      "move": "ingrain"
     },
     {
-     "level": 29,
+     "level": 22,
      "move": "confuse-ray"
     },
     {
-     "level": 36,
+     "level": 29,
      "move": "amnesia"
+    },
+    {
+     "level": 36,
+     "move": "gastro-acid"
     },
     {
      "level": 43,
@@ -9196,15 +10016,23 @@
     },
     {
      "level": 50,
+     "move": "energy-ball"
+    },
+    {
+     "level": 57,
      "move": "spit-up"
     },
     {
-     "level": 50,
+     "level": 57,
      "move": "stockpile"
     },
     {
-     "level": 50,
+     "level": 57,
      "move": "swallow"
+    },
+    {
+     "level": 64,
+     "move": "wring-out"
     }
    ],
    "encounters": [],
@@ -9257,39 +10085,47 @@
     },
     {
      "level": 8,
-     "move": "constrict"
-    },
-    {
-     "level": 15,
      "move": "acid"
     },
     {
-     "level": 22,
+     "level": 15,
      "move": "ingrain"
     },
     {
-     "level": 29,
+     "level": 22,
      "move": "confuse-ray"
     },
     {
-     "level": 36,
+     "level": 29,
      "move": "amnesia"
     },
     {
-     "level": 48,
+     "level": 36,
      "move": "ancient-power"
     },
     {
-     "level": 60,
+     "level": 46,
+     "move": "gastro-acid"
+    },
+    {
+     "level": 56,
+     "move": "energy-ball"
+    },
+    {
+     "level": 66,
      "move": "spit-up"
     },
     {
-     "level": 60,
+     "level": 66,
      "move": "stockpile"
     },
     {
-     "level": 60,
+     "level": 66,
      "move": "swallow"
+    },
+    {
+     "level": 76,
+     "move": "wring-out"
     }
    ],
    "encounters": [],
@@ -9332,43 +10168,51 @@
    "learnset": [
     {
      "level": 1,
+     "move": "harden"
+    },
+    {
+     "level": 1,
      "move": "scratch"
     },
     {
      "level": 7,
-     "move": "harden"
-    },
-    {
-     "level": 13,
      "move": "mud-sport"
     },
     {
-     "level": 19,
+     "level": 13,
      "move": "water-gun"
     },
     {
-     "level": 25,
+     "level": 19,
      "move": "metal-claw"
     },
     {
-     "level": 31,
+     "level": 25,
      "move": "protect"
     },
     {
-     "level": 37,
+     "level": 31,
      "move": "ancient-power"
     },
     {
-     "level": 43,
+     "level": 37,
      "move": "fury-cutter"
     },
     {
-     "level": 49,
+     "level": 43,
      "move": "slash"
     },
     {
-     "level": 55,
+     "level": 49,
      "move": "rock-blast"
+    },
+    {
+     "level": 55,
+     "move": "crush-claw"
+    },
+    {
+     "level": 61,
+     "move": "x-scissor"
     }
    ],
    "encounters": [],
@@ -9421,39 +10265,43 @@
     },
     {
      "level": 7,
-     "move": "harden"
-    },
-    {
-     "level": 13,
      "move": "mud-sport"
     },
     {
-     "level": 19,
+     "level": 13,
      "move": "water-gun"
     },
     {
-     "level": 25,
+     "level": 19,
      "move": "metal-claw"
     },
     {
-     "level": 31,
+     "level": 25,
      "move": "protect"
     },
     {
-     "level": 37,
+     "level": 31,
      "move": "ancient-power"
     },
     {
-     "level": 46,
+     "level": 37,
      "move": "fury-cutter"
     },
     {
-     "level": 55,
+     "level": 46,
      "move": "slash"
     },
     {
-     "level": 64,
+     "level": 55,
      "move": "rock-blast"
+    },
+    {
+     "level": 67,
+     "move": "crush-claw"
+    },
+    {
+     "level": 73,
+     "move": "x-scissor"
     }
    ],
    "encounters": [],
@@ -9541,44 +10389,56 @@
      "move": "water-gun"
     },
     {
-     "level": 5,
+     "level": 1,
      "move": "wrap"
     },
     {
-     "level": 10,
+     "level": 5,
      "move": "water-sport"
     },
     {
-     "level": 15,
+     "level": 9,
      "move": "refresh"
     },
     {
-     "level": 20,
+     "level": 13,
      "move": "water-pulse"
     },
     {
-     "level": 25,
+     "level": 17,
      "move": "twister"
     },
     {
-     "level": 30,
+     "level": 21,
      "move": "recover"
     },
     {
-     "level": 35,
+     "level": 25,
+     "move": "captivate"
+    },
+    {
+     "level": 29,
+     "move": "aqua-tail"
+    },
+    {
+     "level": 33,
      "move": "rain-dance"
     },
     {
-     "level": 40,
+     "level": 37,
      "move": "hydro-pump"
     },
     {
-     "level": 45,
+     "level": 41,
      "move": "attract"
     },
     {
-     "level": 50,
+     "level": 45,
      "move": "safeguard"
+    },
+    {
+     "level": 49,
+     "move": "aqua-ring"
     }
    ],
    "encounters": [],
@@ -9705,27 +10565,43 @@
      "move": "feint-attack"
     },
     {
-     "level": 12,
+     "level": 10,
      "move": "fury-swipes"
     },
     {
-     "level": 17,
+     "level": 14,
+     "move": "feint"
+    },
+    {
+     "level": 18,
      "move": "psybeam"
     },
     {
-     "level": 24,
-     "move": "screech"
+     "level": 22,
+     "move": "shadow-sneak"
     },
     {
-     "level": 31,
+     "level": 27,
      "move": "slash"
     },
     {
-     "level": 40,
+     "level": 32,
+     "move": "screech"
+    },
+    {
+     "level": 37,
      "move": "substitute"
     },
     {
+     "level": 43,
+     "move": "sucker-punch"
+    },
+    {
      "level": 49,
+     "move": "shadow-claw"
+    },
+    {
+     "level": 55,
      "move": "ancient-power"
     }
    ],
@@ -9787,40 +10663,56 @@
      "move": "knock-off"
     },
     {
-     "level": 8,
+     "level": 5,
      "move": "screech"
     },
     {
-     "level": 13,
+     "level": 8,
      "move": "night-shade"
     },
     {
-     "level": 20,
+     "level": 13,
      "move": "curse"
     },
     {
-     "level": 25,
+     "level": 16,
      "move": "spite"
     },
     {
-     "level": 32,
+     "level": 20,
+     "move": "shadow-sneak"
+    },
+    {
+     "level": 23,
      "move": "will-o-wisp"
     },
     {
-     "level": 37,
+     "level": 28,
      "move": "feint-attack"
     },
     {
-     "level": 44,
+     "level": 31,
      "move": "shadow-ball"
     },
     {
-     "level": 49,
+     "level": 35,
+     "move": "sucker-punch"
+    },
+    {
+     "level": 38,
+     "move": "embargo"
+    },
+    {
+     "level": 43,
      "move": "snatch"
     },
     {
-     "level": 56,
+     "level": 46,
      "move": "grudge"
+    },
+    {
+     "level": 50,
+     "move": "trick"
     }
    ],
    "encounters": [
@@ -10008,40 +10900,56 @@
      "move": "screech"
     },
     {
+     "level": 5,
+     "move": "night-shade"
+    },
+    {
      "level": 8,
      "move": "screech"
     },
     {
      "level": 13,
-     "move": "night-shade"
-    },
-    {
-     "level": 20,
      "move": "curse"
     },
     {
-     "level": 25,
+     "level": 16,
      "move": "spite"
     },
     {
-     "level": 32,
+     "level": 20,
+     "move": "shadow-sneak"
+    },
+    {
+     "level": 23,
      "move": "will-o-wisp"
     },
     {
-     "level": 39,
+     "level": 28,
      "move": "feint-attack"
     },
     {
-     "level": 48,
+     "level": 31,
      "move": "shadow-ball"
     },
     {
-     "level": 55,
+     "level": 35,
+     "move": "sucker-punch"
+    },
+    {
+     "level": 42,
+     "move": "embargo"
+    },
+    {
+     "level": 51,
      "move": "snatch"
     },
     {
-     "level": 64,
+     "level": 58,
      "move": "grudge"
+    },
+    {
+     "level": 66,
+     "move": "trick"
     }
    ],
    "encounters": [
@@ -10103,39 +11011,47 @@
      "move": "night-shade"
     },
     {
-     "level": 5,
+     "level": 6,
      "move": "disable"
     },
     {
-     "level": 12,
+     "level": 9,
      "move": "foresight"
     },
     {
-     "level": 16,
+     "level": 14,
      "move": "astonish"
     },
     {
-     "level": 23,
+     "level": 17,
      "move": "confuse-ray"
     },
     {
-     "level": 27,
+     "level": 22,
+     "move": "shadow-sneak"
+    },
+    {
+     "level": 25,
      "move": "pursuit"
     },
     {
-     "level": 34,
+     "level": 30,
      "move": "curse"
     },
     {
-     "level": 38,
+     "level": 33,
      "move": "will-o-wisp"
     },
     {
-     "level": 45,
+     "level": 38,
      "move": "mean-look"
     },
     {
-     "level": 49,
+     "level": 41,
+     "move": "payback"
+    },
+    {
+     "level": 46,
      "move": "future-sight"
     }
    ],
@@ -10273,6 +11189,18 @@
     },
     {
      "level": 1,
+     "move": "fire-punch"
+    },
+    {
+     "level": 1,
+     "move": "gravity"
+    },
+    {
+     "level": 1,
+     "move": "ice-punch"
+    },
+    {
+     "level": 1,
      "move": "leer"
     },
     {
@@ -10280,43 +11208,55 @@
      "move": "night-shade"
     },
     {
-     "level": 5,
+     "level": 1,
+     "move": "thunder-punch"
+    },
+    {
+     "level": 6,
      "move": "disable"
     },
     {
-     "level": 12,
+     "level": 9,
      "move": "foresight"
     },
     {
-     "level": 16,
+     "level": 14,
      "move": "astonish"
     },
     {
-     "level": 23,
+     "level": 17,
      "move": "confuse-ray"
     },
     {
-     "level": 27,
+     "level": 22,
+     "move": "shadow-sneak"
+    },
+    {
+     "level": 25,
      "move": "pursuit"
     },
     {
-     "level": 34,
+     "level": 30,
      "move": "curse"
+    },
+    {
+     "level": 33,
+     "move": "will-o-wisp"
     },
     {
      "level": 37,
      "move": "shadow-punch"
     },
     {
-     "level": 41,
-     "move": "will-o-wisp"
-    },
-    {
-     "level": 51,
+     "level": 43,
      "move": "mean-look"
     },
     {
-     "level": 58,
+     "level": 51,
+     "move": "payback"
+    },
+    {
+     "level": 61,
      "move": "future-sight"
     }
    ],
@@ -10397,11 +11337,23 @@
     },
     {
      "level": 41,
-     "move": "solar-beam"
+     "move": "synthesis"
     },
     {
      "level": 47,
-     "move": "synthesis"
+     "move": "air-slash"
+    },
+    {
+     "level": 51,
+     "move": "solar-beam"
+    },
+    {
+     "level": 57,
+     "move": "natural-gift"
+    },
+    {
+     "level": 61,
+     "move": "leaf-storm"
     }
    ],
    "encounters": [
@@ -10463,11 +11415,11 @@
     },
     {
      "level": 17,
-     "move": "take-down"
+     "move": "uproar"
     },
     {
      "level": 22,
-     "move": "uproar"
+     "move": "take-down"
     },
     {
      "level": 25,
@@ -10491,7 +11443,11 @@
     },
     {
      "level": 46,
-     "move": "psychic"
+     "move": "extrasensory"
+    },
+    {
+     "level": 49,
+     "move": "healing-wish"
     }
    ],
    "encounters": [
@@ -10531,10 +11487,14 @@
    "learnset": [
     {
      "level": 1,
+     "move": "feint"
+    },
+    {
+     "level": 1,
      "move": "scratch"
     },
     {
-     "level": 5,
+     "level": 4,
      "move": "leer"
     },
     {
@@ -10542,7 +11502,7 @@
      "move": "taunt"
     },
     {
-     "level": 13,
+     "level": 12,
      "move": "quick-attack"
     },
     {
@@ -10550,15 +11510,19 @@
      "move": "razor-wind"
     },
     {
-     "level": 21,
-     "move": "bite"
+     "level": 20,
+     "move": "pursuit"
     },
     {
-     "level": 26,
+     "level": 25,
      "move": "swords-dance"
     },
     {
-     "level": 31,
+     "level": 28,
+     "move": "bite"
+    },
+    {
+     "level": 33,
      "move": "double-team"
     },
     {
@@ -10570,7 +11534,27 @@
      "move": "future-sight"
     },
     {
-     "level": 46,
+     "level": 44,
+     "move": "sucker-punch"
+    },
+    {
+     "level": 49,
+     "move": "detect"
+    },
+    {
+     "level": 52,
+     "move": "night-slash"
+    },
+    {
+     "level": 57,
+     "move": "me-first"
+    },
+    {
+     "level": 60,
+     "move": "psycho-cut"
+    },
+    {
+     "level": 65,
      "move": "perish-song"
     }
    ],
@@ -10732,7 +11716,7 @@
      "move": "powder-snow"
     },
     {
-     "level": 7,
+     "level": 4,
      "move": "double-team"
     },
     {
@@ -10740,7 +11724,7 @@
      "move": "bite"
     },
     {
-     "level": 16,
+     "level": 13,
      "move": "icy-wind"
     },
     {
@@ -10748,23 +11732,27 @@
      "move": "headbutt"
     },
     {
-     "level": 25,
+     "level": 22,
      "move": "protect"
     },
     {
      "level": 28,
+     "move": "ice-fang"
+    },
+    {
+     "level": 31,
      "move": "crunch"
     },
     {
-     "level": 34,
-     "move": "ice-beam"
+     "level": 37,
+     "move": "ice-shard"
     },
     {
-     "level": 37,
+     "level": 40,
      "move": "hail"
     },
     {
-     "level": 43,
+     "level": 46,
      "move": "blizzard"
     }
    ],
@@ -10826,7 +11814,7 @@
      "move": "powder-snow"
     },
     {
-     "level": 7,
+     "level": 4,
      "move": "double-team"
     },
     {
@@ -10834,7 +11822,7 @@
      "move": "bite"
     },
     {
-     "level": 16,
+     "level": 13,
      "move": "icy-wind"
     },
     {
@@ -10842,27 +11830,31 @@
      "move": "headbutt"
     },
     {
-     "level": 25,
+     "level": 22,
      "move": "protect"
     },
     {
      "level": 28,
+     "move": "ice-fang"
+    },
+    {
+     "level": 31,
      "move": "crunch"
     },
     {
-     "level": 34,
+     "level": 37,
      "move": "ice-beam"
     },
     {
-     "level": 42,
+     "level": 40,
      "move": "hail"
     },
     {
-     "level": 53,
+     "level": 51,
      "move": "blizzard"
     },
     {
-     "level": 61,
+     "level": 59,
      "move": "sheer-cold"
     }
    ],
@@ -10904,6 +11896,10 @@
     }
    ],
    "learnset": [
+    {
+     "level": 1,
+     "move": "defense-curl"
+    },
     {
      "level": 1,
      "move": "growl"
@@ -11089,6 +12085,10 @@
      "move": "hail"
     },
     {
+     "level": 32,
+     "move": "swagger"
+    },
+    {
      "level": 39,
      "move": "rest"
     },
@@ -11139,6 +12139,10 @@
    "learnset": [
     {
      "level": 1,
+     "move": "crunch"
+    },
+    {
+     "level": 1,
      "move": "encore"
     },
     {
@@ -11174,6 +12178,10 @@
      "move": "hail"
     },
     {
+     "level": 32,
+     "move": "swagger"
+    },
+    {
      "level": 39,
      "move": "rest"
     },
@@ -11182,11 +12190,15 @@
      "move": "snore"
     },
     {
-     "level": 50,
+     "level": 44,
+     "move": "ice-fang"
+    },
+    {
+     "level": 52,
      "move": "blizzard"
     },
     {
-     "level": 61,
+     "level": 65,
      "move": "sheer-cold"
     }
    ],
@@ -11285,31 +12297,47 @@
      "move": "whirlpool"
     },
     {
-     "level": 8,
+     "level": 6,
      "move": "bite"
     },
     {
-     "level": 15,
+     "level": 10,
      "move": "screech"
     },
     {
-     "level": 22,
+     "level": 15,
      "move": "water-pulse"
     },
     {
-     "level": 29,
+     "level": 19,
      "move": "scary-face"
     },
     {
-     "level": 36,
-     "move": "crunch"
+     "level": 24,
+     "move": "ice-fang"
     },
     {
-     "level": 43,
+     "level": 28,
+     "move": "brine"
+    },
+    {
+     "level": 33,
      "move": "baton-pass"
     },
     {
-     "level": 50,
+     "level": 37,
+     "move": "dive"
+    },
+    {
+     "level": 42,
+     "move": "crunch"
+    },
+    {
+     "level": 46,
+     "move": "aqua-tail"
+    },
+    {
+     "level": 51,
      "move": "hydro-pump"
     }
    ],
@@ -11349,31 +12377,47 @@
      "move": "whirlpool"
     },
     {
-     "level": 8,
+     "level": 6,
      "move": "confusion"
     },
     {
-     "level": 15,
+     "level": 10,
      "move": "agility"
     },
     {
-     "level": 22,
+     "level": 15,
      "move": "water-pulse"
     },
     {
-     "level": 29,
+     "level": 19,
      "move": "amnesia"
     },
     {
-     "level": 36,
-     "move": "psychic"
+     "level": 24,
+     "move": "aqua-ring"
     },
     {
-     "level": 43,
+     "level": 28,
+     "move": "captivate"
+    },
+    {
+     "level": 33,
      "move": "baton-pass"
     },
     {
-     "level": 50,
+     "level": 37,
+     "move": "dive"
+    },
+    {
+     "level": 42,
+     "move": "psychic"
+    },
+    {
+     "level": 46,
+     "move": "aqua-tail"
+    },
+    {
+     "level": 51,
      "move": "hydro-pump"
     }
    ],
@@ -11443,15 +12487,23 @@
     },
     {
      "level": 50,
-     "move": "rest"
-    },
-    {
-     "level": 57,
      "move": "double-edge"
     },
     {
+     "level": 57,
+     "move": "dive"
+    },
+    {
      "level": 64,
+     "move": "rest"
+    },
+    {
+     "level": 71,
      "move": "hydro-pump"
+    },
+    {
+     "level": 78,
+     "move": "head-smash"
     }
    ],
    "encounters": [],
@@ -11494,31 +12546,47 @@
      "move": "charm"
     },
     {
-     "level": 12,
+     "level": 7,
      "move": "water-gun"
     },
     {
-     "level": 16,
+     "level": 9,
      "move": "agility"
     },
     {
-     "level": 24,
+     "level": 14,
      "move": "take-down"
     },
     {
-     "level": 28,
+     "level": 17,
+     "move": "lucky-chant"
+    },
+    {
+     "level": 22,
      "move": "attract"
     },
     {
-     "level": 36,
+     "level": 27,
      "move": "sweet-kiss"
     },
     {
+     "level": 31,
+     "move": "water-pulse"
+    },
+    {
+     "level": 37,
+     "move": "aqua-ring"
+    },
+    {
      "level": 40,
+     "move": "captivate"
+    },
+    {
+     "level": 46,
      "move": "flail"
     },
     {
-     "level": 48,
+     "level": 51,
      "move": "safeguard"
     }
    ],
@@ -11581,15 +12649,15 @@
      "move": "bite"
     },
     {
-     "level": 9,
+     "level": 10,
      "move": "leer"
     },
     {
-     "level": 17,
+     "level": 16,
      "move": "headbutt"
     },
     {
-     "level": 21,
+     "level": 20,
      "move": "focus-energy"
     },
     {
@@ -11597,23 +12665,27 @@
      "move": "ember"
     },
     {
-     "level": 33,
+     "level": 31,
      "move": "dragon-breath"
     },
     {
-     "level": 37,
+     "level": 35,
+     "move": "zen-headbutt"
+    },
+    {
+     "level": 40,
      "move": "scary-face"
     },
     {
-     "level": 41,
+     "level": 46,
      "move": "crunch"
     },
     {
-     "level": 49,
+     "level": 50,
      "move": "dragon-claw"
     },
     {
-     "level": 53,
+     "level": 55,
      "move": "double-edge"
     }
    ],
@@ -11685,15 +12757,15 @@
      "move": "bite"
     },
     {
-     "level": 9,
+     "level": 10,
      "move": "leer"
     },
     {
-     "level": 17,
+     "level": 16,
      "move": "headbutt"
     },
     {
-     "level": 21,
+     "level": 20,
      "move": "focus-energy"
     },
     {
@@ -11705,23 +12777,27 @@
      "move": "protect"
     },
     {
-     "level": 38,
+     "level": 32,
      "move": "dragon-breath"
     },
     {
-     "level": 47,
+     "level": 37,
+     "move": "zen-headbutt"
+    },
+    {
+     "level": 43,
      "move": "scary-face"
     },
     {
-     "level": 56,
+     "level": 50,
      "move": "crunch"
     },
     {
-     "level": 69,
+     "level": 55,
      "move": "dragon-claw"
     },
     {
-     "level": 78,
+     "level": 61,
      "move": "double-edge"
     }
    ],
@@ -11763,6 +12839,10 @@
     },
     {
      "level": 1,
+     "move": "fire-fang"
+    },
+    {
+     "level": 1,
      "move": "headbutt"
     },
     {
@@ -11774,19 +12854,23 @@
      "move": "rage"
     },
     {
+     "level": 1,
+     "move": "thunder-fang"
+    },
+    {
      "level": 5,
      "move": "bite"
     },
     {
-     "level": 9,
+     "level": 10,
      "move": "leer"
     },
     {
-     "level": 17,
+     "level": 16,
      "move": "headbutt"
     },
     {
-     "level": 21,
+     "level": 20,
      "move": "focus-energy"
     },
     {
@@ -11798,11 +12882,15 @@
      "move": "protect"
     },
     {
-     "level": 38,
+     "level": 32,
      "move": "dragon-breath"
     },
     {
-     "level": 47,
+     "level": 37,
+     "move": "zen-headbutt"
+    },
+    {
+     "level": 43,
      "move": "scary-face"
     },
     {
@@ -11810,15 +12898,15 @@
      "move": "fly"
     },
     {
-     "level": 61,
+     "level": 53,
      "move": "crunch"
     },
     {
-     "level": 79,
+     "level": 61,
      "move": "dragon-claw"
     },
     {
-     "level": 93,
+     "level": 70,
      "move": "double-edge"
     }
    ],
@@ -11905,6 +12993,18 @@
    "learnset": [
     {
      "level": 1,
+     "move": "confusion"
+    },
+    {
+     "level": 1,
+     "move": "magnet-rise"
+    },
+    {
+     "level": 1,
+     "move": "metal-claw"
+    },
+    {
+     "level": 1,
      "move": "take-down"
     },
     {
@@ -11916,31 +13016,39 @@
      "move": "metal-claw"
     },
     {
-     "level": 26,
+     "level": 24,
      "move": "scary-face"
     },
     {
-     "level": 32,
+     "level": 28,
      "move": "pursuit"
     },
     {
-     "level": 38,
+     "level": 32,
+     "move": "bullet-punch"
+    },
+    {
+     "level": 36,
      "move": "psychic"
     },
     {
-     "level": 44,
+     "level": 40,
      "move": "iron-defense"
     },
     {
-     "level": 50,
-     "move": "meteor-mash"
-    },
-    {
-     "level": 56,
+     "level": 44,
      "move": "agility"
     },
     {
-     "level": 62,
+     "level": 48,
+     "move": "meteor-mash"
+    },
+    {
+     "level": 52,
+     "move": "zen-headbutt"
+    },
+    {
+     "level": 56,
      "move": "hyper-beam"
     }
    ],
@@ -11982,11 +13090,11 @@
     },
     {
      "level": 1,
-     "move": "metal-claw"
+     "move": "magnet-rise"
     },
     {
      "level": 1,
-     "move": "scary-face"
+     "move": "metal-claw"
     },
     {
      "level": 1,
@@ -12001,31 +13109,43 @@
      "move": "metal-claw"
     },
     {
-     "level": 26,
+     "level": 24,
      "move": "scary-face"
     },
     {
-     "level": 32,
+     "level": 28,
      "move": "pursuit"
     },
     {
-     "level": 38,
+     "level": 32,
+     "move": "bullet-punch"
+    },
+    {
+     "level": 36,
      "move": "psychic"
     },
     {
-     "level": 44,
+     "level": 40,
      "move": "iron-defense"
     },
     {
-     "level": 55,
-     "move": "meteor-mash"
-    },
-    {
-     "level": 66,
+     "level": 44,
      "move": "agility"
     },
     {
-     "level": 77,
+     "level": 45,
+     "move": "hammer-arm"
+    },
+    {
+     "level": 53,
+     "move": "meteor-mash"
+    },
+    {
+     "level": 62,
+     "move": "zen-headbutt"
+    },
+    {
+     "level": 71,
      "move": "hyper-beam"
     }
    ],
@@ -12065,6 +13185,10 @@
      "move": "explosion"
     },
     {
+     "level": 1,
+     "move": "stomp"
+    },
+    {
      "level": 9,
      "move": "rock-throw"
     },
@@ -12086,7 +13210,7 @@
     },
     {
      "level": 49,
-     "move": "zap-cannon"
+     "move": "charge-beam"
     },
     {
      "level": 57,
@@ -12094,6 +13218,18 @@
     },
     {
      "level": 65,
+     "move": "zap-cannon"
+    },
+    {
+     "level": 73,
+     "move": "stone-edge"
+    },
+    {
+     "level": 81,
+     "move": "hammer-arm"
+    },
+    {
+     "level": 89,
      "move": "hyper-beam"
     }
    ],
@@ -12133,6 +13269,10 @@
      "move": "explosion"
     },
     {
+     "level": 1,
+     "move": "stomp"
+    },
+    {
      "level": 9,
      "move": "icy-wind"
     },
@@ -12154,7 +13294,7 @@
     },
     {
      "level": 49,
-     "move": "zap-cannon"
+     "move": "charge-beam"
     },
     {
      "level": 57,
@@ -12162,6 +13302,18 @@
     },
     {
      "level": 65,
+     "move": "zap-cannon"
+    },
+    {
+     "level": 73,
+     "move": "ice-beam"
+    },
+    {
+     "level": 81,
+     "move": "hammer-arm"
+    },
+    {
+     "level": 89,
      "move": "hyper-beam"
     }
    ],
@@ -12201,6 +13353,10 @@
      "move": "explosion"
     },
     {
+     "level": 1,
+     "move": "stomp"
+    },
+    {
      "level": 9,
      "move": "metal-claw"
     },
@@ -12226,7 +13382,7 @@
     },
     {
      "level": 49,
-     "move": "zap-cannon"
+     "move": "charge-beam"
     },
     {
      "level": 57,
@@ -12234,6 +13390,22 @@
     },
     {
      "level": 65,
+     "move": "zap-cannon"
+    },
+    {
+     "level": 73,
+     "move": "flash-cannon"
+    },
+    {
+     "level": 73,
+     "move": "iron-head"
+    },
+    {
+     "level": 81,
+     "move": "hammer-arm"
+    },
+    {
+     "level": 89,
      "move": "hyper-beam"
     }
    ],
@@ -12303,7 +13475,7 @@
     },
     {
      "level": 40,
-     "move": "psychic"
+     "move": "zen-headbutt"
     },
     {
      "level": 45,
@@ -12311,7 +13483,23 @@
     },
     {
      "level": 50,
+     "move": "psycho-shift"
+    },
+    {
+     "level": 55,
      "move": "charm"
+    },
+    {
+     "level": 60,
+     "move": "healing-wish"
+    },
+    {
+     "level": 65,
+     "move": "psychic"
+    },
+    {
+     "level": 70,
+     "move": "dragon-pulse"
     }
    ],
    "encounters": [],
@@ -12352,7 +13540,7 @@
     },
     {
      "level": 5,
-     "move": "memento"
+     "move": "heal-block"
     },
     {
      "level": 10,
@@ -12380,7 +13568,7 @@
     },
     {
      "level": 40,
-     "move": "psychic"
+     "move": "zen-headbutt"
     },
     {
      "level": 45,
@@ -12388,7 +13576,23 @@
     },
     {
      "level": 50,
+     "move": "psycho-shift"
+    },
+    {
+     "level": 55,
      "move": "dragon-dance"
+    },
+    {
+     "level": 60,
+     "move": "memento"
+    },
+    {
+     "level": 65,
+     "move": "psychic"
+    },
+    {
+     "level": 70,
+     "move": "dragon-pulse"
     }
    ],
    "encounters": [],
@@ -12432,15 +13636,15 @@
     },
     {
      "level": 15,
-     "move": "ancient-power"
-    },
-    {
-     "level": 20,
      "move": "body-slam"
     },
     {
+     "level": 20,
+     "move": "muddy-water"
+    },
+    {
      "level": 30,
-     "move": "calm-mind"
+     "move": "aqua-ring"
     },
     {
      "level": 35,
@@ -12448,23 +13652,31 @@
     },
     {
      "level": 45,
-     "move": "hydro-pump"
+     "move": "ancient-power"
     },
     {
      "level": 50,
-     "move": "rest"
+     "move": "water-spout"
     },
     {
      "level": 60,
-     "move": "sheer-cold"
+     "move": "calm-mind"
     },
     {
      "level": 65,
-     "move": "double-edge"
+     "move": "aqua-tail"
     },
     {
      "level": 75,
-     "move": "water-spout"
+     "move": "sheer-cold"
+    },
+    {
+     "level": 80,
+     "move": "double-edge"
+    },
+    {
+     "level": 90,
+     "move": "hydro-pump"
     }
    ],
    "encounters": [],
@@ -12508,15 +13720,15 @@
     },
     {
      "level": 15,
-     "move": "ancient-power"
+     "move": "lava-plume"
     },
     {
      "level": 20,
-     "move": "slash"
+     "move": "hammer-arm"
     },
     {
      "level": 30,
-     "move": "bulk-up"
+     "move": "rest"
     },
     {
      "level": 35,
@@ -12524,23 +13736,31 @@
     },
     {
      "level": 45,
-     "move": "fire-blast"
+     "move": "ancient-power"
     },
     {
      "level": 50,
-     "move": "rest"
+     "move": "eruption"
     },
     {
      "level": 60,
-     "move": "fissure"
+     "move": "bulk-up"
     },
     {
      "level": 65,
-     "move": "solar-beam"
+     "move": "earth-power"
     },
     {
      "level": 75,
-     "move": "eruption"
+     "move": "fissure"
+    },
+    {
+     "level": 80,
+     "move": "solar-beam"
+    },
+    {
+     "level": 90,
+     "move": "fire-blast"
     }
    ],
    "encounters": [],
@@ -12585,39 +13805,47 @@
     },
     {
      "level": 15,
-     "move": "ancient-power"
-    },
-    {
-     "level": 20,
-     "move": "dragon-claw"
-    },
-    {
-     "level": 30,
-     "move": "dragon-dance"
-    },
-    {
-     "level": 35,
      "move": "crunch"
     },
     {
-     "level": 45,
-     "move": "fly"
+     "level": 20,
+     "move": "hyper-voice"
     },
     {
-     "level": 50,
+     "level": 30,
      "move": "rest"
     },
     {
-     "level": 60,
-     "move": "extreme-speed"
+     "level": 35,
+     "move": "air-slash"
     },
     {
-     "level": 65,
+     "level": 45,
+     "move": "ancient-power"
+    },
+    {
+     "level": 50,
      "move": "outrage"
     },
     {
+     "level": 60,
+     "move": "dragon-dance"
+    },
+    {
+     "level": 65,
+     "move": "fly"
+    },
+    {
      "level": 75,
+     "move": "extreme-speed"
+    },
+    {
+     "level": 80,
      "move": "hyper-beam"
+    },
+    {
+     "level": 90,
+     "move": "dragon-pulse"
     }
    ],
    "encounters": [],
@@ -12686,18 +13914,34 @@
     },
     {
      "level": 35,
-     "move": "double-edge"
+     "move": "zen-headbutt"
     },
     {
      "level": 40,
-     "move": "future-sight"
+     "move": "double-edge"
     },
     {
      "level": 45,
-     "move": "cosmic-power"
+     "move": "gravity"
     },
     {
      "level": 50,
+     "move": "healing-wish"
+    },
+    {
+     "level": 55,
+     "move": "future-sight"
+    },
+    {
+     "level": 60,
+     "move": "cosmic-power"
+    },
+    {
+     "level": 65,
+     "move": "last-resort"
+    },
+    {
+     "level": 70,
      "move": "doom-desire"
     }
    ],
@@ -12741,43 +13985,51 @@
      "move": "wrap"
     },
     {
-     "level": 5,
+     "level": 9,
      "move": "night-shade"
     },
     {
-     "level": 10,
+     "level": 17,
      "move": "teleport"
     },
     {
-     "level": 15,
+     "level": 25,
      "move": "knock-off"
     },
     {
-     "level": 20,
+     "level": 33,
      "move": "pursuit"
     },
     {
-     "level": 25,
+     "level": 41,
      "move": "psychic"
     },
     {
-     "level": 30,
+     "level": 49,
      "move": "snatch"
     },
     {
-     "level": 35,
+     "level": 57,
+     "move": "psycho-shift"
+    },
+    {
+     "level": 65,
+     "move": "zen-headbutt"
+    },
+    {
+     "level": 73,
      "move": "cosmic-power"
     },
     {
-     "level": 40,
+     "level": 81,
      "move": "recover"
     },
     {
-     "level": 45,
+     "level": 89,
      "move": "psycho-boost"
     },
     {
-     "level": 50,
+     "level": 97,
      "move": "hyper-beam"
     }
    ],
@@ -12815,6 +14067,12 @@
    "power": null,
    "category": "status"
   },
+  "air-slash": {
+   "name": "Air Slash",
+   "type": "flying",
+   "power": 75,
+   "category": "special"
+  },
   "amnesia": {
    "name": "Amnesia",
    "type": "psychic",
@@ -12826,6 +14084,24 @@
    "type": "rock",
    "power": 60,
    "category": "special"
+  },
+  "aqua-jet": {
+   "name": "Aqua Jet",
+   "type": "water",
+   "power": 40,
+   "category": "physical"
+  },
+  "aqua-ring": {
+   "name": "Aqua Ring",
+   "type": "water",
+   "power": null,
+   "category": "status"
+  },
+  "aqua-tail": {
+   "name": "Aqua Tail",
+   "type": "water",
+   "power": 90,
+   "category": "physical"
   },
   "arm-thrust": {
    "name": "Arm Thrust",
@@ -12844,6 +14120,12 @@
    "type": "normal",
    "power": null,
    "category": "status"
+  },
+  "assurance": {
+   "name": "Assurance",
+   "type": "dark",
+   "power": 60,
+   "category": "physical"
   },
   "astonish": {
    "name": "Astonish",
@@ -12923,6 +14205,18 @@
    "power": 85,
    "category": "physical"
   },
+  "brave-bird": {
+   "name": "Brave Bird",
+   "type": "flying",
+   "power": 120,
+   "category": "physical"
+  },
+  "brine": {
+   "name": "Brine",
+   "type": "water",
+   "power": 65,
+   "category": "special"
+  },
   "bubble": {
    "name": "Bubble",
    "type": "water",
@@ -12935,15 +14229,39 @@
    "power": 65,
    "category": "special"
   },
+  "bug-bite": {
+   "name": "Bug Bite",
+   "type": "bug",
+   "power": 60,
+   "category": "physical"
+  },
+  "bug-buzz": {
+   "name": "Bug Buzz",
+   "type": "bug",
+   "power": 90,
+   "category": "special"
+  },
   "bulk-up": {
    "name": "Bulk Up",
    "type": "fighting",
    "power": null,
    "category": "status"
   },
+  "bullet-punch": {
+   "name": "Bullet Punch",
+   "type": "steel",
+   "power": 40,
+   "category": "physical"
+  },
   "calm-mind": {
    "name": "Calm Mind",
    "type": "psychic",
+   "power": null,
+   "category": "status"
+  },
+  "captivate": {
+   "name": "Captivate",
+   "type": "normal",
    "power": null,
    "category": "status"
   },
@@ -12952,6 +14270,12 @@
    "type": "electric",
    "power": null,
    "category": "status"
+  },
+  "charge-beam": {
+   "name": "Charge Beam",
+   "type": "electric",
+   "power": 50,
+   "category": "special"
   },
   "charm": {
    "name": "Charm",
@@ -12963,6 +14287,12 @@
    "name": "Clamp",
    "type": "water",
    "power": 35,
+   "category": "physical"
+  },
+  "close-combat": {
+   "name": "Close Combat",
+   "type": "fighting",
+   "power": 120,
    "category": "physical"
   },
   "confuse-ray": {
@@ -12982,6 +14312,12 @@
    "type": "normal",
    "power": 10,
    "category": "physical"
+  },
+  "copycat": {
+   "name": "Copycat",
+   "type": "normal",
+   "power": null,
+   "category": "status"
   },
   "cosmic-power": {
    "name": "Cosmic Power",
@@ -13031,6 +14367,12 @@
    "power": null,
    "category": "status"
   },
+  "defense-curl": {
+   "name": "Defense Curl",
+   "type": "normal",
+   "power": null,
+   "category": "status"
+  },
   "destiny-bond": {
    "name": "Destiny Bond",
    "type": "ghost",
@@ -13054,6 +14396,18 @@
    "type": "normal",
    "power": null,
    "category": "status"
+  },
+  "discharge": {
+   "name": "Discharge",
+   "type": "electric",
+   "power": 80,
+   "category": "special"
+  },
+  "dive": {
+   "name": "Dive",
+   "type": "water",
+   "power": 80,
+   "category": "physical"
   },
   "dizzy-punch": {
    "name": "Dizzy Punch",
@@ -13109,6 +14463,12 @@
    "power": null,
    "category": "status"
   },
+  "dragon-pulse": {
+   "name": "Dragon Pulse",
+   "type": "dragon",
+   "power": 85,
+   "category": "special"
+  },
   "dream-eater": {
    "name": "Dream Eater",
    "type": "psychic",
@@ -13121,11 +14481,23 @@
    "power": 100,
    "category": "physical"
   },
+  "earth-power": {
+   "name": "Earth Power",
+   "type": "ground",
+   "power": 90,
+   "category": "special"
+  },
   "earthquake": {
    "name": "Earthquake",
    "type": "ground",
    "power": 100,
    "category": "physical"
+  },
+  "embargo": {
+   "name": "Embargo",
+   "type": "dark",
+   "power": null,
+   "category": "status"
   },
   "ember": {
    "name": "Ember",
@@ -13150,6 +14522,12 @@
    "type": "normal",
    "power": null,
    "category": "status"
+  },
+  "energy-ball": {
+   "name": "Energy Ball",
+   "type": "grass",
+   "power": 90,
+   "category": "special"
   },
   "eruption": {
    "name": "Eruption",
@@ -13193,6 +14571,12 @@
    "power": 40,
    "category": "physical"
   },
+  "feint": {
+   "name": "Feint",
+   "type": "normal",
+   "power": 30,
+   "category": "physical"
+  },
   "feint-attack": {
    "name": "Feint Attack",
    "type": "dark",
@@ -13204,6 +14588,12 @@
    "type": "fire",
    "power": 110,
    "category": "special"
+  },
+  "fire-fang": {
+   "name": "Fire Fang",
+   "type": "fire",
+   "power": 65,
+   "category": "physical"
   },
   "fire-punch": {
    "name": "Fire Punch",
@@ -13235,11 +14625,35 @@
    "power": 90,
    "category": "special"
   },
+  "flare-blitz": {
+   "name": "Flare Blitz",
+   "type": "fire",
+   "power": 120,
+   "category": "physical"
+  },
+  "flash": {
+   "name": "Flash",
+   "type": "normal",
+   "power": null,
+   "category": "status"
+  },
+  "flash-cannon": {
+   "name": "Flash Cannon",
+   "type": "steel",
+   "power": 80,
+   "category": "special"
+  },
   "flatter": {
    "name": "Flatter",
    "type": "dark",
    "power": null,
    "category": "status"
+  },
+  "fling": {
+   "name": "Fling",
+   "type": "dark",
+   "power": null,
+   "category": "physical"
   },
   "fly": {
    "name": "Fly",
@@ -13257,6 +14671,12 @@
    "name": "Focus Punch",
    "type": "fighting",
    "power": 150,
+   "category": "physical"
+  },
+  "force-palm": {
+   "name": "Force Palm",
+   "type": "fighting",
+   "power": 60,
    "category": "physical"
   },
   "foresight": {
@@ -13289,6 +14709,12 @@
    "power": 120,
    "category": "special"
   },
+  "gastro-acid": {
+   "name": "Gastro Acid",
+   "type": "poison",
+   "power": null,
+   "category": "status"
+  },
   "giga-drain": {
    "name": "Giga Drain",
    "type": "grass",
@@ -13304,6 +14730,12 @@
   "grass-whistle": {
    "name": "Grass Whistle",
    "type": "grass",
+   "power": null,
+   "category": "status"
+  },
+  "gravity": {
+   "name": "Gravity",
+   "type": "psychic",
    "power": null,
    "category": "status"
   },
@@ -13331,6 +14763,12 @@
    "power": null,
    "category": "physical"
   },
+  "gunk-shot": {
+   "name": "Gunk Shot",
+   "type": "poison",
+   "power": 120,
+   "category": "physical"
+  },
   "gust": {
    "name": "Gust",
    "type": "flying",
@@ -13342,6 +14780,12 @@
    "type": "ice",
    "power": null,
    "category": "status"
+  },
+  "hammer-arm": {
+   "name": "Hammer Arm",
+   "type": "fighting",
+   "power": 100,
+   "category": "physical"
   },
   "harden": {
    "name": "Harden",
@@ -13355,6 +14799,12 @@
    "power": null,
    "category": "status"
   },
+  "head-smash": {
+   "name": "Head Smash",
+   "type": "rock",
+   "power": 150,
+   "category": "physical"
+  },
   "headbutt": {
    "name": "Headbutt",
    "type": "normal",
@@ -13364,6 +14814,18 @@
   "heal-bell": {
    "name": "Heal Bell",
    "type": "normal",
+   "power": null,
+   "category": "status"
+  },
+  "heal-block": {
+   "name": "Heal Block",
+   "type": "psychic",
+   "power": null,
+   "category": "status"
+  },
+  "healing-wish": {
+   "name": "Healing Wish",
+   "type": "psychic",
    "power": null,
    "category": "status"
   },
@@ -13433,10 +14895,22 @@
    "power": 90,
    "category": "special"
   },
+  "ice-fang": {
+   "name": "Ice Fang",
+   "type": "ice",
+   "power": 65,
+   "category": "physical"
+  },
   "ice-punch": {
    "name": "Ice Punch",
    "type": "ice",
    "power": 75,
+   "category": "physical"
+  },
+  "ice-shard": {
+   "name": "Ice Shard",
+   "type": "ice",
+   "power": 40,
    "category": "physical"
   },
   "icy-wind": {
@@ -13463,6 +14937,12 @@
    "power": null,
    "category": "status"
   },
+  "iron-head": {
+   "name": "Iron Head",
+   "type": "steel",
+   "power": 80,
+   "category": "physical"
+  },
   "iron-tail": {
    "name": "Iron Tail",
    "type": "steel",
@@ -13475,11 +14955,29 @@
    "power": 65,
    "category": "physical"
   },
+  "last-resort": {
+   "name": "Last Resort",
+   "type": "normal",
+   "power": 140,
+   "category": "physical"
+  },
+  "lava-plume": {
+   "name": "Lava Plume",
+   "type": "fire",
+   "power": 80,
+   "category": "special"
+  },
   "leaf-blade": {
    "name": "Leaf Blade",
    "type": "grass",
    "power": 90,
    "category": "physical"
+  },
+  "leaf-storm": {
+   "name": "Leaf Storm",
+   "type": "grass",
+   "power": 130,
+   "category": "special"
   },
   "leech-life": {
    "name": "Leech Life",
@@ -13517,6 +15015,12 @@
    "power": null,
    "category": "status"
   },
+  "lucky-chant": {
+   "name": "Lucky Chant",
+   "type": "normal",
+   "power": null,
+   "category": "status"
+  },
   "luster-purge": {
    "name": "Luster Purge",
    "type": "psychic",
@@ -13541,11 +15045,23 @@
    "power": 60,
    "category": "special"
   },
+  "magnet-rise": {
+   "name": "Magnet Rise",
+   "type": "electric",
+   "power": null,
+   "category": "status"
+  },
   "magnitude": {
    "name": "Magnitude",
    "type": "ground",
    "power": null,
    "category": "physical"
+  },
+  "me-first": {
+   "name": "Me First",
+   "type": "normal",
+   "power": null,
+   "category": "status"
   },
   "mean-look": {
    "name": "Mean Look",
@@ -13570,6 +15086,12 @@
    "type": "dark",
    "power": null,
    "category": "status"
+  },
+  "metal-burst": {
+   "name": "Metal Burst",
+   "type": "steel",
+   "power": null,
+   "category": "physical"
   },
   "metal-claw": {
    "name": "Metal Claw",
@@ -13631,6 +15153,12 @@
    "power": null,
    "category": "status"
   },
+  "mud-bomb": {
+   "name": "Mud Bomb",
+   "type": "ground",
+   "power": 65,
+   "category": "special"
+  },
   "mud-shot": {
    "name": "Mud Shot",
    "type": "ground",
@@ -13655,6 +15183,18 @@
    "power": 90,
    "category": "special"
   },
+  "nasty-plot": {
+   "name": "Nasty Plot",
+   "type": "dark",
+   "power": null,
+   "category": "status"
+  },
+  "natural-gift": {
+   "name": "Natural Gift",
+   "type": "normal",
+   "power": null,
+   "category": "physical"
+  },
   "nature-power": {
    "name": "Nature Power",
    "type": "normal",
@@ -13673,16 +15213,34 @@
    "power": null,
    "category": "special"
   },
+  "night-slash": {
+   "name": "Night Slash",
+   "type": "dark",
+   "power": 70,
+   "category": "physical"
+  },
   "odor-sleuth": {
    "name": "Odor Sleuth",
    "type": "normal",
    "power": null,
    "category": "status"
   },
+  "ominous-wind": {
+   "name": "Ominous Wind",
+   "type": "ghost",
+   "power": 60,
+   "category": "special"
+  },
   "outrage": {
    "name": "Outrage",
    "type": "dragon",
    "power": 120,
+   "category": "physical"
+  },
+  "payback": {
+   "name": "Payback",
+   "type": "dark",
+   "power": 50,
    "category": "physical"
   },
   "peck": {
@@ -13709,6 +15267,12 @@
    "power": 25,
    "category": "physical"
   },
+  "pluck": {
+   "name": "Pluck",
+   "type": "flying",
+   "power": 60,
+   "category": "physical"
+  },
   "poison-fang": {
    "name": "Poison Fang",
    "type": "poison",
@@ -13720,6 +15284,12 @@
    "type": "poison",
    "power": null,
    "category": "status"
+  },
+  "poison-jab": {
+   "name": "Poison Jab",
+   "type": "poison",
+   "power": 80,
+   "category": "physical"
   },
   "poison-powder": {
    "name": "Poison Powder",
@@ -13751,6 +15321,18 @@
    "power": 40,
    "category": "special"
   },
+  "power-gem": {
+   "name": "Power Gem",
+   "type": "rock",
+   "power": 80,
+   "category": "special"
+  },
+  "power-trick": {
+   "name": "Power Trick",
+   "type": "psychic",
+   "power": null,
+   "category": "status"
+  },
   "protect": {
    "name": "Protect",
    "type": "normal",
@@ -13781,11 +15363,29 @@
    "power": 140,
    "category": "special"
   },
+  "psycho-cut": {
+   "name": "Psycho Cut",
+   "type": "psychic",
+   "power": 70,
+   "category": "physical"
+  },
+  "psycho-shift": {
+   "name": "Psycho Shift",
+   "type": "psychic",
+   "power": null,
+   "category": "status"
+  },
   "psywave": {
    "name": "Psywave",
    "type": "psychic",
    "power": null,
    "category": "special"
+  },
+  "punishment": {
+   "name": "Punishment",
+   "type": "dark",
+   "power": null,
+   "category": "physical"
   },
   "pursuit": {
    "name": "Pursuit",
@@ -13847,6 +15447,12 @@
    "power": null,
    "category": "status"
   },
+  "revenge": {
+   "name": "Revenge",
+   "type": "fighting",
+   "power": 60,
+   "category": "physical"
+  },
   "reversal": {
    "name": "Reversal",
    "type": "fighting",
@@ -13864,6 +15470,12 @@
    "type": "rock",
    "power": 25,
    "category": "physical"
+  },
+  "rock-polish": {
+   "name": "Rock Polish",
+   "type": "rock",
+   "power": null,
+   "category": "status"
   },
   "rock-slide": {
    "name": "Rock Slide",
@@ -13888,6 +15500,12 @@
    "type": "rock",
    "power": 30,
    "category": "physical"
+  },
+  "roost": {
+   "name": "Roost",
+   "type": "flying",
+   "power": null,
+   "category": "status"
   },
   "safeguard": {
    "name": "Safeguard",
@@ -13931,6 +15549,12 @@
    "power": null,
    "category": "status"
   },
+  "seed-bomb": {
+   "name": "Seed Bomb",
+   "type": "grass",
+   "power": 80,
+   "category": "physical"
+  },
   "seismic-toss": {
    "name": "Seismic Toss",
    "type": "fighting",
@@ -13949,10 +15573,22 @@
    "power": 80,
    "category": "special"
   },
+  "shadow-claw": {
+   "name": "Shadow Claw",
+   "type": "ghost",
+   "power": 70,
+   "category": "physical"
+  },
   "shadow-punch": {
    "name": "Shadow Punch",
    "type": "ghost",
    "power": 60,
+   "category": "physical"
+  },
+  "shadow-sneak": {
+   "name": "Shadow Sneak",
+   "type": "ghost",
+   "power": 40,
    "category": "physical"
   },
   "sheer-cold": {
@@ -14069,6 +15705,12 @@
    "power": 120,
    "category": "special"
   },
+  "sonic-boom": {
+   "name": "Sonic Boom",
+   "type": "normal",
+   "power": null,
+   "category": "special"
+  },
   "spark": {
    "name": "Spark",
    "type": "electric",
@@ -14117,6 +15759,12 @@
    "power": 65,
    "category": "physical"
   },
+  "stone-edge": {
+   "name": "Stone Edge",
+   "type": "rock",
+   "power": 100,
+   "category": "physical"
+  },
   "string-shot": {
    "name": "String Shot",
    "type": "bug",
@@ -14140,6 +15788,12 @@
    "type": "normal",
    "power": null,
    "category": "status"
+  },
+  "sucker-punch": {
+   "name": "Sucker Punch",
+   "type": "dark",
+   "power": 70,
+   "category": "physical"
   },
   "sunny-day": {
    "name": "Sunny Day",
@@ -14189,6 +15843,12 @@
    "power": 60,
    "category": "special"
   },
+  "switcheroo": {
+   "name": "Switcheroo",
+   "type": "dark",
+   "power": null,
+   "category": "status"
+  },
   "swords-dance": {
    "name": "Swords Dance",
    "type": "normal",
@@ -14216,6 +15876,12 @@
   "tail-whip": {
    "name": "Tail Whip",
    "type": "normal",
+   "power": null,
+   "category": "status"
+  },
+  "tailwind": {
+   "name": "Tailwind",
+   "type": "flying",
    "power": null,
    "category": "status"
   },
@@ -14261,6 +15927,12 @@
    "power": 110,
    "category": "special"
   },
+  "thunder-fang": {
+   "name": "Thunder Fang",
+   "type": "electric",
+   "power": 65,
+   "category": "physical"
+  },
   "thunder-punch": {
    "name": "Thunder Punch",
    "type": "electric",
@@ -14291,6 +15963,24 @@
    "power": null,
    "category": "status"
   },
+  "toxic-spikes": {
+   "name": "Toxic Spikes",
+   "type": "poison",
+   "power": null,
+   "category": "status"
+  },
+  "trick": {
+   "name": "Trick",
+   "type": "psychic",
+   "power": null,
+   "category": "status"
+  },
+  "trump-card": {
+   "name": "Trump Card",
+   "type": "normal",
+   "power": null,
+   "category": "special"
+  },
   "twister": {
    "name": "Twister",
    "type": "dragon",
@@ -14317,6 +16007,12 @@
   },
   "vital-throw": {
    "name": "Vital Throw",
+   "type": "fighting",
+   "power": 70,
+   "category": "physical"
+  },
+  "wake-up-slap": {
+   "name": "Wake-Up Slap",
    "type": "fighting",
    "power": 70,
    "category": "physical"
@@ -14381,10 +16077,34 @@
    "power": null,
    "category": "status"
   },
+  "withdraw": {
+   "name": "Withdraw",
+   "type": "water",
+   "power": null,
+   "category": "status"
+  },
+  "worry-seed": {
+   "name": "Worry Seed",
+   "type": "grass",
+   "power": null,
+   "category": "status"
+  },
   "wrap": {
    "name": "Wrap",
    "type": "normal",
    "power": 15,
+   "category": "physical"
+  },
+  "wring-out": {
+   "name": "Wring Out",
+   "type": "normal",
+   "power": null,
+   "category": "special"
+  },
+  "x-scissor": {
+   "name": "X-Scissor",
+   "type": "bug",
+   "power": 80,
    "category": "physical"
   },
   "yawn": {
@@ -14398,6 +16118,12 @@
    "type": "electric",
    "power": 120,
    "category": "special"
+  },
+  "zen-headbutt": {
+   "name": "Zen Headbutt",
+   "type": "psychic",
+   "power": 80,
+   "category": "physical"
   }
  },
  "encounters": [

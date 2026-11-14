@@ -1,91 +1,91 @@
 {
   "sides.p1": {
-    "k": 199.5,
+    "k": 193,
     "n": 400,
-    "p": 0.49875,
-    "lo": 0.44999565834620814,
-    "hi": 0.5475281232552911
+    "p": 0.4825,
+    "lo": 0.4339296820630707,
+    "hi": 0.5314032603579181
   },
   "ladder.easy_vs_normal": {
-    "k": 79.5,
+    "k": 87,
     "n": 400,
-    "p": 0.19875,
-    "lo": 0.16258895763834746,
-    "hi": 0.2406424083229602
+    "p": 0.2175,
+    "lo": 0.17986098131336697,
+    "hi": 0.2605136606254526
   },
   "ladder.easy_vs_hard": {
-    "k": 43,
+    "k": 49.5,
     "n": 400,
-    "p": 0.1075,
-    "lo": 0.08079329401678037,
-    "hi": 0.14167412885396896
+    "p": 0.12375,
+    "lo": 0.09501315540326064,
+    "hi": 0.15964510664799905
   },
   "ladder.normal_vs_easy": {
-    "k": 310,
+    "k": 309,
     "n": 400,
-    "p": 0.775,
-    "lo": 0.7315721378719925,
-    "hi": 0.8131959097981832
+    "p": 0.7725,
+    "lo": 0.7289382239883379,
+    "hi": 0.8108773868848361
   },
   "ladder.normal_vs_hard": {
-    "k": 157.5,
+    "k": 135.5,
     "n": 400,
-    "p": 0.39375,
-    "lo": 0.3470973893229047,
-    "hi": 0.4424240468045274
+    "p": 0.33875,
+    "lo": 0.29409766511794594,
+    "hi": 0.38647016147545105
   },
   "ladder.hard_vs_easy": {
-    "k": 350,
+    "k": 343,
     "n": 400,
-    "p": 0.875,
-    "lo": 0.8389801748486139,
-    "hi": 0.9038853447016257
+    "p": 0.8575,
+    "lo": 0.8198362705594275,
+    "hi": 0.888362191411801
   },
   "ladder.hard_vs_normal": {
-    "k": 251.5,
+    "k": 240.5,
     "n": 400,
-    "p": 0.62875,
-    "lo": 0.5803874358732253,
-    "hi": 0.674663059172357
+    "p": 0.60125,
+    "lo": 0.5525210792859201,
+    "hi": 0.6480526109926446
   },
-  "mechanics.seconds.mean": 16.067250000000005,
-  "mechanics.seconds.p50": 15.65,
+  "mechanics.seconds.mean": 15.369458333333336,
+  "mechanics.seconds.p50": 15.066666666666666,
   "mechanics.timeOuts": 0,
-  "mechanics.bonusShare": 0.03903758910586095,
+  "mechanics.bonusShare": 0.03831341655174319,
   "mechanics.comebacks50": {
-    "k": 15,
-    "n": 397,
-    "p": 0.037783375314861464,
-    "lo": 0.02302852467122285,
-    "hi": 0.06139784225276908
+    "k": 14,
+    "n": 399,
+    "p": 0.03508771929824561,
+    "lo": 0.021013918395392038,
+    "hi": 0.05802856381101366
   },
   "mechanics.elementalLanded": {
-    "k": 538,
-    "n": 2169,
-    "p": 0.24804057169202398,
-    "lo": 0.23032121205143147,
-    "hi": 0.2666508635936593
+    "k": 535,
+    "n": 2101,
+    "p": 0.2546406473108044,
+    "lo": 0.23647107090697916,
+    "hi": 0.2737058469190462
   },
   "mechanics.bigLanded": {
-    "k": 191,
-    "n": 1239,
-    "p": 0.15415657788539144,
-    "lo": 0.13512127082532976,
-    "hi": 0.17532987596602323
+    "k": 177,
+    "n": 1081,
+    "p": 0.1637372802960222,
+    "lo": 0.14287583085815714,
+    "hi": 0.18698025135697915
   },
-  "mechanics.share.tackle": 0.585,
-  "mechanics.share.air": 0.05,
-  "mechanics.share.elemental": 0.222,
-  "mechanics.share.big": 0.14300000000000002,
+  "mechanics.share.tackle": 0.5670000000000001,
+  "mechanics.share.air": 0.049,
+  "mechanics.share.elemental": 0.263,
+  "mechanics.share.big": 0.121,
   "mechanics.share.boss": 0,
-  "mechanics.perFight.hits landed": 6.715,
-  "mechanics.perFight.hits guarded": 2.19,
-  "mechanics.perFight.parries": 0.7725,
-  "mechanics.perFight.back attacks": 0.19,
-  "mechanics.perFight.counters": 0.56625,
-  "mechanics.perFight.elemental specials": 2.71125,
-  "mechanics.perFight.big specials": 1.54875,
-  "mechanics.perFight.dashes": 1.2875,
-  "mechanics.perFight.dashes through": 0.4275,
-  "mechanics.perFight.jumps": 2.1075
+  "mechanics.perFight.hits landed": 6.43,
+  "mechanics.perFight.hits guarded": 2.07375,
+  "mechanics.perFight.parries": 0.77625,
+  "mechanics.perFight.back attacks": 0.17,
+  "mechanics.perFight.counters": 0.56375,
+  "mechanics.perFight.elemental specials": 2.62625,
+  "mechanics.perFight.big specials": 1.35125,
+  "mechanics.perFight.dashes": 1.28375,
+  "mechanics.perFight.dashes through": 0.4,
+  "mechanics.perFight.jumps": 2.06
 }

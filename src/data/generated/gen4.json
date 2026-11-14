@@ -6159,6 +6159,10 @@
     },
     {
      "level": 19,
+     "move": "dig"
+    },
+    {
+     "level": 19,
      "move": "take-down"
     },
     {
@@ -6275,6 +6279,10 @@
     {
      "level": 13,
      "move": "yawn"
+    },
+    {
+     "level": 19,
+     "move": "dig"
     },
     {
      "level": 19,
@@ -9503,40 +9511,44 @@
      "move": "scary-face"
     },
     {
-     "level": 10,
+     "level": 6,
      "move": "metal-claw"
     },
     {
-     "level": 20,
+     "level": 10,
      "move": "ancient-power"
     },
     {
-     "level": 30,
-     "move": "dragon-claw"
-    },
-    {
-     "level": 40,
-     "move": "roar-of-time"
-    },
-    {
-     "level": 50,
-     "move": "heal-block"
-    },
-    {
-     "level": 60,
-     "move": "earth-power"
-    },
-    {
-     "level": 70,
+     "level": 15,
      "move": "slash"
     },
     {
-     "level": 80,
+     "level": 19,
+     "move": "power-gem"
+    },
+    {
+     "level": 24,
+     "move": "metal-burst"
+    },
+    {
+     "level": 28,
+     "move": "dragon-claw"
+    },
+    {
+     "level": 33,
+     "move": "earth-power"
+    },
+    {
+     "level": 37,
+     "move": "aura-sphere"
+    },
+    {
+     "level": 42,
      "move": "flash-cannon"
     },
     {
-     "level": 90,
-     "move": "aura-sphere"
+     "level": 46,
+     "move": "roar-of-time"
     }
    ],
    "encounters": [],
@@ -9580,40 +9592,44 @@
      "move": "scary-face"
     },
     {
-     "level": 10,
+     "level": 6,
      "move": "water-pulse"
     },
     {
-     "level": 20,
+     "level": 10,
      "move": "ancient-power"
     },
     {
-     "level": 30,
-     "move": "dragon-claw"
-    },
-    {
-     "level": 40,
-     "move": "spacial-rend"
-    },
-    {
-     "level": 50,
-     "move": "heal-block"
-    },
-    {
-     "level": 60,
-     "move": "earth-power"
-    },
-    {
-     "level": 70,
+     "level": 15,
      "move": "slash"
     },
     {
-     "level": 80,
+     "level": 19,
+     "move": "power-gem"
+    },
+    {
+     "level": 24,
      "move": "aqua-tail"
     },
     {
-     "level": 90,
+     "level": 28,
+     "move": "dragon-claw"
+    },
+    {
+     "level": 33,
+     "move": "earth-power"
+    },
+    {
+     "level": 37,
      "move": "aura-sphere"
+    },
+    {
+     "level": 42,
+     "move": "hydro-pump"
+    },
+    {
+     "level": 46,
+     "move": "spacial-rend"
     }
    ],
    "encounters": [],
@@ -9818,40 +9834,44 @@
      "move": "scary-face"
     },
     {
-     "level": 10,
+     "level": 6,
      "move": "ominous-wind"
     },
     {
-     "level": 20,
+     "level": 10,
      "move": "ancient-power"
     },
     {
-     "level": 30,
-     "move": "dragon-claw"
-    },
-    {
-     "level": 40,
-     "move": "shadow-force"
-    },
-    {
-     "level": 50,
-     "move": "heal-block"
-    },
-    {
-     "level": 60,
-     "move": "earth-power"
-    },
-    {
-     "level": 70,
+     "level": 15,
      "move": "slash"
     },
     {
-     "level": 80,
+     "level": 19,
+     "move": "shadow-sneak"
+    },
+    {
+     "level": 24,
+     "move": "destiny-bond"
+    },
+    {
+     "level": 28,
+     "move": "dragon-claw"
+    },
+    {
+     "level": 33,
+     "move": "earth-power"
+    },
+    {
+     "level": 37,
+     "move": "aura-sphere"
+    },
+    {
+     "level": 42,
      "move": "shadow-claw"
     },
     {
-     "level": 90,
-     "move": "aura-sphere"
+     "level": 46,
+     "move": "shadow-force"
     }
    ],
    "encounters": [],

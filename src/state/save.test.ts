@@ -64,7 +64,13 @@ describe('save format', () => {
     expect(result.status).toBe('ok');
     if (result.status !== 'ok') return;
     expect(result.save).toMatchObject({ version: SAVE_VERSION, prologue: 'done', location: 'viridian', player: { name: 'Kai' } });
-    expect(result.save.party).toEqual(JSON.parse(v1).party);
+    // The same party; only the moves grow (version 7 teaches what the official learnsets add, after what it knew).
+    const old = JSON.parse(v1).party as Save['party'];
+    expect(result.save.party).toHaveLength(old.length);
+    result.save.party.forEach((p, i) => {
+      expect({ ...p, moves: old[i].moves }).toEqual(old[i]);
+      expect(p.moves.slice(0, old[i].moves.length)).toEqual(old[i].moves);
+    });
   });
 });
 
@@ -165,7 +171,7 @@ describe('journeys in several regions (version 6)', () => {
     const result = parseSave(v5);
     if (result.status !== 'ok') throw new Error(JSON.stringify(result));
     const champion = JSON.parse(v5).champion === true;
-    expect(result.save).toMatchObject({ version: 6, region: 'kanto', champions: champion ? ['kanto'] : [], away: {} });
+    expect(result.save).toMatchObject({ version: SAVE_VERSION, region: 'kanto', champions: champion ? ['kanto'] : [], away: {} });
   });
 
   it('switching swaps whole journeys, and the player keeps their name, settings and champions', () => {
@@ -187,6 +193,35 @@ describe('journeys in several regions (version 6)', () => {
     expect(broken(save(), s => (s.badges = ['zephyr']))).toMatchObject({ status: 'broken' });
     expect(broken(save(), s => (s.location = 'nowhere'))).toMatchObject({ status: 'broken' });
     expect(broken(save(), s => ((s as unknown as { champions: unknown }).champions = ['atlantis']))).toMatchObject({ status: 'broken' });
+  });
+});
+
+describe('the official learnsets (version 7)', () => {
+  const v6 = () => JSON.parse(readFileSync(new URL('./fixtures/save-v6-thin-moves.json', import.meta.url), 'utf8'));
+
+  it("a Pokémon from version 6 learns the moves it missed, keeping what it knew and its specials", () => {
+    const old = v6();
+    const result = parseSave(JSON.stringify(old));
+    if (result.status !== 'ok') throw new Error(JSON.stringify(result));
+    // The box's Lv. 30 Psyduck knew only Scratch and Tail Whip (Red/Blue's list); now Water Gun, Confusion and the rest.
+    const before = old.box[0];
+    const after = result.save.box[0];
+    expect(after.moves.slice(0, before.moves.length)).toEqual(before.moves);
+    expect(after.moves).toEqual(expect.arrayContaining(['water-gun', 'confusion', 'disable']));
+    expect(after.specials).toEqual(before.specials);
+    expect(new Set(after.moves).size).toBe(after.moves.length);
+    // Every Pokémon knows at least what a new one of its level would.
+    for (const p of [...result.save.party, ...result.save.box]) {
+      expect(p.moves).toEqual(expect.arrayContaining(createPokemon(p.speciesId, p.level).moves));
+    }
+  });
+
+  it("the other regions' journeys learn too", () => {
+    const old = v6();
+    old.away = { johto: { ...journeyOf(old as Save), location: 'new-bark', badges: [], champion: false } };
+    const result = parseSave(JSON.stringify(old));
+    if (result.status !== 'ok') throw new Error(JSON.stringify(result));
+    expect(result.save.away.johto!.box[0].moves).toEqual(result.save.box[0].moves);
   });
 });
 

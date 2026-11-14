@@ -21,10 +21,10 @@ describe('sandbox', () => {
     expect(view.battle.round.fighters.map(f => f.name)).toEqual([PLAYER_TEAM[0].name, OPPONENT_TEAM[0].name]);
   });
 
-  it('the sandbox teams show both elemental shapes and five big forms', () => {
+  it('the sandbox teams show both elemental shapes and six big forms', () => {
     const all = [...PLAYER_TEAM, ...OPPONENT_TEAM];
     expect(new Set(all.map(m => m.loadout.elemental.shape))).toEqual(new Set(['projectile', 'beam']));
-    expect(new Set(all.map(m => m.loadout.big.shape))).toEqual(new Set(['tornado', 'burst', 'rush', 'barrage', 'strike']));
+    expect(new Set(all.map(m => m.loadout.big.shape))).toEqual(new Set(['tornado', 'burst', 'rush', 'quake', 'strike', 'projectile']));
   });
 
   it('F2 cycles player 2 through the dummy behaviors and the CPU levels', () => {

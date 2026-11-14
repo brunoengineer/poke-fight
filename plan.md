@@ -289,8 +289,21 @@ More archetypes can come later (status effects: paralysis = slower, burn = damag
   - It's what PokeAPI returns by default (old typings are only in `past_types`), so the data script stays simple.
   - New regions never need chart changes, only new species.
   - In practice: Kanto uses **modern typings and move data** (Clefairy is Fairy, Magnemite is Electric/Steel,
-    Bite is Dark, Gust is Flying). Learnsets still come from the region's own games (Kanto: Red/Blue; the
-    version group is set per region).
+    Bite is Dark, Gust is Flying). Learnsets: see **Official learnsets** below.
+- **Official learnsets** (decided 2026-11-14, replacing "the region's own games"): every species learns by level
+  up from **HeartGold/SoulSilver's** lists (then Platinum's, then its region's games, for any species they lack). They
+  are the last official games with all 493 species and full level-up lists; Red/Blue's were so thin that a Lv. 30
+  Psyduck knew only Scratch and Tail Whip, and 94 of the 151 had fewer than 3 damaging moves at Lv. 30 (now: 11).
+  `node scripts/build-data.mjs --learnsets` refreshes only the learnsets. The species left with few damaging moves at
+  Lv. 30 (54 of 493: Magikarp, Abra, Chansey, Snorlax, Wobbuffet, the Lake trio, babies…) have official movepools
+  that are thin too; that is kept, not padded.
+  - **A species learns its earlier forms' moves too** (`learnable` in `game/moves.ts`), each at the lowest level any
+    of them learns it. So **evolving early never costs a move**: a Raichu from a Lv. 10 Pikachu (Thunder Stone) still
+    learns Slam at 21, Discharge at 37 and Thunder at 45; a caught Charizard knows Ember.
+  - **Evolving teaches** every move the new form would know at its level that the Pokémon doesn't (its Lv. 1 moves:
+    Raichu's Quick Attack and Thunderbolt). Nothing is ever forgotten.
+  - **Save version 7**: every Pokémon in old saves (every journey, party and box) learns the moves the new lists give
+    it at its level, after the ones it knew; its specials stay.
 - **Combo scaling**: each hit in a combo does less damage (100%, 90%, 80%, … minimum 40%), so a lucky combo can't
   end a fight.
 - **Physical attack type** (decided in milestone 4): the tackle has **no type** (always ×1, no STAB). With Normal,
@@ -630,7 +643,7 @@ Two players on one machine (decided 2026-11-10). From the title: **Versus**.
   the moves of each new level are learned. **All moves are kept** (no 4-move limit: only the 2 special slots).
 - **Evolution by level**, asked after the battle ("What? X is evolving!": Evolve / Stop, as in the games; a stopped
   Pokémon is asked again after its next battle). It keeps level, XP, moves and specials, and learns the new form's
-  moves at that level. Stones and trades: the data is ready, the items come with the shop (milestone 8).
+  moves up to that level (see **Official learnsets**). Stones and trades: the data is ready, the items come with the shop (milestone 8).
 - **Party screen (P)**: pauses the fight; level, HP, XP to the next level; pick each special from the known damaging
   moves; Heal (sandbox stand-in for the Pokémon Center); New game; language. Changes start a new battle.
 - **Results screen** after every battle (outcome, XP, level ups, new moves, evolutions). If nobody can fight, the
@@ -781,7 +794,7 @@ World map (cities unlocked by badges)
   (§4.8); it takes the whole team. Beaten, **only a Master Ball** can be thrown (no other ball is offered); with none,
   it can only be let go and fought again. It gives **every party Pokémon** the full XP twice over, fainted or not,
   whether it fought or not (`LEGENDARY_XP`). A caught legendary's card says so and can't be fought again.
-- **Data**: `npm run data` builds generations 1–4 (species, moves, learnsets from the region's games, Pokédex pages)
+- **Data**: `npm run data` builds generations 1–4 (species, moves, HeartGold/SoulSilver learnsets, Pokédex pages)
   and, for generations 2–4, each region's own encounter tables (every species found there, only its own areas, so
   Kanto's tables are untouched). New evolution items: Sun, Dusk, Shiny and Dawn Stones, and the **Soothe Bell**
   (friendship evolutions); the Link Cable starts every trade evolution. Evolutions that need what the game doesn't

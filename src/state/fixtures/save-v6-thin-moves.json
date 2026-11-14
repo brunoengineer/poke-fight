@@ -1,0 +1,130 @@
+{
+ "version": 6,
+ "createdAt": 1794096000000,
+ "settings": {
+  "language": "en"
+ },
+ "player": {
+  "name": "Kai"
+ },
+ "rival": {
+  "name": "Ren",
+  "starterId": 7
+ },
+ "starterId": 4,
+ "prologue": "done",
+ "location": "indigo",
+ "party": [
+  {
+   "speciesId": 150,
+   "level": 100,
+   "xp": 1250000,
+   "ivs": {
+    "hp": 15,
+    "atk": 15,
+    "def": 15,
+    "spa": 15,
+    "spd": 15,
+    "spe": 15
+   },
+   "hp": 3370,
+   "moves": [
+    "confusion",
+    "disable",
+    "psychic",
+    "swift",
+    "barrier",
+    "recover",
+    "mist",
+    "amnesia"
+   ],
+   "specials": {
+    "elemental": "psychic",
+    "big": "psychic"
+   }
+  },
+  {
+   "speciesId": 6,
+   "level": 60,
+   "xp": 211060,
+   "ivs": {
+    "hp": 15,
+    "atk": 15,
+    "def": 15,
+    "spa": 15,
+    "spd": 15,
+    "spe": 15
+   },
+   "hp": 1720,
+   "moves": [
+    "ember",
+    "growl",
+    "leer",
+    "scratch",
+    "rage",
+    "slash",
+    "flamethrower",
+    "fire-spin"
+   ],
+   "specials": {
+    "elemental": "flamethrower",
+    "big": "flamethrower"
+   }
+  }
+ ],
+ "box": [
+  {
+   "speciesId": 54,
+   "level": 30,
+   "xp": 27000,
+   "ivs": {
+    "hp": 15,
+    "atk": 15,
+    "def": 15,
+    "spa": 15,
+    "spd": 15,
+    "spe": 15
+   },
+   "hp": 0,
+   "moves": [
+    "scratch",
+    "tail-whip"
+   ],
+   "specials": {
+    "elemental": "scratch",
+    "big": "scratch"
+   }
+  }
+ ],
+ "money": 3000,
+ "bag": {
+  "poke-ball": 5
+ },
+ "dex": {
+  "seen": [
+   4,
+   7,
+   150,
+   6
+  ],
+  "caught": [
+   150,
+   6
+  ]
+ },
+ "badges": [
+  "boulder",
+  "cascade",
+  "thunder",
+  "rainbow",
+  "soul",
+  "marsh",
+  "volcano",
+  "earth"
+ ],
+ "region": "kanto",
+ "champion": false,
+ "hallOfFame": [],
+ "champions": [],
+ "away": {}
+}

@@ -26,8 +26,19 @@ export function createSaveStore(storage: Pick<Storage, 'getItem' | 'setItem' | '
   return {
     load() {
       const raw = safely(() => storage!.getItem(key), null);
+      // No save, but one was kept aside: if this version can read it (a fix since), it comes back.
+      if (raw === null) {
+        const aside = safely(() => storage!.getItem(brokenKey), null);
+        const recovered = parseSave(aside);
+        if (recovered.status === 'ok') {
+          safely(() => storage!.setItem(key, aside!), undefined);
+          safely(() => storage!.removeItem(brokenKey), undefined);
+          return recovered;
+        }
+        return { status: 'none' };
+      }
       const result = parseSave(raw);
-      if (result.status === 'broken' && raw !== null) {
+      if (result.status === 'broken') {
         safely(() => storage!.setItem(brokenKey, raw), undefined);
         safely(() => storage!.removeItem(key), undefined);
       }

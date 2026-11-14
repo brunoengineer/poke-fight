@@ -46,7 +46,9 @@ describe('save format', () => {
     expect(broken(save(), s => (s.party[0].level = 101))).toMatchObject({ reason: 'invalid' });
     expect(broken(save(), s => (s.party[0].hp = 99_999))).toMatchObject({ reason: 'invalid' });
     expect(broken(save(), s => s.party[0].moves.push('not-a-move'))).toMatchObject({ reason: 'invalid' });
-    expect(broken(save(), s => (s.party[0].specials.big = 'growl'))).toMatchObject({ reason: 'invalid' });
+    // A special that isn't an option is repaired (see 'the official learnsets'); no specials at all is refused.
+    expect(broken(save(), s => (s.party[0].specials.big = 'growl'))).toMatchObject({ status: 'ok' });
+    expect(broken(save(), s => delete (s.party[0] as Partial<Save['party'][0]>).specials)).toMatchObject({ reason: 'invalid' });
     expect(broken(save(), s => (s.settings.language = 'fr' as never))).toMatchObject({ reason: 'invalid' });
     expect(broken(save(), s => (s.player.name = ''))).toMatchObject({ reason: 'invalid' });
     expect(broken(save(), s => (s.rival.name = 'A name that is far too long'))).toMatchObject({ reason: 'invalid' });
@@ -146,6 +148,27 @@ describe('save store', () => {
     expect(storage.map.has(SAVE_KEY)).toBe(false);
   });
 
+  it('a save kept aside comes back once this version can read it, unless a new game was started since', () => {
+    const storage = memoryStorage();
+    const kept = { ...save(), party: [{ ...save().party[0], specials: { elemental: 'struggle', big: 'struggle' } }] };
+    storage.setItem(BROKEN_SAVE_KEY, serializeSave(kept));
+    const loaded = createSaveStore(storage).load();
+    expect(loaded).toMatchObject({ status: 'ok', save: { player: { name: 'Ana' } } });
+    expect(storage.map.has(SAVE_KEY)).toBe(true);
+    expect(storage.map.has(BROKEN_SAVE_KEY)).toBe(false);
+    // A new game since: the one kept aside stays aside.
+    const other = memoryStorage();
+    other.setItem(SAVE_KEY, serializeSave({ ...save(), player: { name: 'Novo' } }));
+    other.setItem(BROKEN_SAVE_KEY, serializeSave(save()));
+    expect(createSaveStore(other).load()).toMatchObject({ status: 'ok', save: { player: { name: 'Novo' } } });
+    expect(other.map.has(BROKEN_SAVE_KEY)).toBe(true);
+    // Still unreadable: it stays aside, and there is no save.
+    const unreadable = memoryStorage();
+    unreadable.setItem(BROKEN_SAVE_KEY, '{oops');
+    expect(createSaveStore(unreadable).load()).toEqual({ status: 'none' });
+    expect(unreadable.map.get(BROKEN_SAVE_KEY)).toBe('{oops');
+  });
+
   it('still runs when storage is blocked (it just remembers nothing)', () => {
     const throwing = {
       getItem: () => {
@@ -214,6 +237,23 @@ describe('the official learnsets (version 7)', () => {
     for (const p of [...result.save.party, ...result.save.box]) {
       expect(p.moves).toEqual(expect.arrayContaining(createPokemon(p.speciesId, p.level).moves));
     }
+  });
+
+  it("a Pokémon that had only Struggle and now learns a real move gets it as its specials (it used to lose the whole save)", () => {
+    // A Metapod knew only Harden; the new lists give it Caterpie's Tackle.
+    const old = v6();
+    old.party.push({ ...createPokemon(speciesBySlug('metapod').id, 7), moves: ['harden'], specials: { elemental: 'struggle', big: 'struggle' } });
+    const result = parseSave(JSON.stringify(old));
+    if (result.status !== 'ok') throw new Error(JSON.stringify(result));
+    expect(result.save.party.at(-1)).toMatchObject({ moves: ['harden', 'string-shot', 'tackle'], specials: { elemental: 'tackle', big: 'tackle' } });
+  });
+
+  it('a save of this version with a special that is no longer an option is repaired, not refused', () => {
+    const s = save();
+    s.party[0] = { ...s.party[0], specials: { elemental: 'struggle', big: 'struggle' } };
+    const result = parseSave(serializeSave(s));
+    if (result.status !== 'ok') throw new Error(JSON.stringify(result));
+    expect(result.save.party[0].specials).toEqual(createPokemon(s.party[0].speciesId, 30).specials);
   });
 
   it("the other regions' journeys learn too", () => {

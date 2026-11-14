@@ -9,7 +9,7 @@ import { hasCity, hasRegion, isRegion, isSanctuary, region as regionData, region
 import { START_BAG, START_MONEY, type Bag } from '../game/economy';
 import { movesKnownAt } from '../game/moves';
 import { maxHpOf, type Pokemon } from '../game/pokemon';
-import { specialOptions } from '../game/progress';
+import { repairSpecials, specialOptions } from '../game/progress';
 import { DEFAULT_NAMES, MAX_NAME_LENGTH } from '../game/story';
 import { MAX_LEVEL } from '../game/xp';
 import { isLanguage, type Language } from '../i18n';
@@ -150,10 +150,31 @@ function teachOfficialMoves(p: Pokemon): Pokemon {
   return { ...p, moves: [...p.moves, ...missing] };
 }
 
-function teachJourney<T extends Record<string, unknown>>(journey: T): T {
+/** Every Pokémon of a journey (its party and box) through `change`; anything malformed is left for findProblem. */
+function eachPokemon<T extends Record<string, unknown>>(journey: T, change: (p: Pokemon) => Pokemon): T {
   if (typeof journey !== 'object' || journey === null) return journey;
-  const all = (list: unknown) => (Array.isArray(list) ? list.map(teachOfficialMoves) : list);
+  const all = (list: unknown) => (Array.isArray(list) ? list.map(change) : list);
   return { ...journey, party: all(journey.party), box: all(journey.box) };
+}
+
+/** The same, in the current journey and every journey kept in `away`. */
+function everyPokemon(data: Record<string, unknown>, change: (p: Pokemon) => Pokemon): Record<string, unknown> {
+  const away = data.away;
+  if (typeof away !== 'object' || away === null) return eachPokemon(data, change);
+  return {
+    ...eachPokemon(data, change),
+    away: Object.fromEntries(Object.entries(away as Record<string, Record<string, unknown>>).map(([id, j]) => [id, eachPokemon(j, change)])),
+  };
+}
+
+/** Specials that are no longer options are repaired on load (see repairSpecials), not a reason to refuse the save. */
+function repairedSpecials(p: Pokemon): Pokemon {
+  if (typeof p !== 'object' || p === null || !hasSpecies(p.speciesId) || !Array.isArray(p.moves) || typeof p.specials !== 'object' || p.specials === null) return p;
+  try {
+    return repairSpecials(p);
+  } catch {
+    return p; // An unknown move: findProblem says so.
+  }
 }
 
 /** Migrations from version N to N + 1. */
@@ -194,11 +215,7 @@ const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string
     hallOfFame: (old.hallOfFame as HallOfFameEntry[]).map(entry => ({ ...entry, region: 'kanto' })),
   }),
   // Version 6 saves (Red/Blue's thin learnsets for Kanto): every Pokémon, in every journey, learns what it missed.
-  6: old => ({
-    ...teachJourney(old),
-    version: 7,
-    away: Object.fromEntries(Object.entries((old.away as Record<string, Record<string, unknown>>) ?? {}).map(([id, j]) => [id, teachJourney(j)])),
-  }),
+  6: old => ({ ...everyPokemon(old, teachOfficialMoves), version: 7 }),
 };
 
 export type LoadResult =
@@ -224,6 +241,7 @@ export function parseSave(raw: string | null): LoadResult {
     if (!migrate) return { status: 'broken', reason: 'invalid', detail: `no migration from version ${data.version}` };
     data = migrate(data);
   }
+  data = everyPokemon(data, repairedSpecials);
   const problem = findProblem(data);
   return problem ? { status: 'broken', reason: 'invalid', detail: problem } : { status: 'ok', save: data as unknown as Save };
 }

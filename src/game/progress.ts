@@ -3,7 +3,7 @@
 
 import type { EvolutionItemId } from '../data/items';
 import { species, type Evolution } from '../data/pokedex';
-import { isDamaging, learnable, STRUGGLE } from './moves';
+import { defaultSpecials, isDamaging, learnable, STRUGGLE } from './moves';
 import { maxHpOf, type Pokemon } from './pokemon';
 import { levelForXp, MAX_LEVEL, xpForLevel } from './xp';
 
@@ -21,7 +21,20 @@ export interface XpResult {
 /** New moves are learned (all moves are kept: there is no 4-move limit, only the two special slots). */
 function learn(p: Pokemon, slugs: readonly string[]): Pokemon {
   const fresh = slugs.filter(slug => !p.moves.includes(slug));
-  return fresh.length ? { ...p, moves: [...p.moves, ...fresh] } : p;
+  return fresh.length ? repairSpecials({ ...p, moves: [...p.moves, ...fresh] }) : p;
+}
+
+/**
+ * A special that is no longer an option goes back to the default pick; the other slot is kept. It happens when a
+ * Pokémon with no damaging move (Struggle in both slots: a Metapod, a Magikarp) learns its first one, and Struggle
+ * stops being an option. Left as it was, the save refused it and the whole game was lost (fixed 2026-11-14).
+ */
+export function repairSpecials(p: Pokemon): Pokemon {
+  const options = specialOptions(p);
+  const { elemental, big } = p.specials;
+  if (options.includes(elemental) && options.includes(big)) return p;
+  const pick = defaultSpecials(species(p.speciesId), p.moves);
+  return { ...p, specials: { elemental: options.includes(elemental) ? elemental : pick.elemental, big: options.includes(big) ? big : pick.big } };
 }
 
 /** HP goes up by as much as max HP does (a hurt Pokémon stays hurt by the same amount). */

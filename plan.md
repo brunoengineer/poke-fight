@@ -304,6 +304,13 @@ More archetypes can come later (status effects: paralysis = slower, burn = damag
     Raichu's Quick Attack and Thunderbolt). Nothing is ever forgotten.
   - **Save version 7**: every Pokémon in old saves (every journey, party and box) learns the moves the new lists give
     it at its level, after the ones it knew; its specials stay.
+  - **Struggle is replaced** (fixed 2026-11-14): a Pokémon with no damaging move has Struggle in both slots. When it
+    learns its first real one (a Magikarp's Tackle, a Metapod evolving, or the version 7 migration: a Metapod now
+    learns Caterpie's Tackle), the slot gets the default pick (`repairSpecials`). Before, the save refused such a
+    Pokémon and the whole game was set aside. Loading also repairs any special that is no longer an option instead
+    of refusing the save, and **a save kept aside comes back** by itself once the game can read it, if no new game
+    was started since (`state/store.ts`). Checked against 2,925 Pokémon saved by the code from before (every species
+    at Lv. 1, 5, 18, 36 and 100, evolved early, every special choice) and the endgame save: all load.
 - **Combo scaling**: each hit in a combo does less damage (100%, 90%, 80%, … minimum 40%), so a lucky combo can't
   end a fight.
 - **Physical attack type** (decided in milestone 4): the tackle has **no type** (always ×1, no STAB). With Normal,

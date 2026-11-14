@@ -6,7 +6,7 @@ import { battleStep, createBattle, type BattleState } from '../fight/battle';
 import { Button } from '../fight/input';
 import { afterBattle, levelProgress } from './after-battle';
 import { createPokemon, maxHpOf, toFighter, type Pokemon } from './pokemon';
-import { evolve, gainXp, heal, levelEvolution, setSpecial, specialOptions } from './progress';
+import { evolve, gainXp, heal, levelEvolution, repairSpecials, setSpecial, specialOptions } from './progress';
 import { battleXp } from './rewards';
 import { levelForXp, MAX_LEVEL, xpForDefeating, xpForLevel } from './xp';
 
@@ -127,6 +127,25 @@ describe('specials', () => {
     expect(setSpecial(charmeleon, 'big', 'scratch').specials.big).toBe('scratch');
     expect(() => setSpecial(charmeleon, 'big', 'growl')).toThrow();
     expect(() => setSpecial(charmeleon, 'big', 'flamethrower')).toThrow();
+  });
+
+  it("a Pokémon with no damaging move fights with Struggle; its first real one replaces it (it used to break the save)", () => {
+    const magikarp = createPokemon(id('magikarp'), 14);
+    expect(magikarp.specials).toEqual({ elemental: 'struggle', big: 'struggle' });
+    const { pokemon } = gainXp(magikarp, xpForLevel(speciesBySlug('magikarp').growthRate, 15) - magikarp.xp);
+    expect(pokemon.moves).toContain('tackle');
+    expect(pokemon.specials).toEqual({ elemental: 'tackle', big: 'tackle' });
+    // Evolving does it too: a Metapod caught before the official learnsets (Harden only) becomes a Butterfree.
+    const metapod = { ...createPokemon(id('metapod'), 7), moves: ['harden'], specials: { elemental: 'struggle', big: 'struggle' } };
+    const butterfree = evolve(metapod, id('butterfree')).pokemon;
+    expect(butterfree.specials).toEqual({ elemental: 'confusion', big: 'confusion' });
+  });
+
+  it('repairing specials only changes a slot that is no longer an option', () => {
+    const charmeleon = setSpecial(createPokemon(id('charmeleon'), 30), 'big', 'scratch');
+    expect(repairSpecials(charmeleon)).toBe(charmeleon);
+    const half = { ...charmeleon, specials: { elemental: 'struggle', big: 'scratch' } };
+    expect(repairSpecials(half).specials).toEqual({ elemental: charmeleon.specials.elemental, big: 'scratch' });
   });
 
   it('heal restores full HP', () => {

@@ -477,6 +477,16 @@ p {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 
+/* The League's crown once its Champion. */
+.card-icon.gold {
+  color: var(--ink);
+  fill: #fff3b0;
+  background: linear-gradient(180deg, #ffe27a, var(--gold));
+  box-shadow:
+    0 0 1.6cqh color-mix(in srgb, var(--gold) 70%, transparent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+
 .card-text {
   display: grid;
   gap: 0.5cqh;
@@ -523,6 +533,25 @@ p {
 .chip-ok {
   background: var(--ok);
   color: var(--ink);
+}
+
+/* A hunt's caught counter: a grey ball while some are missing, a Poké Ball red once all are caught. */
+.chip-caught {
+  background: rgba(8, 9, 22, 0.72);
+  color: rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.chip-caught .icon {
+  color: #9aa0b8;
+}
+
+.chip-complete {
+  background: linear-gradient(180deg, #ff5a4a, #d42a1f);
+  color: #fff;
+  box-shadow:
+    0 0.5cqh 1.4cqh rgba(0, 0, 0, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
 
 .chip-lock {
@@ -2572,6 +2601,75 @@ kbd,
   margin: -0.8cqh;
   overflow: auto;
   scrollbar-width: none;
+}
+
+/* The box's label and its filters (type, favorites) on one line, smaller than the Pokédex's. */
+.box-grid-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1cqh 1.6cqh;
+}
+
+.box-grid-head .dex-filters {
+  flex: 1;
+  gap: 0.8cqh;
+}
+
+.box-grid-head .dex-filter {
+  min-height: 3.8cqh;
+  padding: 0 1.4cqh;
+  font-size: 1.7cqh;
+}
+
+.box-grid-head .dex-shown {
+  font-size: 1.6cqh;
+}
+
+.dex-filter-icon {
+  width: 2.1cqh;
+  height: 2.1cqh;
+}
+
+.dex-filter.on .dex-filter-icon {
+  color: var(--gold);
+  fill: var(--gold);
+}
+
+.dex-filter.on:focus .dex-filter-icon {
+  color: var(--ink);
+  fill: var(--gold);
+}
+
+/* A favorite's star, in the slot's other corner (the level is on the right). */
+.slot-fav {
+  position: absolute;
+  top: 0.4cqh;
+  left: 0.4cqh;
+  display: grid;
+  place-items: center;
+  width: 2.3cqh;
+  height: 2.3cqh;
+  border-radius: 50%;
+  background: rgba(10, 12, 28, 0.72);
+  color: var(--gold);
+  pointer-events: none;
+}
+
+.slot-fav .icon {
+  width: 1.5cqh;
+  height: 1.5cqh;
+  fill: currentColor;
+}
+
+.btn.favorite.on {
+  background: var(--gold);
+  color: var(--ink);
+  border-color: transparent;
+}
+
+.btn.favorite.on .icon {
+  fill: currentColor;
 }
 
 .box-empty {

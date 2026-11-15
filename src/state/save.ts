@@ -15,7 +15,7 @@ import { DEFAULT_NAMES, MAX_NAME_LENGTH } from '../game/story';
 import { MAX_LEVEL } from '../game/xp';
 import { isLanguage, type Language } from '../i18n';
 
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 export interface Settings {
   language: Language;
@@ -228,6 +228,8 @@ const MIGRATIONS: Record<number, (old: Record<string, unknown>) => Record<string
     const away = (old.away ?? {}) as Record<string, Record<string, unknown>>;
     return { ...old, version: 8, dojo: null, away: Object.fromEntries(Object.entries(away).map(([id, j]) => [id, { ...j, dojo: null }])) };
   },
+  // Version 8 saves (before favorites): nothing to change, no Pokémon is a favorite yet.
+  8: old => ({ ...old, version: 9 }),
 };
 
 export type LoadResult =
@@ -329,6 +331,7 @@ function pokemonProblem(p: Pokemon): string | null {
   if (!Number.isInteger(p.speciesId) || !hasSpecies(p.speciesId)) return `unknown species ${p.speciesId}`;
   if (!Number.isInteger(p.level) || p.level < 1 || p.level > MAX_LEVEL) return `bad level ${p.level}`;
   if (!Number.isInteger(p.xp) || p.xp < 0) return 'bad xp';
+  if (p.favorite !== undefined && typeof p.favorite !== 'boolean') return 'bad favorite';
   if (!Array.isArray(p.moves) || p.moves.some(slug => typeof slug !== 'string')) return 'bad moves';
   try {
     p.moves.forEach(move);

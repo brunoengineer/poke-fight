@@ -178,6 +178,11 @@ const base: Record<BaseKey, string> = {
   'box.sendHint': 'Mandar',
   'box.putHint': 'Pôr aqui',
   'box.pickHint': 'Pegar',
+  'box.favorites': 'Favoritos',
+  'box.markFavorite': 'Favoritar',
+  'box.isFavorite': 'Favorito',
+  'box.favoriteHint': 'Favoritar',
+  'box.noMatch': 'Nenhum Pokémon da caixa combina com esses filtros.',
   'box.moveHere': 'Mover para cá',
   'box.holding': 'Para onde vai {name}? Escolha um Pokémon para trocar de lugar, ou um lugar vazio.',
 
@@ -186,6 +191,7 @@ const base: Record<BaseKey, string> = {
   'map.go': 'Viajar',
 
   'dex.filterOwned': 'Capturados',
+  'dex.filterMissing': 'Não capturados',
   'dex.filterType': 'Tipo',
   'dex.filterLegendary': 'Lendário',
   'dex.filterMythical': 'Mítico',
@@ -376,6 +382,7 @@ const base: Record<BaseKey, string> = {
   'place.levels': 'Nv. {min}–{max} · {count} espécies',
   'place.rod': 'Com a {rod}',
   'place.noRod': 'Você precisa de uma vara de pescar',
+  'place.caught': '{caught}/{total}',
   'place.needsRod': 'Vara',
   'place.gym': 'Ginásio',
   'place.gymLeader': '{leader} · {type}',

@@ -88,6 +88,9 @@ describe('Pokédex filters', () => {
 
   it('owned, type, legendary, mythical, number range; all at once must all hold', () => {
     expect(filterDex(all, { ...NO_FILTER, owned: true }, id => id === 25 || id === 4)).toEqual([4, 25]);
+    // Not owned: everything else (seen or not), with the other filters too.
+    expect(filterDex(all, { ...NO_FILTER, missing: true }, id => id !== 25 && id !== 4)).toEqual([4, 25]);
+    expect(filterDex(all, { ...NO_FILTER, missing: true, type: 'fire', range: [1, 30] }, id => id === 4)).toEqual([5, 6]);
     expect(filterDex(all, { ...NO_FILTER, type: 'dragon' }, none)).toEqual([147, 148, 149]);
     expect(filterDex(all, { ...NO_FILTER, legendary: true }, none)).toEqual([144, 145, 146, 150]);
     expect(filterDex(all, { ...NO_FILTER, mythical: true }, none)).toEqual([151]);

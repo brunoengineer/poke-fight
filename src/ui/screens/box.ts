@@ -4,8 +4,11 @@
 //     moves there; A on itself, or B, puts it back.
 //   - Y (or S) sends the focused (or held) Pokémon straight across: party → box, box → party.
 //   - X (or Delete) releases it, after asking (a sheet that keeps the focus, "Keep it" first).
+//   - RB (or F) marks it as a favorite (a star in its slot's corner), or not any more.
+//   - Above the box: filters by type (only the types in it) and favorites; hidden Pokémon keep their places.
 
 import { h } from '../dom';
+import { filterBar, type FilterButton } from '../filters';
 import { focusStart, mount } from '../focus';
 import { icon } from '../icons';
 import { button, heading, hintBar, hpBar, pokemonSprite, screen, typePill, type ButtonSpec, type Hint } from '../kit';
@@ -28,6 +31,9 @@ export interface BoxMon {
   send: { label: string; blocked: string | null; onSend: () => void };
   /** Releasing it (null: it can't be, the party's last Pokémon). */
   onRelease: (() => void) | null;
+  favorite: boolean;
+  /** RB / F: a favorite, or not any more. */
+  onFavorite: () => void;
 }
 
 export interface BoxHolding {
@@ -47,6 +53,12 @@ export interface BoxView {
   empty: string;
   party: BoxMon[];
   box: BoxMon[];
+  /** The box places the filters show (indexes into `box`, in order). */
+  boxShown: number[];
+  filters: { filters: FilterButton[]; clear: ButtonSpec | null; shown: string | null; cancel: string };
+  /** "No Pokémon in the box match these filters." */
+  noMatch: string;
+  favorite: { mark: string; marked: string };
   /** While a Pokémon is held (the Back button then puts it back). */
   holding: BoxHolding | null;
   release: { label: string; ask: (mon: BoxMon) => string; yes: string; no: string; blocked: string };
@@ -68,6 +80,7 @@ function slot(mon: BoxMon, testid: string, wrapper: string, details: (mon: BoxMo
     [
       pokemonSprite(mon.sprite, 'sprite slot-sprite'),
       compact ? h('span', { class: 'slot-level', attrs: { 'aria-hidden': 'true' }, text: mon.levelTag }) : null,
+      mon.favorite ? h('span', { class: 'slot-fav', testid: `${testid}-fav`, attrs: { 'aria-hidden': 'true' } }, [icon('star')]) : null,
       compact ? null : h('span', { class: 'slot-info' }, [h('strong', { text: mon.name }), h('small', { text: mon.level }), hpBar(mon.hp, mon.maxHp)]),
       mon.held ? h('span', { class: 'slot-held-mark', attrs: { 'aria-hidden': 'true' } }, [icon('arrow')]) : null,
     ],
@@ -112,6 +125,19 @@ export function renderBox(root: HTMLElement, view: BoxView) {
     if (mon.send.blocked) send.setAttribute('aria-disabled', 'true');
     return send;
   };
+  const favoriteButton = (mon: BoxMon) => {
+    const star = button({
+      label: mon.favorite ? view.favorite.marked : view.favorite.mark,
+      testid: 'box-favorite',
+      class: `small favorite${mon.favorite ? ' on' : ''}`,
+      icon: 'star',
+      pad: 'rb',
+      key: 'KeyF',
+      onClick: mon.onFavorite,
+    });
+    star.setAttribute('aria-pressed', String(mon.favorite));
+    return star;
+  };
   const details = (mon: BoxMon) =>
     detail.replaceChildren(
       pokemonSprite(mon.sprite, 'sprite box-detail-sprite'),
@@ -123,6 +149,7 @@ export function renderBox(root: HTMLElement, view: BoxView) {
       ]),
       h('div', { class: 'box-detail-buttons' }, [
         sendButton(mon),
+        favoriteButton(mon),
         mon.onRelease
           ? button({ label: view.release.label, testid: 'release', class: 'small danger', pad: 'x', key: 'Delete', onClick: () => ask(mon, mon.onRelease!) })
           : h('small', { class: 'box-action blocked', text: view.release.blocked }),
@@ -143,7 +170,8 @@ export function renderBox(root: HTMLElement, view: BoxView) {
 
   const partySlots: HTMLElement[] = view.party.map((mon, i) => slot(mon, `party-slot-${i}`, `party-${i}`, showDetails, false, !!holding));
   if (holding?.toParty) partySlots.push(dropSlot(holding.drop, 'party-drop', false, holding.toParty));
-  const boxSlots: HTMLElement[] = view.box.map((mon, i) => slot(mon, `box-slot-${i}`, `boxed-${i}`, showDetails, true, !!holding));
+  // Only what the filters show; each slot keeps its box place (its testid and what A does there).
+  const boxSlots: HTMLElement[] = view.boxShown.map(i => slot(view.box[i], `box-slot-${i}`, `boxed-${i}`, showDetails, true, !!holding));
   if (holding?.toBox) boxSlots.push(dropSlot(holding.drop, 'box-drop', true, holding.toBox));
   const empties = Math.max(0, MIN_SLOTS - boxSlots.length);
 
@@ -153,9 +181,13 @@ export function renderBox(root: HTMLElement, view: BoxView) {
       h('header', { class: 'box-head' }, [heading(view.title)]),
       h('section', { class: 'box-party glass' }, [h('h3', { class: 'label', text: view.partyLabel }), h('div', { class: 'box-party-list' }, partySlots)]),
       h('section', { class: 'box-grid-wrap glass' }, [
-        h('h3', { class: 'label', text: view.boxLabel }),
+        h('div', { class: 'box-grid-head' }, [
+          h('h3', { class: 'label', text: view.boxLabel }),
+          view.box.length ? filterBar(root, sheet, { ...view.filters, shownTestid: 'box-shown', autofocusFirst: false }) : null,
+        ]),
         h('div', { class: 'box-grid' }, [...boxSlots, ...Array.from({ length: empties }, () => h('span', { class: 'slot empty', attrs: { 'aria-hidden': 'true' } }))]),
         view.box.length === 0 && !holding ? h('p', { class: 'box-empty', text: view.empty }) : null,
+        view.box.length > 0 && view.boxShown.length === 0 ? h('p', { class: 'box-empty', testid: 'box-no-match', text: view.noMatch }) : null,
       ]),
       detail,
       h('footer', { class: 'screen-foot box-foot' }, [button({ ...view.back, back: true }), hintBar(view.hints)]),
@@ -164,7 +196,7 @@ export function renderBox(root: HTMLElement, view: BoxView) {
   );
   // The panel follows the focus (mount may have put it back on a slot); before any focus, the first Pokémon.
   const focused = document.activeElement;
-  const all = [...view.party, ...view.box];
+  const all = [...view.party, ...view.boxShown.map(i => view.box[i])];
   const slots = [...root.querySelectorAll<HTMLElement>('.slot:not(.empty):not(.drop)')];
   const index = focused instanceof HTMLElement ? slots.indexOf(focused) : -1;
   const first = all[index] ?? all[0];

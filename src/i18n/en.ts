@@ -178,6 +178,11 @@ const base = {
   'box.sendHint': 'Send across',
   'box.putHint': 'Put here',
   'box.pickHint': 'Pick up',
+  'box.favorites': 'Favorites',
+  'box.markFavorite': 'Favorite',
+  'box.isFavorite': 'Favorite',
+  'box.favoriteHint': 'Favorite',
+  'box.noMatch': 'No Pokémon in the box match these filters.',
   'box.moveHere': 'Move here',
   'box.holding': 'Where should {name} go? Pick a Pokémon to swap places, or an empty place.',
 
@@ -186,6 +191,7 @@ const base = {
   'map.go': 'Travel',
 
   'dex.filterOwned': 'Owned',
+  'dex.filterMissing': 'Not owned',
   'dex.filterType': 'Type',
   'dex.filterLegendary': 'Legendary',
   'dex.filterMythical': 'Mythical',
@@ -376,6 +382,7 @@ const base = {
   'place.levels': 'Lv. {min}–{max} · {count} kinds',
   'place.rod': 'With the {rod}',
   'place.noRod': 'You need a fishing rod',
+  'place.caught': '{caught}/{total}',
   'place.needsRod': 'Rod',
   'place.gym': 'Gym',
   'place.gymLeader': '{leader} · {type}',

@@ -603,6 +603,8 @@ Two players on one machine (decided 2026-11-10). From the title: **Versus**.
     25% / 41% / 63%; Mauville's grass: 22% / 30% / 35% → 55% / 89% / 100%.
   - Gen 8 "critical capture" is left out (simpler).
   - **One throw per win**: if the Pokémon breaks free, it **flees**. You still keep the battle's XP. The ball is used up either way.
+  - **Let it go comes first** after a hunt (decided 2026-11-15: most wild Pokémon are let go), and has the focus; the
+    balls follow. In the Safari (catching is why you came) and for a legendary (Master Ball only), the ball stays first.
   - So the choice of ball matters: a rare Pokémon is worth an Ultra Ball, because there is no second try.
 - **Party and PC**: 6 in the party, the rest in a box (simple list screen). **Releasing** (after milestone 11):
   from the box screen (X / Delete), after a "Keep it / Release" question with Keep it focused; any boxed Pokémon,
@@ -626,9 +628,10 @@ Two players on one machine (decided 2026-11-10). From the title: **Versus**.
   - Opened from the city's bottom bar (X). **The list**: all 151 in a grid (unseen ones as silhouettes named "???", a Poké Ball on caught ones, always in
     color: caught means registered in the Pokédex, as in the games, so evolving or releasing it never undoes it;
     decided after milestone 12, it used to turn grey once none was left). A filter bar on top: **Owned** (caught at some point, as the games'
-    Pokédex says "owned"; released ones count), **Type** (a picker), **Legendary**, **Mythical** (with both on,
+    Pokédex says "owned"; released ones count), **Not owned** (never caught: what is left to catch; decided
+    2026-11-15, it and Owned turn each other off), **Type** (a picker), **Legendary**, **Mythical** (with both on,
     either), **No.** (a range of 30 numbers, which also jumps there), and Clear. Filters add up, stay while the game
-    runs, and the list says how many are shown.
+    runs, and the list says how many are shown. The bar is shared with the PC box (`ui/filters.ts`).
   - **A species' page** (A on a tile): a card (sprite, number, name, kind, types, legendary / mythical, what you know,
     size) and the text, which takes the focus so the **d-pad scrolls it** while there is more to read
     (`data-scroll` in `ui/focus.ts`), then moves on. LB / RB (Q / E) go to the previous / next species *in the list
@@ -757,6 +760,14 @@ World map (cities unlocked by badges)
 - **Shop** (per city), **Pokémon Center** (free healing), **PC box** in any city (decided: swap freely, the party
   keeps 1–6), **potions** used from the party screen (they can't revive), **world map** (locked cities say how many
   badges they need), **Pokédex** (seen / caught counts).
+- **The box's favorites and filters** (decided 2026-11-15; `game/box.ts`): RB / F marks a Pokémon as a **favorite**
+  (a gold star in its slot's corner, wherever it goes: party, box, dojo; save version 9 adds `favorite` to a
+  Pokémon, only on favorites). Above the box: **Type** (a picker with only the types in the box, and how many have
+  each) and **Favorites**, Clear and "N shown". Hidden Pokémon keep their places (moving and swapping are unchanged);
+  picking a type puts the focus on the first one shown; the filters are cleared each time the box is opened.
+- **The city's cards say more** (decided 2026-11-15): each hunting card has a ball and how many of its species are
+  caught ("4/7"), grey while some are missing, Poké Ball red once all are; the League's crown turns gold once it is
+  won.
 - **Save version 3**: money, bag, Pokédex (version 2 saves migrate).
 
 **Built in milestone 8** (pinned by `gym.test.ts`, `save.test.ts`, `e2e/gyms.spec.ts`):

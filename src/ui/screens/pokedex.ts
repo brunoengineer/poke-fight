@@ -6,7 +6,8 @@
 //     d-pad when it is long; LB / RB go to the previous / next one in the list; B goes back to the list.
 
 import { h } from '../dom';
-import { focusStart, mount } from '../focus';
+import { filterBar, type FilterButton, type FilterChoice } from '../filters';
+import { mount } from '../focus';
 import { icon } from '../icons';
 import { button, heading, hintBar, pokemonSprite, screen, typePill, type ButtonSpec, type Hint } from '../kit';
 
@@ -21,17 +22,9 @@ export interface DexTile {
   status: DexTileStatus;
 }
 
-export interface DexChoice {
-  label: string;
-  testid: string;
-  selected: boolean;
-  onPick: () => void;
-}
-
-/** A filter: a switch (on / off), or a choice from a list (it opens a picker). */
-export type DexFilterButton =
-  | { kind: 'toggle'; label: string; testid: string; on: boolean; onToggle: () => void }
-  | { kind: 'choice'; label: string; value: string; testid: string; active: boolean; title: string; choices: DexChoice[] };
+/** The Pokédex's filters: the shared filter bar's (ui/filters.ts). */
+export type DexChoice = FilterChoice;
+export type DexFilterButton = FilterButton;
 
 export interface DexListView {
   title: string;
@@ -55,52 +48,14 @@ export interface DexListView {
 
 export function renderDexList(root: HTMLElement, view: DexListView) {
   const sheet = h('div', { class: 'sheet-layer' });
-  const pick = (filter: Extract<DexFilterButton, { kind: 'choice' }>) => {
-    const close = () => {
-      sheet.replaceChildren();
-      root.querySelector<HTMLElement>(`[data-testid="${filter.testid}"]`)?.focus();
-    };
-    sheet.replaceChildren(
-      h('div', { class: 'sheet glass dex-picker', testid: `${filter.testid}-picker`, attrs: { 'data-nav-scope': '', role: 'dialog', 'aria-label': filter.title } }, [
-        h('h3', { class: 'label', text: filter.title }),
-        h(
-          'div',
-          { class: 'dex-choices', attrs: { 'data-nav-wrap': '' } },
-          filter.choices.map(choice =>
-            h('button', {
-              class: `dex-choice${choice.selected ? ' selected' : ''}`,
-              testid: choice.testid,
-              text: choice.label,
-              onClick: choice.onPick,
-              attrs: { type: 'button', 'aria-pressed': String(choice.selected), ...(choice.selected ? { 'data-autofocus': '' } : {}) },
-            }),
-          ),
-        ),
-        button({ label: view.cancel, testid: `${filter.testid}-cancel`, back: true, onClick: close }),
-      ]),
-    );
-    focusStart(root);
-  };
-
-  const filterBar = h('div', { class: 'dex-filters' }, [
-    ...view.filters.map(filter =>
-      filter.kind === 'toggle'
-        ? h('button', {
-            class: `dex-filter${filter.on ? ' on' : ''}`,
-            testid: filter.testid,
-            onClick: filter.onToggle,
-            attrs: { type: 'button', 'aria-pressed': String(filter.on), ...(view.start === null && filter === view.filters[0] ? { 'data-autofocus': '' } : {}) },
-          }, [h('span', { class: 'dex-check', attrs: { 'aria-hidden': 'true' } }), h('span', { text: filter.label })])
-        : h('button', {
-            class: `dex-filter choice${filter.active ? ' on' : ''}`,
-            testid: filter.testid,
-            onClick: () => pick(filter),
-            attrs: { type: 'button', 'aria-haspopup': 'dialog' },
-          }, [h('span', { text: filter.label }), h('b', { text: filter.value })]),
-    ),
-    view.clear ? button({ ...view.clear, class: 'small ghost dex-clear' }) : null,
-    h('span', { class: 'dex-shown', testid: 'dex-shown', text: view.shown }),
-  ]);
+  const bar = filterBar(root, sheet, {
+    filters: view.filters,
+    clear: view.clear,
+    shown: view.shown,
+    shownTestid: 'dex-shown',
+    cancel: view.cancel,
+    autofocusFirst: view.start === null,
+  });
 
   const tiles = view.tiles.map(tile =>
     h(
@@ -124,7 +79,7 @@ export function renderDexList(root: HTMLElement, view: DexListView) {
     root,
     screen('pokedex', 'dex-screen', view.title, [
       h('header', { class: 'box-head dex-head-row' }, [heading(view.title), h('span', { class: 'stat', testid: 'dex-counts', text: view.counts })]),
-      filterBar,
+      bar,
       tiles.length ? h('div', { class: 'dex-grid glass', testid: 'dex-grid' }, tiles) : h('p', { class: 'dex-empty glass', testid: 'dex-empty', text: view.empty }),
       h('footer', { class: 'screen-foot dex-foot' }, [button({ ...view.back, back: true }), hintBar(view.hints)]),
       sheet,

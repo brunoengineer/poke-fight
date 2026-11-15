@@ -20,6 +20,8 @@ export interface Pokemon {
   moves: string[];
   /** The moves in its two special slots. */
   specials: SpecialChoice;
+  /** Marked as a favorite in the box (absent: not one). */
+  favorite?: boolean;
 }
 
 export interface CreateOptions {

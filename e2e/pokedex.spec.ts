@@ -72,7 +72,7 @@ test.describe('the Pokédex', () => {
     expect(await body.evaluate(element => Math.ceil(element.scrollTop + element.clientHeight) >= element.scrollHeight)).toBe(true);
   });
 
-  test('filters: owned, type, legendary, mythical, number; they add up and can be cleared', async ({ page }) => {
+  test('filters: owned, not owned, type, legendary, mythical, number; they add up and can be cleared', async ({ page }) => {
     await opened(page);
     // Opened from the city, the focus starts on the first filter (not somewhere in the list).
     await expect(page.getByTestId('filter-owned')).toBeFocused();
@@ -91,6 +91,17 @@ test.describe('the Pokédex', () => {
 
     await page.getByTestId('filter-clear').click();
     await expect(page.getByTestId('dex-shown')).toHaveText('151 shown');
+
+    // Not owned: what is left to catch (151 − 5). It turns Owned off, and Owned turns it off.
+    await page.getByTestId('filter-owned').click();
+    await page.getByTestId('filter-missing').click();
+    await expect(page.getByTestId('dex-shown')).toHaveText('146 shown');
+    await expect(page.getByTestId('filter-owned')).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.getByTestId('dex-63')).toHaveCount(0);
+    await page.getByTestId('filter-owned').click();
+    await expect(page.getByTestId('filter-missing')).toHaveAttribute('aria-pressed', 'false');
+    await expect(page.getByTestId('dex-shown')).toHaveText('5 shown');
+    await page.getByTestId('filter-clear').click();
 
     await page.getByTestId('filter-legendary').click();
     await expect(page.getByTestId('dex-shown')).toHaveText('4 shown');

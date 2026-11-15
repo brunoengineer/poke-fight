@@ -291,6 +291,20 @@ describe('the Training Dojo (version 8)', () => {
   });
 });
 
+describe('favorites (version 9)', () => {
+  it('a version 8 save loads with no favorites, its dojo kept; a favorite survives a save; a bad one is refused', () => {
+    const v8 = readFileSync(new URL('./fixtures/save-v8-dojo.json', import.meta.url), 'utf8');
+    const result = parseSave(v8);
+    if (result.status !== 'ok') throw new Error(JSON.stringify(result));
+    expect(result.save).toMatchObject({ version: SAVE_VERSION, dojo: { battles: 3, pokemon: { speciesId: 6 } } });
+    expect([...result.save.party, ...result.save.box].some(p => p.favorite)).toBe(false);
+    const s = save();
+    s.party[0] = { ...s.party[0], favorite: true };
+    expect(parseSave(serializeSave(s))).toMatchObject({ status: 'ok', save: { party: [{ favorite: true }, {}] } });
+    expect(broken(s, x => ((x.party[0] as unknown as { favorite: unknown }).favorite = 'yes'))).toMatchObject({ reason: 'invalid' });
+  });
+});
+
 describe('fixtures (real saves kept for compatibility)', () => {
   const dir = new URL('./fixtures/', import.meta.url);
   const files = readdirSync(dir).filter(f => f.endsWith('.json'));

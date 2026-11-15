@@ -1,6 +1,7 @@
 // The PC box: Pokémon not in the party. Swapping is free in any city (decided after milestone 6), never during a fight.
 // The party always keeps 1 to 6 Pokémon. Pokémon can be released from the box screen.
 
+import { species } from '../data/pokedex';
 import type { Pokemon } from './pokemon';
 
 export const MAX_PARTY = 6;
@@ -87,4 +88,37 @@ export function release(team: Team, where: Place, index: number): Team {
   return where === 'party'
     ? { party: team.party.filter((_, i) => i !== index), box: team.box }
     : { party: team.party, box: team.box.filter((_, i) => i !== index) };
+}
+
+// ── Favorites and the box's filters (decided 2026-11-15) ─────────────────────────────────────────────────────────
+
+/** Marks a Pokémon as a favorite, or not any more (only favorites carry the field). */
+export function toggleFavorite(team: Team, where: Place, index: number): Team {
+  const p = team[where][index];
+  if (!p) throw new Error('No Pokémon there');
+  const { favorite, ...rest } = p;
+  const changed: Pokemon = favorite ? rest : { ...rest, favorite: true };
+  return { ...team, [where]: team[where].map((q, i) => (i === index ? changed : q)) };
+}
+
+export interface BoxFilter {
+  /** Only Pokémon of this type (either of their types). */
+  type: string | null;
+  /** Only favorites. */
+  favorites: boolean;
+}
+
+export const NO_BOX_FILTER: BoxFilter = { type: null, favorites: false };
+export const isBoxFiltered = (filter: BoxFilter) => filter.type !== null || filter.favorites;
+
+/** The box's places that pass the filter: their indexes, in box order (moving and swapping keep using them). */
+export function boxShown(box: readonly Pokemon[], filter: BoxFilter): number[] {
+  return box.flatMap((p, i) => ((filter.type === null || species(p.speciesId).types.includes(filter.type)) && (!filter.favorites || p.favorite) ? [i] : []));
+}
+
+/** The types in the box, with how many Pokémon have each (a dual-type one counts for both), alphabetically. */
+export function boxTypes(box: readonly Pokemon[]): { type: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const p of box) for (const type of species(p.speciesId).types) counts.set(type, (counts.get(type) ?? 0) + 1);
+  return [...counts].map(([type, count]) => ({ type, count })).sort((a, b) => a.type.localeCompare(b.type));
 }

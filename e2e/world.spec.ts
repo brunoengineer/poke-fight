@@ -341,3 +341,44 @@ test.describe('the battle field', () => {
     expect((await save(page)).money).toBe(3180);
   });
 });
+
+test.describe('what the city cards say (decided 2026-11-15)', () => {
+  test('each hunt card counts what is caught there: a grey ball while some are missing…', async ({ page }) => {
+    // Pallet's grass: Pidgey and Rattata.
+    await openGame(page, { scene: 'city' }, { save: start() });
+    const chip = page.getByTestId('hunt-grass').locator('.chip');
+    await expect(chip).toHaveText('0/2');
+    await expect(chip).toHaveClass(/chip-caught/);
+  });
+
+  test('…and red once every species there is caught', async ({ page }) => {
+    const data = start() as SaveData & { dex: { seen: number[]; caught: number[] } };
+    await openGame(page, { scene: 'city' }, { save: { ...data, dex: { seen: [...data.dex.seen, 16, 19], caught: [...data.dex.caught, 16, 19] } } });
+    const chip = page.getByTestId('hunt-grass').locator('.chip');
+    await expect(chip).toHaveText('2/2');
+    await expect(chip).toHaveClass(/chip-complete/);
+  });
+
+  test('after a wild battle, Let it go comes first and has the focus; the balls follow', async ({ page }) => {
+    await openGame(page, { scene: 'city' }, { save: start() });
+    await page.getByTestId('hunt-grass').click();
+    await winBattle(page);
+    await expect(page.getByTestId('let-go')).toBeFocused();
+    await expect(page.locator('.next-buttons .btn').first()).toHaveAttribute('data-testid', 'let-go');
+    await expect(page.locator('.next-buttons .btn').nth(1)).toHaveAttribute('data-testid', 'throw-poke-ball');
+    // Enter lets it go.
+    await page.keyboard.press('Enter');
+    await expect(page.getByTestId('results-lines')).toContainText('You let the wild');
+  });
+
+  test("the League's crown is plain before it is won…", async ({ page }) => {
+    await openGame(page, { scene: 'city' }, { save: fixture('save-v7-indigo.json') });
+    await expect(page.getByTestId('city-league').locator('.card-icon')).toHaveClass('icon card-icon');
+  });
+
+  test('…and gold once it is', async ({ page }) => {
+    const indigo = fixture('save-v7-indigo.json') as Record<string, unknown>;
+    await openGame(page, { scene: 'city' }, { save: { ...indigo, champion: true, champions: ['kanto'] } });
+    await expect(page.getByTestId('city-league').locator('.card-icon')).toHaveClass(/gold/);
+  });
+});

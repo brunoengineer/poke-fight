@@ -20,7 +20,7 @@ import type { Style } from './fight/ai/profiles';
 import type { BattleEvent, TeamMember } from './fight/battle';
 import type { InputMask } from './fight/input';
 import { afterBattle, type ReportLine, type XpGain } from './game/after-battle';
-import { addCaught, canPlace, canRelease, canSendToBox, canTakeFromBox, place, release, sendToBox, swapInParty, takeFromBox, type Place, type Spot } from './game/box';
+import { addCaught, boxShown, boxTypes, canPlace, canRelease, canSendToBox, canTakeFromBox, isBoxFiltered, NO_BOX_FILTER, place, release, sendToBox, swapInParty, takeFromBox, toggleFavorite, type BoxFilter, type Place, type Spot } from './game/box';
 import { catchValue, throwBall } from './game/capture';
 import { buy, canUsePotion, countOf, MAX_MONEY, moneyAfterLoss, prizeMoney, removeItem, usePotion } from './game/economy';
 import { cpuProfile, type Controller } from './game/ai';
@@ -717,6 +717,9 @@ export function startApp(elements: AppElements, options: TestOptions) {
         const min = Math.min(...table.map(e => e.minLevel));
         const max = Math.max(...table.map(e => e.maxLevel));
         const noRod = kind === 'water' && !rod;
+        // How many of this ground's species are caught: a grey ball, red once they all are.
+        const caught = ids.filter(id => s.dex.caught.includes(id)).length;
+        const complete = caught === ids.length;
         return {
           testid: `hunt-${kind}`,
           title: t(`place.${kind}`),
@@ -724,7 +727,9 @@ export function startApp(elements: AppElements, options: TestOptions) {
           color: huntColors[kind],
           icon: huntIcons[kind],
           locked: noRod,
-          chip: noRod ? { text: t('place.needsRod'), icon: 'lock', tone: 'lock' } : undefined,
+          chip: noRod
+            ? { text: t('place.needsRod'), icon: 'lock', tone: 'lock' }
+            : { text: t('place.caught', { caught, total: ids.length }), icon: 'ball', tone: complete ? 'complete' : 'caught' },
           // Every species of this ground, the most common first (unseen ones as silhouettes).
           art: { pokemon: ids.map(id => ({ url: spriteUrl(id), seen: s.dex.seen.includes(id) })) },
           onClick: () => startHunt(kind),
@@ -758,6 +763,8 @@ export function startApp(elements: AppElements, options: TestOptions) {
         subtitle: t('place.leagueText'),
         color: '#7b5cff',
         icon: 'crown',
+        // Gold once the League is won.
+        iconTone: s.champion ? 'gold' : undefined,
         locked: !open,
         chip: open ? undefined : { text: t('place.badgesNeeded', { badges: 8 }), icon: 'lock', tone: 'lock' },
         art: { people: regionNow().league.eliteFour.slice(-2).reverse().map(member => trainerUrl(member.sprite)) },
@@ -1041,7 +1048,9 @@ export function startApp(elements: AppElements, options: TestOptions) {
       title: t('dex.title'),
       counts: t('dex.counts', { seen: s.dex.seen.length, caught: s.dex.caught.length, total: dexNumbers(regionNow().lastSpecies).length }),
       filters: [
-        { kind: 'toggle', label: t('dex.filterOwned'), testid: 'filter-owned', on: dexFilter.owned, onToggle: () => setFilter({ owned: !dexFilter.owned }) },
+        // Owned and Not owned: one or the other (both would show nothing).
+        { kind: 'toggle', label: t('dex.filterOwned'), testid: 'filter-owned', on: dexFilter.owned, onToggle: () => setFilter({ owned: !dexFilter.owned, missing: false }) },
+        { kind: 'toggle', label: t('dex.filterMissing'), testid: 'filter-missing', on: dexFilter.missing, onToggle: () => setFilter({ missing: !dexFilter.missing, owned: false }) },
         {
           kind: 'choice',
           label: t('dex.filterType'),
@@ -1464,9 +1473,12 @@ export function startApp(elements: AppElements, options: TestOptions) {
 
   /** The Pokémon picked up in the box (A), until it is put down. */
   let boxHeld: Spot | null = null;
+  /** The box's filters (type, favorites); cleared each time the box is opened. */
+  let boxFilter: BoxFilter = NO_BOX_FILTER;
 
   function openBox() {
     boxHeld = null;
+    boxFilter = NO_BOX_FILTER;
     showBox();
   }
 
@@ -1523,7 +1535,27 @@ export function startApp(elements: AppElements, options: TestOptions) {
       onPick: pick(spot),
       send: send(spot),
       onRelease: releaser(spot.where, spot.index),
+      favorite: p.favorite === true,
+      onFavorite: () => {
+        audio.play('select');
+        redraw(current => toggleFavorite(current, spot.where, spot.index));
+      },
     });
+    // The filters: only the types in the box (a type that left it lets go of its filter).
+    const types = boxTypes(s.box);
+    if (boxFilter.type && !types.some(x => x.type === boxFilter.type)) boxFilter = { ...boxFilter, type: null };
+    const setBoxFilter = (change: Partial<BoxFilter>) => {
+      boxFilter = { ...boxFilter, ...change };
+      showBox();
+    };
+    const typeName = (type: string) => t(`type.${type}` as MessageKey);
+    const shown = boxShown(s.box, boxFilter);
+    // A type picked: the focus goes to the first Pokémon it shows (or back to the filter if none).
+    const pickType = (type: string | null) => {
+      setBoxFilter({ type });
+      const first = save ? boxShown(save.box, boxFilter)[0] : undefined;
+      overlayRoot.querySelector<HTMLElement>(`[data-testid="${first === undefined ? 'box-filter-type' : `box-slot-${first}`}"]`)?.focus();
+    };
     /** The empty place after a list, if the held Pokémon can move there (not where it already is at the end). */
     const dropAt = (where: Place) => {
       const end = { where, index: s[where].length };
@@ -1541,6 +1573,32 @@ export function startApp(elements: AppElements, options: TestOptions) {
       empty: t('box.empty'),
       party: s.party.map((p, i) => mon(p, { where: 'party', index: i })),
       box: s.box.map((p, i) => mon(p, { where: 'box', index: i })),
+      boxShown: shown,
+      filters: {
+        filters: [
+          {
+            kind: 'choice',
+            label: t('dex.filterType'),
+            value: boxFilter.type ? typeName(boxFilter.type) : t('dex.all'),
+            testid: 'box-filter-type',
+            active: boxFilter.type !== null,
+            title: t('dex.filterType'),
+            choices: [
+              { label: t('dex.all'), testid: 'box-type-all', selected: boxFilter.type === null, onPick: () => pickType(null) },
+              ...types
+                .map(({ type, count }) => ({ type, label: `${typeName(type)} · ${count}` }))
+                .sort((a, b) => a.label.localeCompare(b.label))
+                .map(({ type, label }) => ({ label, testid: `box-type-${type}`, selected: boxFilter.type === type, onPick: () => pickType(type) })),
+            ],
+          },
+          { kind: 'toggle', label: t('box.favorites'), testid: 'box-filter-favorites', icon: 'star', on: boxFilter.favorites, onToggle: () => setBoxFilter({ favorites: !boxFilter.favorites }) },
+        ],
+        clear: isBoxFiltered(boxFilter) ? { label: t('dex.clear'), testid: 'box-filter-clear', onClick: () => setBoxFilter(NO_BOX_FILTER) } : null,
+        shown: isBoxFiltered(boxFilter) ? t('dex.shown', { count: shown.length }) : null,
+        cancel: t('party.cancel'),
+      },
+      noMatch: t('box.noMatch'),
+      favorite: { mark: t('box.markFavorite'), marked: t('box.isFavorite') },
       holding: held ? { text: t('box.holding', { name: nameOf(s[held.where][held.index]) }), toParty: dropAt('party'), toBox: dropAt('box'), drop: t('box.moveHere') } : null,
       release: {
         label: t('box.release'),
@@ -1555,7 +1613,13 @@ export function startApp(elements: AppElements, options: TestOptions) {
         : { label: t('menu.back'), testid: 'back', onClick: goCity },
       hints: held
         ? [{ pad: 'a', key: 'Enter', label: t('box.putHint') }, { pad: 'y', key: 'S', label: t('box.sendHint') }, { pad: 'b', key: 'Esc', label: t('party.cancel') }]
-        : [{ pad: 'a', key: 'Enter', label: t('box.pickHint') }, { pad: 'y', key: 'S', label: t('box.sendHint') }, { pad: 'x', key: 'Del', label: t('box.release') }, hints.back],
+        : [
+            { pad: 'a', key: 'Enter', label: t('box.pickHint') },
+            { pad: 'y', key: 'S', label: t('box.sendHint') },
+            { pad: 'rb', key: 'F', label: t('box.favoriteHint') },
+            { pad: 'x', key: 'Del', label: t('box.release') },
+            hints.back,
+          ],
     });
   }
 
@@ -2222,20 +2286,24 @@ export function startApp(elements: AppElements, options: TestOptions) {
       const legendary = state.capture.legendary === true;
       const balls = (mode === 'safari' ? (['safari-ball'] as BallId[]) : BALLS.filter(ball => ballsLeft(ball) > 0)).filter(ball => canThrowAt(ball, legendary));
       const prompt = !legendary ? t('capture.prompt', { name: nameOf(target) }) : balls.length ? t('legend.capturePrompt', { name: nameOf(target) }) : t('legend.needMaster', { name: nameOf(target) });
+      // After a hunt, most Pokémon are let go (decided 2026-11-15): Let it go comes first and has the focus. In the
+      // Safari (catching is why you came) and for a legendary (a Master Ball only), the ball stays first.
+      const letGoFirst = !legendary && mode !== 'safari';
+      const throws = balls.map((ball, i) => ({
+        label: t('capture.throw', { ball: itemName(ball), count: ballsLeft(ball) }),
+        testid: `throw-${ball}`,
+        image: itemUrl(ball),
+        primary: !letGoFirst && i === 0,
+        onClick: () => throwAt(ball),
+      }));
+      const letGoButton = { label: t('capture.letGo'), testid: 'let-go', back: true, primary: letGoFirst, onClick: letGo };
       renderResults(overlayRoot, {
         ...base,
         prompt: { text: prompt, sprite: spriteUrl(target.speciesId), evolving: false },
-        buttons: [
-          ...balls.map((ball, i) => ({
-            label: t('capture.throw', { ball: itemName(ball), count: ballsLeft(ball) }),
-            testid: `throw-${ball}`,
-            image: itemUrl(ball),
-            primary: i === 0,
-            onClick: () => throwAt(ball),
-          })),
-          { label: t('capture.letGo'), testid: 'let-go', back: true, primary: false, onClick: letGo },
-        ],
-        hints: [{ pad: 'a', key: 'Enter', label: t('capture.throwHint') }, { pad: 'b', key: 'Esc', label: t('capture.letGo') }],
+        buttons: letGoFirst ? [letGoButton, ...throws] : [...throws, letGoButton],
+        hints: letGoFirst
+          ? [hints.select, { pad: 'b', key: 'Esc', label: t('capture.letGo') }]
+          : [{ pad: 'a', key: 'Enter', label: t('capture.throwHint') }, { pad: 'b', key: 'Esc', label: t('capture.letGo') }],
       });
       return;
     }

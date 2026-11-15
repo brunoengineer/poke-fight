@@ -108,6 +108,8 @@ export function whereToFind(id: number, region: Region): FoundAt[] {
 export interface DexFilter {
   /** Only the species caught at some point ("owned", as the games' Pokédex says; released ones count). */
   owned: boolean;
+  /** Only the species never caught (seen or not): what is left to catch. Never on together with `owned`. */
+  missing: boolean;
   type: string | null;
   legendary: boolean;
   mythical: boolean;
@@ -115,7 +117,7 @@ export interface DexFilter {
   range: readonly [number, number] | null;
 }
 
-export const NO_FILTER: DexFilter = { owned: false, type: null, legendary: false, mythical: false, range: null };
+export const NO_FILTER: DexFilter = { owned: false, missing: false, type: null, legendary: false, mythical: false, range: null };
 
 /** The number ranges to pick from: 30 at a time up to the region's last (the last range takes what is left). */
 export function dexRanges(last: number): (readonly [number, number])[] {
@@ -131,7 +133,7 @@ export function dexRanges(last: number): (readonly [number, number])[] {
 export const dexTypes = (last: number): string[] => [...new Set(allSpecies().filter(s => s.id <= last).flatMap(s => s.types))].sort();
 
 export const isFiltered = (filter: DexFilter) =>
-  filter.owned || filter.type !== null || filter.legendary || filter.mythical || filter.range !== null;
+  filter.owned || filter.missing || filter.type !== null || filter.legendary || filter.mythical || filter.range !== null;
 
 /**
  * The species that pass the filter, in Pokédex order. Every condition must hold, except Legendary and Mythical: with
@@ -141,6 +143,7 @@ export function filterDex(ids: readonly number[], filter: DexFilter, owned: (id:
   return ids.filter(id => {
     const s = species(id);
     if (filter.owned && !owned(id)) return false;
+    if (filter.missing && owned(id)) return false;
     if (filter.type && !s.types.includes(filter.type)) return false;
     if ((filter.legendary || filter.mythical) && !((filter.legendary && s.legendary) || (filter.mythical && s.mythical))) return false;
     if (filter.range && (id < filter.range[0] || id > filter.range[1])) return false;

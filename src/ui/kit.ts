@@ -64,8 +64,10 @@ export interface CardSpec {
   /** Pictures shown at the top (sprites pop out of the card). */
   art?: Child;
   icon?: IconName;
-  /** A small tag in the corner: "Locked", "Beaten"… */
-  chip?: { text: string; icon?: IconName; tone?: 'gold' | 'ok' | 'lock' };
+  /** The icon in gold (the League's crown, once its Champion). */
+  iconTone?: 'gold';
+  /** A small tag in the corner: "Locked", "Beaten", "3/7" caught (grey; red once all are)… */
+  chip?: { text: string; icon?: IconName; tone?: 'gold' | 'ok' | 'lock' | 'caught' | 'complete' };
   /** Shown but not usable (it can still get the focus, so a controller can read why). */
   locked?: boolean;
   onClick: () => void;
@@ -95,7 +97,7 @@ export function card(spec: CardSpec) {
     [
       spec.art ? h('span', { class: 'card-art' }, [spec.art]) : null,
       h('span', { class: 'card-body' }, [
-        spec.icon ? icon(spec.icon, 'icon card-icon') : null,
+        spec.icon ? icon(spec.icon, `icon card-icon${spec.iconTone ? ` ${spec.iconTone}` : ''}`) : null,
         h('span', { class: 'card-text' }, [
           h('strong', { class: 'card-title', text: spec.title }),
           spec.subtitle ? h('small', { class: 'card-subtitle', text: spec.subtitle }) : null,

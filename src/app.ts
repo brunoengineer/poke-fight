@@ -71,6 +71,8 @@ import type { IconName } from './ui/icons';
 import type { Hint, Pad } from './ui/kit';
 import { renderCenter } from './ui/screens/center';
 import { renderDojo } from './ui/screens/dojo';
+import { renderLegends } from './ui/screens/legends';
+import { VISITOR_FRESH, visitingLegends, visitorTables } from './game/visitors';
 import { renderBox, type BoxMon } from './ui/screens/box';
 import { renderCity, type PlaceCard } from './ui/screens/city';
 import { renderMap } from './ui/screens/map';
@@ -131,6 +133,12 @@ function safeStorage(): Storage | null {
 }
 
 const nameOf = (p: Pokemon) => species(p.speciesId).name;
+
+/** A hunting ground: a city's own (grass, cave, water, the Hidden Grove), or an earlier region's visitors. */
+type Hunt = HuntKind | `visitors-${RegionId}`;
+const visitorOrigin = (hunt: Hunt): RegionId | null => (hunt.startsWith('visitors-') ? (hunt.slice('visitors-'.length) as RegionId) : null);
+/** How many of a visitors' ground's Pokémon its card shows (the most likely first). */
+const VISITOR_ART = 14;
 const cityKey = (location: string) => `city.${location}` as MessageKey;
 const itemName = (id: ItemId) => t(`item.${id}` as MessageKey);
 
@@ -702,7 +710,10 @@ export function startApp(elements: AppElements, options: TestOptions) {
     backdrop.set({ image: art.backdrop, town: here.id, theme: art.color, mode: 'scene' });
     // Everything that can appear here (and the party) starts loading now, so a hunt starts with its sprites ready.
     const rod = ownsRod(s);
-    const possible = (['grass', 'cave', 'water', 'rare'] as HuntKind[]).flatMap(kind => encounterTable(here, kind, rod).map(e => e.speciesId));
+    const possible = [
+      ...(['grass', 'cave', 'water', 'rare'] as HuntKind[]).flatMap(kind => encounterTable(here, kind, rod).map(e => e.speciesId)),
+      ...(here.id === regionNow().league.city ? [...visitorTables(regionNow()).values()].flatMap(table => table.map(e => e.speciesId)) : []),
+    ];
     preloadSprites([...new Set([...possible, ...s.party.map(p => p.speciesId)])]);
 
     const huntColors: Record<HuntKind, string> = { grass: '#3fae5a', cave: '#9a6b45', water: '#2f8fe0', rare: '#d9a521' };
@@ -735,6 +746,25 @@ export function startApp(elements: AppElements, options: TestOptions) {
           onClick: () => startHunt(kind),
         } satisfies PlaceCard;
       });
+    // The visitors from each earlier region (decided 2026-11-17), in the League city: what this region can't give.
+    if (here.id === regionNow().league.city) {
+      for (const [from, raw] of visitorTables(regionNow())) {
+        const table = huntTable(here, raw, s.dex.caught, VISITOR_FRESH);
+        const ids = chances(table).map(c => c.speciesId);
+        const caught = ids.filter(id => s.dex.caught.includes(id)).length;
+        adventure.push({
+          testid: `hunt-visitors-${from}`,
+          title: t('place.visitors', { region: t(`region.${from}`) }),
+          subtitle: t('place.levels', { min: Math.min(...table.map(e => e.minLevel)), max: Math.max(...table.map(e => e.maxLevel)), count: ids.length }),
+          color: region(from).color,
+          icon: 'globe',
+          chip: { text: t('place.caught', { caught, total: ids.length }), icon: 'ball', tone: caught === ids.length ? 'complete' : 'caught' },
+          // The most likely first (the ones not caught yet), only so many: the card can't hold forty.
+          art: { pokemon: ids.slice(0, VISITOR_ART).map(id => ({ url: spriteUrl(id), seen: s.dex.seen.includes(id) })) },
+          onClick: () => startHunt(`visitors-${from}`),
+        });
+      }
+    }
     const g = gymIn(here.id);
     if (g) {
       const beaten = s.badges.includes(g.badge);
@@ -785,19 +815,22 @@ export function startApp(elements: AppElements, options: TestOptions) {
     }
     // The sanctuary: a card for each legendary instead of the battle field.
     const sanctuary = isSanctuary(here.id) ? regionNow().sanctuary : null;
-    for (const l of sanctuary?.legendaries ?? []) {
-      const id = speciesBySlug(l.species).id;
-      const caught = s.dex.caught.includes(id);
+    for (const l of sanctuary?.legendaries ?? []) adventure.push(legendCard(s, l));
+    // The earlier regions' legendaries (decided 2026-11-17): one card per region, opening their own row.
+    for (const group of sanctuary ? visitingLegends(regionNow()) : []) {
+      const ids = group.legendaries.map(l => speciesBySlug(l.species).id);
+      const caught = ids.filter(id => s.dex.caught.includes(id)).length;
+      const levels = group.legendaries.map(l => l.level);
       adventure.push({
-        testid: `legend-${l.species}`,
-        title: species(id).name,
-        subtitle: t(species(id).mythical ? 'legend.cardMythical' : 'legend.card', { level: l.level }),
-        color: typeColor(species(id).types[0]),
-        icon: 'star',
-        locked: caught,
-        chip: caught ? { text: t('legend.caught'), icon: 'check', tone: 'ok' } : undefined,
-        art: { pokemon: [{ url: spriteUrl(id), seen: s.dex.seen.includes(id) }] },
-        onClick: () => startLegendary(l),
+        testid: `legends-${group.from}`,
+        title: t('legend.visitors', { region: t(`region.${group.from}`) }),
+        // Just the levels: how many there are is in the chip ("0/6"), and the dense cards are narrow.
+        subtitle: t('legend.visitorsText', { min: Math.min(...levels), max: Math.max(...levels) }),
+        color: region(group.from).color,
+        icon: 'globe',
+        chip: { text: t('place.caught', { caught, total: ids.length }), icon: 'ball', tone: caught === ids.length ? 'complete' : 'caught' },
+        art: { pokemon: ids.map(id => ({ url: spriteUrl(id), seen: s.dex.seen.includes(id) })) },
+        onClick: () => showLegends(group.from),
       });
     }
     if (!sanctuary) adventure.push({
@@ -1149,10 +1182,25 @@ export function startApp(elements: AppElements, options: TestOptions) {
             )
           : [],
         where: known
-          ? whereToFind(id, regionNow()).map(f => {
-              const params = { city: t(cityKey(f.cityId)), place: placeName(f), min: f.minLevel, max: f.maxLevel };
-              return f.rod ? t('dex.whereRod', { ...params, rod: itemName(f.rod) }) : t('dex.where', params);
-            })
+          ? [
+              ...whereToFind(id, regionNow()).map(f => {
+                const params = { city: t(cityKey(f.cityId)), place: placeName(f), min: f.minLevel, max: f.maxLevel };
+                return f.rod ? t('dex.whereRod', { ...params, rod: itemName(f.rod) }) : t('dex.where', params);
+              }),
+              // A visitor: in the League city.
+              ...[...visitorTables(regionNow())].flatMap(([from, table]) =>
+                table
+                  .filter(e => e.speciesId === id)
+                  .map(e =>
+                    t('dex.where', {
+                      city: t(cityKey(regionNow().league.city)),
+                      place: t('place.visitors', { region: t(`region.${from}`) }),
+                      min: e.minLevel,
+                      max: e.maxLevel,
+                    }),
+                  ),
+              ),
+            ]
           : [],
         stats: caught
           ? (['hp', 'atk', 'def', 'spa', 'spd', 'spe'] as const).map(stat => ({ label: t(`stat.${stat}`), value: stats[stat] }))
@@ -1310,6 +1358,46 @@ export function startApp(elements: AppElements, options: TestOptions) {
           showCenter('center.healed');
         },
       },
+      back: { label: t('menu.back'), testid: 'back', onClick: goCity },
+      hints: [hints.select, hints.back],
+    });
+  }
+
+  // ── Legends ─────────────────────────────────────────────────────────────────────────────────────────────────
+  /** A legendary's card (the sanctuary's own, or a visitor's): A fights it; a caught one says so and can't be. */
+  function legendCard(s: Save, l: Legendary): PlaceCard {
+    const id = speciesBySlug(l.species).id;
+    const caught = s.dex.caught.includes(id);
+    return {
+      testid: `legend-${l.species}`,
+      title: species(id).name,
+      subtitle: t(species(id).mythical ? 'legend.cardMythical' : 'legend.card', { level: l.level }),
+      color: typeColor(species(id).types[0]),
+      icon: 'star',
+      locked: caught,
+      chip: caught ? { text: t('legend.caught'), icon: 'check', tone: 'ok' } : undefined,
+      art: { pokemon: [{ url: spriteUrl(id), seen: s.dex.seen.includes(id) }] },
+      onClick: () => startLegendary(l),
+    };
+  }
+
+  /** An earlier region's legendaries, visiting this sanctuary: their cards in a row, like the sanctuary's own. */
+  function showLegends(from: RegionId) {
+    if (!save) return;
+    const s = save;
+    const group = visitingLegends(regionNow()).find(g => g.from === from);
+    if (!group) return goCity();
+    scene = 'menu';
+    show();
+    const cards = group.legendaries.map(l => legendCard(s, l));
+    const first = cards.find(c => !c.locked);
+    if (first) first.primary = true;
+    renderLegends(overlayRoot, {
+      region: t(`region.${regionNow().id}`),
+      title: t('legend.visitors', { region: t(`region.${from}`) }),
+      tagline: t('legend.visitorsTagline', { region: t(`region.${from}`) }),
+      theme: placeArt(s.location).color,
+      cards,
       back: { label: t('menu.back'), testid: 'back', onClick: goCity },
       hints: [hints.select, hints.back],
     });
@@ -1774,18 +1862,21 @@ export function startApp(elements: AppElements, options: TestOptions) {
 
   /** Hunting: a wild Pokémon from this city's grass, cave or water (fishing with the best rod). */
   /** The last hunting ground (for "Hunt again" on the results screen). */
-  let lastHunt: HuntKind | null = null;
+  let lastHunt: Hunt | null = null;
   const huntAgain = () => {
     closeModal();
     if (lastHunt) startHunt(lastHunt);
   };
 
-  function startHunt(kind: HuntKind) {
+  function startHunt(kind: Hunt) {
     if (!save) return;
     lastHunt = kind;
     const s = save;
     const here = city(s.location);
-    const table = huntTable(here, encounterTable(here, kind, kind === 'water' ? ownsRod(s) : null), s.dex.caught);
+    const from = visitorOrigin(kind);
+    const table = from
+      ? huntTable(here, visitorTables(regionNow()).get(from) ?? [], s.dex.caught, VISITOR_FRESH)
+      : huntTable(here, encounterTable(here, kind as HuntKind, kind === 'water' ? ownsRod(s) : null), s.dex.caught);
     if (table.length === 0) return;
     const party = readyParty();
     wild = wildPokemon(rollEncounter(table, rng), rng);
@@ -1796,7 +1887,7 @@ export function startApp(elements: AppElements, options: TestOptions) {
       opponent: 'cpu-easy',
       cpu: { kind: 'wild' },
       showOwned: true,
-      stage: huntStage(s.location, kind),
+      stage: huntStage(s.location, from ? 'rare' : (kind as HuntKind)),
       rivalLook: null,
       intro: { step: null, key: 'wild.appeared', params: { name: nameOf(found) } },
     });

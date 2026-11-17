@@ -51,16 +51,17 @@ test('every hunting card shows all the species of its ground, as many as it says
 });
 
 test.describe('hunting and catching', () => {
-  test("the Hidden Grove at the League: the Pokémon nothing else reaches (the starters not chosen, fossils, Lapras…)", async ({ page }) => {
+  test("the Hidden Grove at the League: the Pokémon nothing else reaches (the starters not chosen, fossils, Lapras, Mr. Mime…)", async ({ page }) => {
     const badges = ['boulder', 'cascade', 'thunder', 'rainbow', 'soul', 'marsh', 'volcano', 'earth'];
     await openGame(page, { scene: 'city' }, { save: { ...start(), location: 'indigo', badges } });
     const grove = page.getByTestId('hunt-rare');
     await expect(grove).toContainText('Hidden Grove');
-    await expect(grove).toContainText('Lv. 30–46 · 12 kinds');
+    await expect(grove).toContainText('Lv. 30–46 · 18 kinds');
     await grove.click();
     expect(await scene(page)).toMatchObject({ scene: 'fight', mode: 'wild' });
     const wild = (await snapshot(page)).fighters[1].name;
-    const groveKanto = ['Bulbasaur', 'Charmander', 'Squirtle', 'Hitmonlee', 'Hitmonchan', 'Lapras', 'Eevee', 'Porygon', 'Omanyte', 'Kabuto', 'Aerodactyl', 'Snorlax'];
+    // Since 2026-11-17 also Red/Blue's trades and prizes (Mr. Mime…), so Kanto's Pokédex can be completed in Kanto.
+    const groveKanto = ['Bulbasaur', 'Charmander', 'Squirtle', 'Hitmonlee', 'Hitmonchan', 'Lapras', 'Eevee', 'Porygon', 'Omanyte', 'Kabuto', 'Aerodactyl', 'Snorlax', 'Farfetch’d', 'Lickitung', 'Tangela', 'Mr. Mime', 'Jynx', 'Dratini'];
     expect(groveKanto).toContain(wild);
   });
 

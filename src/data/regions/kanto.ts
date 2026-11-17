@@ -258,9 +258,11 @@ export const KANTO: Region = {
       ['saffron', 'kanto-sanctuary'],
     ],
   },
-  // The Hidden Grove, by the League (decided after milestone 14: every species can be obtained): this generation's
-  // Pokémon nothing else reaches (the starters not chosen, the games' gifts and fossils, babies, evolutions this game
-  // can't do). Base forms at Lv. 30–36, evolved ones at 40–46. Checked by game/obtainable.test.ts.
+  // The Hidden Grove, by the League (decided after milestone 14: every species can be obtained; since 2026-11-17, in
+  // every region's own journey): this generation's Pokémon nothing else in this region reaches (the starters not
+  // chosen, the games' gifts, trades and fossils, babies, evolutions this game can't do). Base forms at Lv. 30–36,
+  // evolved ones at 40–46. The earlier generations' come as visitors (game/visitors.ts). Checked by
+  // game/obtainable.test.ts.
   grove: [
     ['bulbasaur', 30, 36],
     ['charmander', 30, 36],
@@ -274,6 +276,13 @@ export const KANTO: Region = {
     ['kabuto', 30, 36],
     ['aerodactyl', 30, 36],
     ['snorlax', 40, 46],
+    // Red/Blue's in-game trades and Game Corner prizes.
+    ['farfetchd', 30, 36],
+    ['lickitung', 30, 36],
+    ['tangela', 30, 36],
+    ['mr-mime', 30, 36],
+    ['jynx', 30, 36],
+    ['dratini', 30, 36],
   ],
   sanctuary: {
     id: 'kanto-sanctuary',

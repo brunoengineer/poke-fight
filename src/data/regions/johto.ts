@@ -311,9 +311,11 @@ export const JOHTO: Region = {
       ['violet', 'johto-sanctuary'],
     ],
   },
-  // The Hidden Grove, by the League (decided after milestone 14: every species can be obtained): this generation's
-  // Pokémon nothing else reaches (the starters not chosen, the games' gifts and fossils, babies, evolutions this game
-  // can't do). Base forms at Lv. 30–36, evolved ones at 40–46. Checked by game/obtainable.test.ts.
+  // The Hidden Grove, by the League (decided after milestone 14: every species can be obtained; since 2026-11-17, in
+  // every region's own journey): this generation's Pokémon nothing else in this region reaches (the starters not
+  // chosen, the games' gifts, trades and fossils, babies, evolutions this game can't do). Base forms at Lv. 30–36,
+  // evolved ones at 40–46. The earlier generations' come as visitors (game/visitors.ts). Checked by
+  // game/obtainable.test.ts.
   grove: [
     ['chikorita', 30, 36],
     ['cyndaquil', 30, 36],
@@ -326,6 +328,15 @@ export const JOHTO: Region = {
     ['smoochum', 30, 36],
     ['elekid', 30, 36],
     ['magby', 30, 36],
+    // Not wild in HeartGold/SoulSilver's tables here (headbutt trees, Bug-Catching Contest, Rock Smash, swarms).
+    ['pichu', 30, 36],
+    ['cleffa', 30, 36],
+    ['sudowoodo', 30, 36],
+    ['aipom', 30, 36],
+    ['pineco', 30, 36],
+    ['heracross', 30, 36],
+    ['slugma', 30, 36],
+    ['houndour', 30, 36],
   ],
   sanctuary: {
     id: 'johto-sanctuary',

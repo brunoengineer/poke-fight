@@ -154,7 +154,7 @@ export function oldFaces(cityId: string): Set<number> {
  * What you meet hunting here: one entry per species (with its level range), weighted for variety (see above). The
  * raw tables (encounterTable) stay the games'; the Pokédex shows those.
  */
-export function huntTable(city: City, raw: readonly EncounterEntry[], caught: readonly number[]): EncounterEntry[] {
+export function huntTable(city: City, raw: readonly EncounterEntry[], caught: readonly number[], fresh = FRESH): EncounterEntry[] {
   const total = raw.reduce((sum, e) => sum + e.weight, 0);
   if (total === 0) return [];
   const old = oldFaces(city.id);
@@ -168,7 +168,7 @@ export function huntTable(city: City, raw: readonly EncounterEntry[], caught: re
   }
   return [...bySpecies.values()].map(e => ({
     ...e,
-    weight: e.weight ** FLATTEN * (old.has(e.speciesId) ? OLD_FACE : 1) * (caught.includes(e.speciesId) ? 1 : FRESH),
+    weight: e.weight ** FLATTEN * (old.has(e.speciesId) ? OLD_FACE : 1) * (caught.includes(e.speciesId) ? 1 : fresh),
   }));
 }
 

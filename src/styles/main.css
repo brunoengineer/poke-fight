@@ -4999,6 +4999,31 @@ kbd,
   grid-template-rows: repeat(2, minmax(0, 1fr));
 }
 
+/* More than ten (Sinnoh's sanctuary with its visiting legends): up to 8 columns of dense cards. */
+.adventure.dense .card-body {
+  gap: 0.8cqh;
+  padding: 1.1cqh 1.3cqh;
+}
+
+.adventure.dense .card-icon {
+  display: none;
+}
+
+.adventure.dense .card-title {
+  font-size: 2.5cqh;
+}
+
+.adventure.dense .card-subtitle {
+  font-size: 1.4cqh;
+}
+
+.adventure.dense .chip {
+  top: 0.8cqh;
+  right: 0.8cqh;
+  padding: 0.45cqh 0.8cqh;
+  font-size: 1.25cqh;
+}
+
 /* Half as tall: the Pokémon use the card's top and a little behind the title's fade (city.ts artArea)… */
 .adventure.two-rows .place-pokemon {
   inset: 0.6cqh 0.6cqh 6cqh;

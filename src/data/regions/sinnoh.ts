@@ -407,9 +407,11 @@ export const SINNOH: Region = {
       ['celestic', 'sinnoh-sanctuary'],
     ],
   },
-  // The Hidden Grove, by the League (decided after milestone 14: every species can be obtained): this generation's
-  // Pokémon nothing else reaches (the starters not chosen, the games' gifts and fossils, babies, evolutions this game
-  // can't do). Base forms at Lv. 30–36, evolved ones at 40–46. Checked by game/obtainable.test.ts.
+  // The Hidden Grove, by the League (decided after milestone 14: every species can be obtained; since 2026-11-17, in
+  // every region's own journey): this generation's Pokémon nothing else in this region reaches (the starters not
+  // chosen, the games' gifts, trades and fossils, babies, evolutions this game can't do). Base forms at Lv. 30–36,
+  // evolved ones at 40–46. The earlier generations' come as visitors (game/visitors.ts). Checked by
+  // game/obtainable.test.ts.
   grove: [
     ['turtwig', 30, 36],
     ['chimchar', 30, 36],

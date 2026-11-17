@@ -715,6 +715,24 @@ World map (cities unlocked by badges)
   Munchlax, Mantine from Mantyke). Base forms Lv. 30–36, evolved ones Lv. 40–46; their evolutions happen as usual.
   Kanto 12, Johto 11, Hoenn 10, Sinnoh 29 (`Region.grove`, area `<region>-hidden-grove`). `game/obtainable.test.ts`
   fails if any species becomes unreachable, or a grove holds one that is wild elsewhere.
+- **…in every region's own journey** (decided 2026-11-17): "somewhere" wasn't enough, since each region is its own
+  journey with its own Pokédex (every species up to its generation's last). Mr. Mime could only be caught in Sinnoh,
+  so Kanto's Pokédex couldn't be completed in Kanto; Hoenn's journey couldn't reach 172 of its 386, Sinnoh's 248 of
+  its 493. Now every region's whole Pokédex can be obtained there (`game/visitors.ts`, checked per region):
+  - each **Hidden Grove** also holds its generation's Pokémon nothing else *in that region* reaches: Kanto adds
+    Red/Blue's trades and prizes (Farfetch'd, Lickitung, Tangela, **Mr. Mime**, Jynx, Dratini; 18 in all), Johto 8
+    (Pichu, Cleffa, Sudowoodo, Aipom, Pineco, Heracross, Slugma, Houndour; 19), Hoenn 4 (Azurill, Nosepass, Clamperl,
+    Relicanth; 14);
+  - each League city has a **Visitors** hunting ground per earlier region ("Kanto visitors", in that region's color):
+    its generation's Pokémon this region can't give, only the first missing form of each family (evolving does the
+    rest), at Lv. 30–36 (40–46 for one that comes evolved). Worked out from the data, not listed by hand. Johto 19
+    from Kanto; Hoenn 47 + 29; Sinnoh 37 + 32 + 45. A species not caught yet comes **6 times as often**
+    (`VISITOR_FRESH`; ordinary grounds: twice), so the last few still turn up; the card shows the 14 most likely
+    (the uncaught first) and counts what is caught ("3/37");
+  - each Legends' Sanctuary welcomes the **earlier regions' legendaries**: one card per region ("Legends of Kanto",
+    with how many are caught), opening their own row (`ui/screens/legends.ts`); each keeps its home level, attacks
+    and arena, and is caught once, with a Master Ball, like the sanctuary's own. With more than 10 cards (Sinnoh's
+    sanctuary: 13 + 3), a row of places takes up to 8 columns of denser cards.
 - **Variety** (decided after milestone 11, `huntTable` in `game/encounters.ts`): the Red/Blue tables put Pidgey,
   Rattata and Spearow on nearly every route and make each city's own Pokémon rare (Lavender's Vulpix 3%). What you
   actually meet is weighted so every new city feels new; the levels stay the games':

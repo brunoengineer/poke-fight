@@ -123,13 +123,22 @@ const placeCard = (place: PlaceCard, size: CardSpec['size'], index: number, area
   return element;
 };
 
-function adventureRow(places: PlaceCard[]) {
+/** Past this many columns a row's cards are dense (smaller titles, no icon): Sinnoh's sanctuary has 16 cards. */
+const DENSE_AFTER = 5;
+const MAX_COLUMNS = 8;
+
+/**
+ * A row of big place cards, their art sized to fit: the city's adventures, a group of legends. Past 5 cards, two
+ * rows; past 10, more columns (up to 8) and dense cards, so a sanctuary with its visiting legends still fits.
+ */
+export function adventureRow(places: PlaceCard[]) {
   const twoRows = places.length > 5;
-  const columns = Math.min(5, Math.ceil(places.length / (twoRows ? 2 : 1)));
+  const columns = Math.min(MAX_COLUMNS, Math.ceil(places.length / (twoRows ? 2 : 1)));
+  const dense = columns > DENSE_AFTER;
   const area = artArea(columns, twoRows);
   return h(
     'div',
-    { class: `adventure${twoRows ? ' two-rows' : ''}`, style: { '--n': columns } },
+    { class: `adventure${twoRows ? ' two-rows' : ''}${dense ? ' dense' : ''}`, testid: 'adventure', style: { '--n': columns } },
     places.map((p, i) => placeCard(p, 'hero', i, area)),
   );
 }
